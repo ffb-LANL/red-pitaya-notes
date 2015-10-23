@@ -18,21 +18,21 @@ cell xilinx.com:ip:c_counter_binary:12.0 cntr_0 {
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_0 {
-  DIN_WIDTH 32  DIN_FROM 26 DIN_TO 23
+  DIN_WIDTH 32  DIN_FROM 26 DIN_TO 21
 } {
   Din cntr_0/Q
 }
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_0 {
-  CONST_WIDTH 4
+  CONST_WIDTH 2
   CONST_VAL 0
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_0 {
-  IN0_WIDTH 4
-  IN1_WIDTH 4
+  IN0_WIDTH 6
+  IN1_WIDTH 2
 } {
   In0 slice_0/Dout
   In1 const_0/dout
