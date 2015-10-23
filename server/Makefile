@@ -18,7 +18,7 @@ VERSION ?= 0.00-0000
 REVISION ?= devbuild
 
 # List of compiled object files (not yet linked to executable)
-OBJS = fpga_awg.o generate.o
+OBJS = rp.o
 # List of raw source files (all object files, renamed from .o to .c)
 SRCS = $(subst .o,.c, $(OBJS)))
 
@@ -26,7 +26,7 @@ SRCS = $(subst .o,.c, $(OBJS)))
 TARGET=rp
 
 # GCC compiling & linking flags
-CFLAGS=-g -std=gnu99 -Wall -Werror
+CFLAGS=-g -std=gnu99 -Wall
 CFLAGS += -DVERSION=$(VERSION) -DREVISION=$(REVISION)
 
 # Red Pitaya common SW directory
@@ -61,17 +61,13 @@ all: $(TARGET)
 # It applies to all files ending with .o. During partial building only new object
 # files are created for the source files (.c) which have newer timestamp then 
 # objects (.o) files.
-%.o: %.c version.h
+%.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
 # Makefile target with rules how to link executable for each target from $(TARGET)
 # list.
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
-
-# Version header for traceability
-version.h:
-	cp $(SHARED)/include/redpitaya/version.h . 
 
 # Clean target - when called it cleans all object files and executables.
 clean:
