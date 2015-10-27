@@ -48,10 +48,11 @@ int interrupted = 0;
 int main()
 {
   int fd, i, sockServer,sockClient,yes = 1,samples,packet_size=4096;
+  uint32_t status;
   unsigned long size = 0;
   int16_t value;
   uint64_t command = 600000;
-  void *cfg, *ram;
+  void *cfg, *ram, *sts;
   char *name = "/dev/mem";
   struct sockaddr_in addr;
   size_t length;
@@ -65,7 +66,7 @@ int main()
   length=(samples+1)*4;
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   ram = mmap(NULL,length , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
-
+  sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
   // reset writer
   *((uint32_t *)(cfg + 0)) &= ~2;
   *((uint32_t *)(cfg + 0)) |= 2;
@@ -129,6 +130,14 @@ int main()
             	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
             	  // enter normal mode
             	  *((uint32_t *)(cfg + 0)) |= 5;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)34703340;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)347033400;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
             	  // wait 1 second
             	  sleep(1);
            		 printf("Sending data\n");
@@ -142,12 +151,19 @@ int main()
            		  for(i = 0; i < 20; ++i)
            		  {
            		    value = *((int16_t *)(ram + 4*i + 2));
-           		    printf("%d\t%f\t%f\n", value,osc_fpga_cnv_cnt_to_v(value,1,0,0),(float)value/(float)0x2000);
+           		    printf("%d\t%f\t%f\n", value,osc_fpga_cnv_cnt_to_v(0x3FFF&value,1,0,0),(float)value/(float)0x2000);
            		  }
            		  break;
             case 2:
             	interrupted=1;
             	break;
+            case 3: //get status
+            	offset = command & 0xFFFFFFFF;
+            	 status=*((uint32_t *)(sts + offset));
+            	 printf("Status = %u\n",status);
+   			 	 if(send(sockClient, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
+            	 break;
+
           }
         }
       }
