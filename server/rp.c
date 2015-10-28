@@ -12,6 +12,15 @@
 #include <arpa/inet.h>
 #define RAM_START 0x10000000
 #define TCP_PORT 1002
+#define UPDATE_CIC_FLAG 4
+#define WRITER_ENABLE_FLAG 2
+#define TRIGGER_RECORD_FLAG 8
+#define PKTZR_RESET_FLAG 1
+#define RECORD_LENGTH_OFFSET 4
+#define FREQ_OFFSET 8
+#define DESIMATION_OFFSET 12
+#define RECORD_START_POS_OFFSET 4
+
 
 int interrupted = 0;
 int main()
@@ -104,34 +113,34 @@ int main()
             case 0:
             	printf("Sending phase word %d\n",(int)command);
                 /* set phase increment */
-                *((uint32_t *)(cfg + 8)) = (uint32_t)command;
+                *((uint32_t *)(cfg + FREQ_OFFSET)) = (uint32_t)command;
               	break;
 
             case 1:
 
             	samples = command & 0xFFFFFFFF;
             	// reset writer
-            	  *((uint32_t *)(cfg + 0)) &= ~2;
+            	  *((uint32_t *)(cfg + 0)) &= ~WRITER_ENABLE_FLAG;
 
          		  // enter reset mode for packetizer and fifo
-         		  *((uint32_t *)(cfg + 0)) &= ~ 5;
-         		  *((uint32_t *)(cfg + 0)) &= ~ 8;
+         		  *((uint32_t *)(cfg + 0)) &= ~ PKTZR_RESET_FLAG ;
+         		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
             	  // set number of samples
-            	  *((uint32_t *)(cfg + 4)) = samples;
+            	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
             	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
 
             	  // enter normal mode
-            	  *((uint32_t *)(cfg + 0)) |= 2;
-            	  *((uint32_t *)(cfg + 0)) |= 5;
+            	  *((uint32_t *)(cfg + 0)) |= WRITER_ENABLE_FLAG;
+            	  *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
             	  wait=rand()/1000;
             	  printf("Waiting to trigger for %ld usec\n", wait);
                   	  usleep(wait);
                   //trigger
-                	  *((uint32_t *)(cfg + 0)) |= 8;
+                	  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
                   	  sleep(1);
            		 printf("Sending data\n");
            		 //read start pos
-           		 start_pos=*((uint32_t *)(sts + 4));
+           		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
            		 start_offset=((start_pos*2)/packet_size)*packet_size-packet_size;
            		 end_offset=((start_pos*2)/packet_size)*packet_size+samples*4-packet_size;
            		 for(offset=0;offset < 0x300000*4;offset +=packet_size)

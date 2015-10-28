@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#define RAM_START 0x8000000
+#define RAM_START 0x10000000
 #define TCP_PORT 1002
 /* @brief Number of ADC acquisition bits.  */
 const int                  c_osc_fpga_adc_bits = 14;
@@ -94,7 +94,7 @@ int main()
   }
 
   listen(sockServer, 1024);
-  printf("waiting on client\n");
+  printf("Lockin test delay, waiting on client\n");
   if((sockClient = accept(sockServer, NULL, NULL)) < 0)
         {
           perror("accept");

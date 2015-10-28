@@ -55,7 +55,7 @@ cell xilinx.com:ip:c_counter_binary:12.0 cntr_0 {
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_0 {
-  DIN_WIDTH 32 DIN_FROM 25 DIN_TO 25 DOUT_WIDTH 1
+  DIN_WIDTH 32 DIN_FROM 25 DIN_TO 21
 } {
   Din cntr_0/Q
  }
@@ -79,14 +79,14 @@ set_property OFFSET 0x40000000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_1 {
-  DIN_WIDTH 1024 DIN_FROM 134 DIN_TO 128 DOUT_WIDTH 7
+  DIN_WIDTH 1024 DIN_FROM 129 DIN_TO 128 
 } {
   Din cfg_0/cfg_data
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_0 {
-  IN1_WIDTH 7
+  IN1_WIDTH 2
 } {
   In0 slice_0/Dout
   In1 slice_1/Dout
@@ -131,7 +131,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_0 {} {
   s_axis_aclk adc_0/adc_clk
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
-  m_axis_aresetn slice_4/Dout
+  m_axis_aresetn rst_0/peripheral_aresetn
 }
 
 # Create xlconstant
@@ -224,7 +224,7 @@ cell  xilinx.com:ip:axis_combiner:1.1 comb_0 {
 }
 
 # Create clk_wiz
-cell xilinx.com:ip:clk_wiz:5.1 pll_0 {
+cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
   PRIMITIVE PLL
   PRIM_IN_FREQ.VALUE_SRC USER
   PRIM_IN_FREQ 125.0
@@ -265,7 +265,7 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 # Create axis_packetizer
 cell pavel-demin:user:axis_packetizer:1.0 pktzr_0 {
   AXIS_TDATA_WIDTH 64
-  CNTR_WIDTH 32
+  CNTR_WIDTH 26
   CONTINUOUS FALSE
   NON_BLOCKING TRUE
 } {
@@ -289,7 +289,7 @@ cell pavel-demin:user:axis_packetizer:1.0 pktzr_0 {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_2 {
   CONST_WIDTH 32
-  CONST_VAL 134217728
+  CONST_VAL 268435456
 }
 
 # Create axis_ram_writer
