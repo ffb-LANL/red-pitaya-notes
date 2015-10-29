@@ -143,7 +143,7 @@ int main()
            		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
            		 start_offset=((start_pos*2)/packet_size)*packet_size-packet_size;
            		 end_offset=((start_pos*2)/packet_size)*packet_size+samples*4-packet_size;
-           		 for(offset=0;offset < 0x300000*4;offset +=packet_size)
+           		 for(offset=0;offset < samples*4;offset +=packet_size)
            		 	 {
            			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
            			 	 //printf("%d\r",offset);
