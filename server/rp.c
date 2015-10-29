@@ -20,6 +20,7 @@
 #define FREQ_OFFSET 8
 #define DESIMATION_OFFSET 12
 #define RECORD_START_POS_OFFSET 4
+#define VALUE_OFFSET 16
 
 
 int interrupted = 0;
@@ -30,7 +31,7 @@ int main()
   uint32_t status, start_pos, start_offset, end_offset;
   unsigned long size = 0, wait;
   int16_t value;
-  uint64_t command = 600000;
+  uint64_t command = 600000,value;
   void *cfg, *ram, *sts;
   char *name = "/dev/mem";
   struct sockaddr_in addr;
@@ -170,7 +171,6 @@ int main()
             	  printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
             	  if(send(sockClient, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
             	  break;
-
           }
         }
       }

@@ -21,7 +21,7 @@ CORES = axi_bram_reader_v1_0 axi_bram_writer_v1_0 axi_cfg_register_v1_0 \
   axis_timer_v1_0 axis_trigger_v1_0 axi_sts_register_v1_0 axis_validator_v1_0 \
   axis_variable_v1_0
 
-CORES += axis_delay_v1_0 axis_snapshot_v1_0 axis_circular_packetizer_v1_0  
+CORES += axis_delay_v1_0 axis_snapshot_v1_0 axis_circular_packetizer_v1_0 axis_value_v1_0  
 
 VIVADO = vivado -nolog -nojournal -mode batch
 HSI = hsi -nolog -nojournal -mode batch
