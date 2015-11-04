@@ -8,7 +8,7 @@
 
 `timescale 1 ns / 1 ps
 
-module axis_packetizer #
+module axis_circular_packetizer #
 (
   parameter integer AXIS_TDATA_WIDTH = 32,
   parameter integer CNTR_WIDTH = 32,
