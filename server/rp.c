@@ -11,27 +11,31 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #define RAM_START 0x10000000
+//#define RAM_START 0x1E000000
 #define TCP_PORT 1002
-#define UPDATE_CIC_FLAG 4
-#define WRITER_ENABLE_FLAG 2
-#define TRIGGER_RECORD_FLAG 8
+
 #define PKTZR_RESET_FLAG 1
+#define WRITER_ENABLE_FLAG 2
+#define UPDATE_CIC_FLAG 4
+#define TRIGGER_RECORD_FLAG 8
+
 #define RECORD_LENGTH_OFFSET 4
 #define FREQ_OFFSET 8
-#define DESIMATION_OFFSET 12
+#define DESIMATION_OFFSET  12
 #define RECORD_START_POS_OFFSET 4
+#define WRITER_STS_OFFSET 0
 #define VALUE_OFFSET 16
 
 
 int interrupted = 0;
 int main()
 {
-  int fd, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
+  int fd,fdio, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
-  uint32_t status, start_pos, start_offset, end_offset;
+  uint32_t status, start_pos, start_offset, end_offset, config;
   unsigned long size = 0, wait;
-  int16_t value;
-  uint64_t command = 600000,value;
+  uint64_t value;
+  uint64_t command = 600000;
   void *cfg, *ram, *sts;
   char *name = "/dev/mem";
   struct sockaddr_in addr;
@@ -54,7 +58,10 @@ int main()
 
   // enter reset mode for packetizer and fifo
   //*((uint32_t *)(cfg + 0)) &= ~5;
-
+  //value = 50;
+ *((uint32_t *)(cfg + 0)) &= ~0xf;
+  //*((uint16_t *)(cfg + DESIMATION_OFFSET)) = 100;
+  //*((uint32_t *)(cfg + 0)) |= UPDATE_CIC_FLAG;
 
   if((sockServer = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
@@ -102,6 +109,7 @@ int main()
           return 1;
         }
   printf("new connection\n");
+
   while(!interrupted)
       {
         if(ioctl(sockClient, FIONREAD, &size) < 0) break;
@@ -120,25 +128,26 @@ int main()
             case 1:
 
             	samples = command & 0xFFFFFFFF;
-            	// reset writer
-            	  *((uint32_t *)(cfg + 0)) &= ~WRITER_ENABLE_FLAG;
+            	// reset writer and packetizer
+            	  *((uint32_t *)(cfg + 0)) &= 15;//  ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG ) ;
 
-         		  // enter reset mode for packetizer and fifo
-         		  *((uint32_t *)(cfg + 0)) &= ~ PKTZR_RESET_FLAG ;
+         		  // reset trigger
          		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
             	  // set number of samples
             	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
             	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
 
             	  // enter normal mode
-            	  *((uint32_t *)(cfg + 0)) |= WRITER_ENABLE_FLAG;
-            	  *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
+            	 *((uint32_t *)(cfg + 0)) |= 15; // ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
+            	 // *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
+            	//  *((uint32_t *)(cfg + 0)) |=
+
             	  wait=rand()/1000;
             	  printf("Waiting to trigger for %ld usec\n", wait);
-                  	  usleep(wait);
+                  usleep(wait);
                   //trigger
-                	  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
-                  	  sleep(1);
+                  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
+                  sleep(1);
            		 printf("Sending data\n");
            		 //read start pos
            		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
@@ -147,9 +156,9 @@ int main()
            		 for(offset=0;offset < samples*4;offset +=packet_size)
            		 	 {
            			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
-           			 	 //printf("%d\r",offset);
-           		 	 }
-           		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d\n",start_pos,offset, start_offset, end_offset);
+           			 }
+           		config=*((uint32_t *)(cfg + 0));
+           		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",start_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
          		  break;
             case 2:
             	interrupted=1;
@@ -157,20 +166,70 @@ int main()
             case 3: //get status
             	offset = command & 0xFFFFFFFF;
             	 status=*((uint32_t *)(sts + offset));
-            	 printf("Status = %u\n",status);
+            	 printf("Offset =%u, Status = %u\n",(uint32_t)offset, status);
    			 	 if(send(sockClient, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
             	 break;
             case 4: //get temperature
-            	 if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_raw", "r")) == NULL){
-            	  	    perror("device open");
-            	  	    return 1;
-            	    }
-            	  fscanf(fp,"%d", &temperature);
+            	  if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_raw", "r")) == NULL){
+            	              	  	    perror("device open");
+            	              	  	    return 1;
+            	              	    }
+            	  fscanf(fp,"%d", &temperature_raw);
             	  fclose(fp);
             	  temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
-            	  printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
+            	  // printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
             	  if(send(sockClient, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
             	  break;
+            case 5: //change decimation rate
+                  value = command & 0xFFFF;
+            	  *((uint32_t *)(cfg + 0)) &= ~ UPDATE_CIC_FLAG;
+                  *((uint32_t *)(cfg + DESIMATION_OFFSET)) = value;
+                  *((uint32_t *)(cfg + 0)) |= UPDATE_CIC_FLAG;
+                  value=*((uint32_t *)(cfg + DESIMATION_OFFSET));
+              	  config=*((uint32_t *)(cfg + 0));
+                  printf("Decimation rate =%u, config = %x\n",(uint32_t)value, config);
+                  break;
+            case 6:  // arm
+
+             	samples = command & 0xFFFFFFFF;
+             	// reset writer and packetizer
+             	  *((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG ) ;
+
+          		  // reset trigger
+          		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
+             	  // set number of samples
+             	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
+             	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
+
+             	  // enter normal mode
+             	 *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
+             	 // *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
+             	//  *((uint32_t *)(cfg + 0)) |=
+
+             	   printf("Armed\n");
+             	   break;
+            case 7: //software trigger
+                //trigger
+                 *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
+                printf("Software trigger\n");
+            	break;
+            case 8: //read data
+             	samples = command & 0xFFFFFFFF;
+          		 printf("Sending data\n");
+          		 //read start pos
+          		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
+          		 start_offset=((start_pos*2)/packet_size)*packet_size-packet_size;
+          		 end_offset=((start_pos*2)/packet_size)*packet_size+samples*4-packet_size;
+          		 for(offset=0;offset < samples*4;offset +=packet_size)
+          		 	 {
+          			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
+          		 	 }
+  			 	 printf("Offset %d\n",offset);
+          		config=*((uint32_t *)(cfg + 0));
+          		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",start_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+                break;
+
+
           }
         }
       }
@@ -181,6 +240,7 @@ printf("closed connection\n");
 
   munmap(cfg, sysconf(_SC_PAGESIZE));
   munmap(ram, sysconf(_SC_PAGESIZE));
+  munmap(sts, sysconf(_SC_PAGESIZE));
 
   return 0;
 }

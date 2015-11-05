@@ -28,7 +28,7 @@ cell xilinx.com:ip:xlslice:1.0 slice_decimate {
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_cic_update {
-  DIN_WIDTH 256 DIN_FROM 2 DIN_TO 2 DOUT_WIDTH 1
+  DIN_WIDTH 256 DIN_FROM 6 DIN_TO 6 DOUT_WIDTH 1
 } {
   Din cfg
 }

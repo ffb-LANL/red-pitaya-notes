@@ -137,6 +137,19 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_ADC {
   aresetn rst_0/peripheral_aresetn
 }
 
+
+
+# Create axis_value
+cell pavel-demin:user:axis_value:1.0 value_1 {
+  AXIS_TDATA_WIDTH 32
+} {
+  s_axis bcast_ADC/M01_AXIS
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+
 # Create axis_subset_converter
 cell xilinx.com:ip:axis_subset_converter:1.1 subset_ADC_A {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
@@ -145,7 +158,7 @@ cell xilinx.com:ip:axis_subset_converter:1.1 subset_ADC_A {
   M_TDATA_NUM_BYTES 2
   TDATA_REMAP {tdata[15:0]}
 } {
-  S_AXIS bcast_ADC/M01_AXIS
+
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
@@ -183,14 +196,14 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
 }
 
 # Create axis_broadcaster
-#cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
-#  S_TDATA_NUM_BYTES 4
-#  M_TDATA_NUM_BYTES 4
-# } {
-#  S_AXIS dds_0/M_AXIS_DATA
-#  aclk ps_0/FCLK_CLK0
-#  aresetn rst_0/peripheral_aresetn
-#}
+cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 4
+ } {
+  S_AXIS dds_0/M_AXIS_DATA
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
 
 
 # Create axis_lfsr
@@ -198,6 +211,18 @@ cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
   aclk ps_0/FCLK_CLK0
   aresetn slice_1/Dout
 }
+
+
+
+# Create axis_value
+cell pavel-demin:user:axis_value:1.0 value_0 {
+  AXIS_TDATA_WIDTH 32
+} {
+  s_axis bcast_DDS/M01_AXIS
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
+
 
 # create delay
 module delay_0 {
@@ -255,7 +280,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_dac {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS dds_0/M_AXIS_DATA
+  S_AXIS bcast_DDS/M00_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk pll_0/clk_out1
@@ -338,67 +363,34 @@ cell pavel-demin:user:axis_snapshot:1.0 snap_phase {
   aresetn slice_trig_record/Dout
 }
 
-# Create xlconcat
-cell xilinx.com:ip:xlconcat:2.1 concat_status {
-  NUM_PORTS 3
-  IN0_WIDTH 32
-  IN1_WIDTH 32
-  IN2_WIDTH 32
-} {
-  In0 writer_0/sts_data
-  In1 pktzr_0/start_pos
-  In2 snap_phase/data
-}
 
-# Create blk_mem_gen
-cell xilinx.com:ip:blk_mem_gen:8.3 bram_0 {
-  MEMORY_TYPE True_Dual_Port_RAM
-  USE_BRAM_BLOCK Stand_Alone
-  USE_BYTE_WRITE_ENABLE true
-  BYTE_SIZE 8
-  WRITE_WIDTH_A 64
-  WRITE_DEPTH_A 512
-  WRITE_WIDTH_B 32
-  WRITE_DEPTH_B 1024
-  ENABLE_A Always_Enabled
-  ENABLE_B Always_Enabled
-  REGISTER_PORTB_OUTPUT_OF_MEMORY_PRIMITIVES false
-}
-
-# Create axis_bram_writer
-cell pavel-demin:user:axis_bram_writer:1.0 writer_fir {
+# Create axis_value
+cell pavel-demin:user:axis_value:1.0 value_xy {
   AXIS_TDATA_WIDTH 64
-  BRAM_DATA_WIDTH 64
-  BRAM_ADDR_WIDTH 9
 } {
   S_AXIS filter_0/m_axis
-  BRAM_PORTA bram_0/BRAM_PORTA
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
 
-# Create axi_bram_reader
-cell pavel-demin:user:axi_bram_reader:1.0 reader_0 {
-  AXI_DATA_WIDTH 32
-  AXI_ADDR_WIDTH 32
-  BRAM_DATA_WIDTH 32
-  BRAM_ADDR_WIDTH 10
+
+# Create xlconcat
+cell xilinx.com:ip:xlconcat:2.1 concat_status {
+  NUM_PORTS 4
+  IN0_WIDTH 32
+  IN1_WIDTH 32
+  IN2_WIDTH 32
+  IN3_WIDTH 64
 } {
-  BRAM_PORTA bram_0/BRAM_PORTB
+  In0 writer_0/sts_data
+  In1 pktzr_0/start_pos
+  In2 snap_phase/data
+  In3 value_xy/data
 }
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins reader_0/S_AXI]
-
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-set_property OFFSET 0x40002000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 96
+  STS_DATA_WIDTH 160
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {
