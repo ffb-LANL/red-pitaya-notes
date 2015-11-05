@@ -21,7 +21,7 @@ module axis_circular_packetizer #
   input  wire                        aresetn,
 
   input  wire [CNTR_WIDTH-1:0]       cfg_data,
-  output wire [CNTR_WIDTH-1:0]       start_pos,
+  output wire [CNTR_WIDTH-1:0]       trigger_pos,
   input  wire                        trigger,
 
   // Slave side
@@ -121,6 +121,6 @@ module axis_circular_packetizer #
   assign m_axis_tdata = s_axis_tdata;
   assign m_axis_tvalid = int_tvalid_wire;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
-  assign start_pos = int_start_pos;
+  assign trigger_pos = int_start_pos;
 
 endmodule
