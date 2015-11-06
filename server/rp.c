@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#define RAM_START 0x10000000
+#define RAM_START 0x0fff0000 //0x10000000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 
@@ -32,7 +32,7 @@ int main()
 {
   int fd,fdio, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
-  uint32_t status, start_pos, start_offset, end_offset, config;
+  uint32_t status, trigger_pos, start_offset, end_offset, config;
   unsigned long size = 0, wait;
   uint64_t value;
   uint64_t command = 600000;
@@ -150,15 +150,15 @@ int main()
                   sleep(1);
            		 printf("Sending data\n");
            		 //read start pos
-           		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-           		 start_offset=((start_pos*2)/packet_size)*packet_size-packet_size;
-           		 end_offset=((start_pos*2)/packet_size)*packet_size+samples*4-packet_size;
+           		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
+           		 start_offset=((trigger_pos*2)/packet_size)*packet_size-packet_size;
+           		 end_offset=((trigger_pos*2)/packet_size)*packet_size+samples*4-packet_size;
            		 for(offset=0;offset < samples*4;offset +=packet_size)
            		 	 {
            			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
            			 }
            		config=*((uint32_t *)(cfg + 0));
-           		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",start_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
+           		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
          		  break;
             case 2:
             	interrupted=1;
@@ -206,27 +206,40 @@ int main()
              	 // *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
              	//  *((uint32_t *)(cfg + 0)) |=
 
-             	   printf("Armed\n");
+             	   printf("Armed, status %d\n", *((uint32_t *)(cfg + 0)));
              	   break;
             case 7: //software trigger
                 //trigger
                  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
-                printf("Software trigger\n");
+                printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
             	break;
-            case 8: //read data
+            case 8: //read all of data
              	samples = command & 0xFFFFFFFF;
           		 printf("Sending data\n");
           		 //read start pos
-          		 start_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-          		 start_offset=((start_pos*2)/packet_size)*packet_size-packet_size;
-          		 end_offset=((start_pos*2)/packet_size)*packet_size+samples*4-packet_size;
+          		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
+          		 start_offset=((trigger_pos*2)/packet_size)*packet_size-packet_size;
+          		 end_offset=((trigger_pos*2)/packet_size)*packet_size+samples*4-packet_size;
           		 for(offset=0;offset < samples*4;offset +=packet_size)
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
           		 	 }
   			 	 printf("Offset %d\n",offset);
           		config=*((uint32_t *)(cfg + 0));
-          		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",start_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+          		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+                break;
+            case 9: //read data chunk
+            	start_offset= command & 0x3FFFFFFF;
+            	end_offset = (command  >> 30)& 0x3FFFFFFF;
+         		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
+          		 printf("Sending data, start = %x, end = %x, trigger pos = %x\n", start_offset,end_offset,trigger_pos);
+          		 for(offset=start_offset;offset < end_offset;offset +=packet_size)
+          		 	 {
+          			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
+          		 	 }
+  			 	 printf("Offset %d\n",offset);
+          		config=*((uint32_t *)(cfg + 0));
+          		 printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
                 break;
 
 
