@@ -36,7 +36,7 @@ module axis_circular_packetizer #
   output wire                        m_axis_tlast
 );
 
-  reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next, int_start_pos, int_start_pos_next;
+  reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next, int_trigger_pos, int_trigger_pos_next;
   reg int_enbl_reg, int_enbl_next;
 
   wire int_comp_wire, int_tvalid_wire, int_tlast_wire;
@@ -46,13 +46,13 @@ module axis_circular_packetizer #
     if(~aresetn)
     begin
       int_cntr_reg <= {(CNTR_WIDTH){1'b0}};
-      int_start_pos <= {(CNTR_WIDTH){1'b0}};
+      int_trigger_pos <= {(CNTR_WIDTH){1'b0}};
       int_enbl_reg <= 1'b0;
     end
     else
     begin
       int_cntr_reg <= int_cntr_next;
-      int_start_pos <= int_start_pos_next;
+      int_trigger_pos <= int_trigger_pos_next;
       int_enbl_reg <= int_enbl_next;
     end
   end
@@ -65,53 +65,53 @@ module axis_circular_packetizer #
     if(CONTINUOUS == "TRUE")
     begin : CONTINUOUS
       always @*
-      begin
-        int_cntr_next = int_cntr_reg;
-        int_enbl_next = int_enbl_reg;
-
-        if(~int_enbl_reg & int_comp_wire)
         begin
-          int_enbl_next = 1'b1;
-        end
+          int_cntr_next = int_cntr_reg;
+          int_enbl_next = int_enbl_reg;
+          int_trigger_pos_next = int_trigger_pos;
 
-        if(m_axis_tready & int_tvalid_wire & int_comp_wire)
-        begin
-          int_cntr_next = int_cntr_reg + 1'b1;
-        end
+          if(~int_enbl_reg & int_comp_wire)
+            begin
+              int_enbl_next = 1'b1;
+            end
 
-        if(m_axis_tready & int_tvalid_wire & int_tlast_wire)
-        begin
-          int_cntr_next = {(CNTR_WIDTH){1'b0}};
+          if(m_axis_tready & int_tvalid_wire & int_comp_wire)
+            begin
+              int_cntr_next = int_cntr_reg + 1'b1;
+            end
+          if(m_axis_tready & int_tvalid_wire & int_tlast_wire)
+            begin
+              int_cntr_next = {(CNTR_WIDTH){1'b0}};
+            end
         end
       end
-    end
     else
-    begin : STOP
-      always @*
-      begin
-        int_cntr_next = int_cntr_reg;
-        int_start_pos_next = int_start_pos;
-        int_enbl_next = int_enbl_reg;
+      begin : STOP
+        always @*
+          begin
+            int_cntr_next = int_cntr_reg;
+            int_trigger_pos_next = int_trigger_pos;
+            int_enbl_next = int_enbl_reg;
 
-        if(~int_enbl_reg & int_comp_wire)
-        begin
-          int_enbl_next = 1'b1;
-        end
+            if(~int_enbl_reg & int_comp_wire)
+              begin
+                int_enbl_next = 1'b1;
+              end
 
-        if(m_axis_tready & int_tvalid_wire & int_comp_wire)
-        begin
-          if(trigger)
-             int_cntr_next = int_cntr_reg + 1'b1;
-          else
-             int_start_pos_next = int_start_pos + 1'b1;
-        end
+            if(m_axis_tready & int_tvalid_wire & int_comp_wire)
+              begin
+                if(trigger)
+                  int_cntr_next = int_cntr_reg + 1'b1;
+                else
+                  int_trigger_pos_next = int_trigger_pos + 1'b1;
+              end
 
-        if(m_axis_tready & int_tvalid_wire & int_tlast_wire)
-        begin
-          int_enbl_next = 1'b0;
-        end
-      end
-    end
+            if(m_axis_tready & int_tvalid_wire & int_tlast_wire)
+              begin
+                int_enbl_next = 1'b0;
+              end
+         end
+       end
   endgenerate
 
   if(NON_BLOCKING == "TRUE")  
@@ -121,6 +121,6 @@ module axis_circular_packetizer #
   assign m_axis_tdata = s_axis_tdata;
   assign m_axis_tvalid = int_tvalid_wire;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
-  assign trigger_pos = int_start_pos;
+  assign trigger_pos = int_trigger_pos;
 
 endmodule
