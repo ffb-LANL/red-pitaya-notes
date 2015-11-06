@@ -138,26 +138,26 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
 
 
 # create filter
-#module filter_0 {
-#  source projects/filter_test/filter_dual.tcl
-#} {
-#  s_axis fifo_ADC/M_AXIS
-#  cfg cfg_0/cfg_data
-#  aclk ps_0/FCLK_CLK0
-#  aresetn rst_0/peripheral_aresetn
-#}
-
-
-# Create axis_dwidth_converter
-cell xilinx.com:ip:axis_dwidth_converter:1.1 filter_0 {
-  S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 8
+module filter_0 {
+  source projects/filter_test/filter_FIR.tcl
 } {
-  S_AXIS fifo_ADC/m_axis
+  s_axis fifo_ADC/M_AXIS
+  cfg cfg_0/cfg_data
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
+
+
+# Create axis_dwidth_converter
+#cell xilinx.com:ip:axis_dwidth_converter:1.1 filter_0 {
+#  S_TDATA_NUM_BYTES.VALUE_SRC USER
+#  S_TDATA_NUM_BYTES 4
+#  M_TDATA_NUM_BYTES 8
+#} {
+#  S_AXIS fifo_ADC/m_axis
+#  aclk ps_0/FCLK_CLK0
+#  aresetn rst_0/peripheral_aresetn
+#}
 
 # Create gpio_trigger
 cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
@@ -169,10 +169,16 @@ cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
   aresetn slice_pktzr_reset/Dout
 }
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant:1.1 const_pktzr_length {
+  CONST_WIDTH 32
+  CONST_VAL 2048
+}
+
 # Create axis_circular_packetizer
 cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
   AXIS_TDATA_WIDTH 64
-  CNTR_WIDTH 15
+  CNTR_WIDTH 25
   CONTINUOUS FALSE
 } {
   S_AXIS filter_0/M_AXIS
@@ -203,7 +209,7 @@ cell xilinx.com:ip:xlconstant:1.1 const_2 {
 
 # Create axis_ram_writer
 cell pavel-demin:user:axis_ram_writer:1.0 writer_0 {
-  ADDR_WIDTH 15
+  ADDR_WIDTH 25
 } {
   S_AXIS pktzr_0/M_AXIS
   M_AXI ps_0/S_AXI_HP0
