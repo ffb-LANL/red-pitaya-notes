@@ -13,7 +13,7 @@
 #define RAM_START 0x0fff0000 //0x10000000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
-
+#define SYSTEM_CALL_MAX 1
 #define PKTZR_RESET_FLAG 1
 #define WRITER_ENABLE_FLAG 2
 #define UPDATE_CIC_FLAG 4
@@ -38,6 +38,7 @@ int main()
   uint64_t command = 600000;
   void *cfg, *ram, *sts;
   char *name = "/dev/mem";
+  char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg"};
   struct sockaddr_in addr;
   size_t length;
   off_t offset=0x8000000;
@@ -241,6 +242,13 @@ int main()
           		config=*((uint32_t *)(cfg + 0));
           		 printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
                 break;
+            case 10:
+            	i = command & 0xFFFF;
+            	if(i < SYSTEM_CALL_MAX) {
+            		printf("Call: %s\n",system_call[i]);
+            		system(system_call[i]);
+            	}
+            	break;
 
 
           }
