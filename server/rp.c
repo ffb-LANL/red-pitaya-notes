@@ -10,7 +10,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#define RAM_START 0x0fff0000 //0x10000000
+//#define RAM_START 0x0fff0000
+#define RAM_START 0x10000000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 1
@@ -167,7 +168,7 @@ int main()
             case 3: //get status
             	offset = command & 0xFFFFFFFF;
             	 status=*((uint32_t *)(sts + offset));
-            	 printf("Offset =%u, Status = %u\n",(uint32_t)offset, status);
+            	 printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
    			 	 if(send(sockClient, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
             	 break;
             case 4: //get temperature
@@ -181,7 +182,7 @@ int main()
             	  // printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
             	  if(send(sockClient, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
             	  break;
-            case 5: //change decimation rate
+            case 5: //set decimation rate
                   value = command & 0xFFFF;
             	  *((uint32_t *)(cfg + 0)) &= ~ UPDATE_CIC_FLAG;
                   *((uint32_t *)(cfg + DESIMATION_OFFSET)) = value;
@@ -214,7 +215,7 @@ int main()
                  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
                 printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
             	break;
-            case 8: //read all of data
+            case 8: //read from start of buffer
              	samples = command & 0xFFFFFFFF;
           		 printf("Sending data\n");
           		 //read start pos
@@ -233,7 +234,7 @@ int main()
             	start_offset= command & 0x3FFFFFFF;
             	end_offset = (command  >> 30)& 0x3FFFFFFF;
          		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-          		 printf("Sending data, start = %x, end = %x, trigger pos = %x\n", start_offset,end_offset,trigger_pos);
+          		 printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
           		 for(offset=start_offset;offset < end_offset;offset +=packet_size)
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
@@ -249,6 +250,12 @@ int main()
             		system(system_call[i]);
             	}
             	break;
+            case 11: //get config
+            	offset = command & 0xFFFFFFFF;
+            	 status=*((uint32_t *)(cfg + offset));
+            	 printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
+   			 	 if(send(sockClient, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
+            	 break;
 
 
           }

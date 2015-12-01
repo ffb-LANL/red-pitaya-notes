@@ -149,15 +149,15 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
 
 
 # Create axis_dwidth_converter
-cell xilinx.com:ip:axis_dwidth_converter:1.1 filter_0 {
-  S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 8
-} {
-  S_AXIS fifo_ADC/m_axis
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
+#cell xilinx.com:ip:axis_dwidth_converter:1.1 filter_0 {
+#  S_TDATA_NUM_BYTES.VALUE_SRC USER
+#  S_TDATA_NUM_BYTES 4
+#  M_TDATA_NUM_BYTES 8
+#} {
+#  S_AXIS fifo_ADC/m_axis
+#  aclk ps_0/FCLK_CLK0
+#  aresetn rst_0/peripheral_aresetn
+#}
 
 # Create gpio_trigger
 cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
@@ -177,11 +177,11 @@ cell xilinx.com:ip:xlconstant:1.1 const_pktzr_length {
 
 # Create axis_circular_packetizer
 cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
-  AXIS_TDATA_WIDTH 64
-  CNTR_WIDTH 25
+  AXIS_TDATA_WIDTH 32
+  CNTR_WIDTH 26
   CONTINUOUS FALSE
 } {
-  S_AXIS filter_0/M_AXIS
+  S_AXIS fifo_ADC/M_AXIS
   cfg_data slice_record_length/Dout
   trigger trigger_0/trigger
   aclk ps_0/FCLK_CLK0
@@ -191,15 +191,15 @@ cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
 
 
 # Create axis_dwidth_converter
-#cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_0 {
-#  S_TDATA_NUM_BYTES.VALUE_SRC USER
-#  S_TDATA_NUM_BYTES 4
-#  M_TDATA_NUM_BYTES 8
-#} {
-#  S_AXIS pktzr_0/M_AXIS
-#  aclk ps_0/FCLK_CLK0
-#  aresetn slice_write_enable/Dout
-#}
+cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_0 {
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 8
+} {
+  S_AXIS pktzr_0/M_AXIS
+  aclk ps_0/FCLK_CLK0
+  aresetn slice_write_enable/Dout
+}
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_2 {
@@ -211,7 +211,7 @@ cell xilinx.com:ip:xlconstant:1.1 const_2 {
 cell pavel-demin:user:axis_ram_writer:1.0 writer_0 {
   ADDR_WIDTH 25
 } {
-  S_AXIS pktzr_0/M_AXIS
+  S_AXIS conv_0/M_AXIS
   M_AXI ps_0/S_AXI_HP0
   cfg_data const_2/dout
   aclk ps_0/FCLK_CLK0
@@ -246,11 +246,21 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
  PHASE_INCREMENT Streaming
   DSP48_USE Maximal
   HAS_TREADY true
-  HAS_PHASE_OUT false
+  HAS_PHASE_OUT true
 } {
   S_AXIS_PHASE phase_0/M_AXIS
   aclk ps_0/FCLK_CLK0
 }
+
+# Create axis_snapshot
+cell pavel-demin:user:axis_snapshot:1.0 snap_0 {
+  AXIS_TDATA_WIDTH 32
+} {
+  S_AXIS dds_0/M_AXIS_PHASE
+  aclk ps_0/FCLK_CLK0
+  aresetn trigger_0/trigger
+}
+
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
@@ -299,21 +309,23 @@ cell xilinx.com:ip:xlconstant:1.1 const_sts {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 4
+  NUM_PORTS 5
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 31
+  IN4_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
   In3 const_sts/dout
+  In4 snap_0/data
 }
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 96
+  STS_DATA_WIDTH 128
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {

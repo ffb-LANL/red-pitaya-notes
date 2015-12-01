@@ -5,6 +5,8 @@ set part_name [lindex $argv 1]
 
 file delete -force tmp/$project_name.cache tmp/$project_name.hw tmp/$project_name.srcs tmp/$project_name.runs tmp/$project_name.xpr
 
+file delete -force tmp/$project_name.sim
+
 create_project -part $part_name $project_name tmp
 
 set_property IP_REPO_PATHS tmp/cores [current_project]
