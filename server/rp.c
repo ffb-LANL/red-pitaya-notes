@@ -14,7 +14,7 @@
 #define RAM_START 0x10000000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
-#define SYSTEM_CALL_MAX 1
+#define SYSTEM_CALL_MAX 2
 #define PKTZR_RESET_FLAG 1
 #define WRITER_ENABLE_FLAG 2
 #define UPDATE_CIC_FLAG 4
@@ -39,7 +39,7 @@ int main()
   uint64_t command = 600000;
   void *cfg, *ram, *sts;
   char *name = "/dev/mem";
-  char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg"};
+  char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg","cat /root/fd.bit > /dev/xdevcfg"};
   struct sockaddr_in addr;
   size_t length;
   off_t offset=0x8000000;
