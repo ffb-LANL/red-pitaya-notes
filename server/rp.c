@@ -256,8 +256,12 @@ int main()
             	 printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
    			 	 if(send(sockClient, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
             	 break;
-
-
+            case 12: //set config
+            	offset = (command >> 32)& 0xFF;
+            	 status=command & 0xFFFFFFFF;
+            	 printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
+            	 *((uint32_t *)(cfg + offset)) = status;
+   			 	 break;
           }
         }
       }

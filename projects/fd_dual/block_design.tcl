@@ -238,6 +238,22 @@ module dds_0 {
   aresetn rst_0/peripheral_aresetn
 }
 
+# Create xlslice
+cell xilinx.com:ip:xlslice:1.0 slice_frequency_1 {
+  DIN_WIDTH 256 DIN_FROM 223 DIN_TO 192
+} {
+  Din cfg_0/cfg_data
+}
+
+# create dds
+module dds_1 {
+  source projects/fd_dual/dds.tcl
+} {
+  cfg slice_frequency_1/Dout
+  trigger trigger_0/trigger
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
@@ -252,12 +268,23 @@ cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
   clk_in1 adc_0/adc_clk
 }
 
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner:1.1 comb_DDS {
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 2
+} {
+  S00_AXIS dds_0/m_axis
+  S01_AXIS dds_1/m_axis
+  aclk ps_0/FCLK_CLK0
+  aresetn  rst_0/peripheral_aresetn
+}
+
 # Create dac_clock_converter
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS dds_0/m_axis
+  S_AXIS comb_DDS/m_axis
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk pll_0/clk_out1
@@ -286,23 +313,25 @@ cell xilinx.com:ip:xlconstant:1.1 const_sts {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 5
+  NUM_PORTS 6
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 31
   IN4_WIDTH 32
+  IN5_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
   In3 const_sts/dout
   In4 dds_0/status
+  IN5 dds_1/status
 }
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 128
+  STS_DATA_WIDTH 160
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {
