@@ -139,7 +139,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
 
 # create filter
 module filter_0 {
-  source projects/filter_test/filter_FIR.tcl
+  source projects/filter_test/filter_NO_FIR_16.tcl
 } {
   s_axis fifo_ADC/M_AXIS
   cfg cfg_0/cfg_data
