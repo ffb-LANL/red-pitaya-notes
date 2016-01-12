@@ -19,3 +19,5 @@
 Applications/builds
 tmp
 .Xil
+webtalk*
+hs_err*
