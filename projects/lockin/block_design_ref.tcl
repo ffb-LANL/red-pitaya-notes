@@ -169,17 +169,6 @@ cell pavel-demin:user:axis_constant:1.0 phase_0 {
 }
 
 
-# Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster:1.1 bcast_f {
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 4
- } {
-  S_AXIS phase_0/m_axis
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   DDS_CLOCK_RATE 125
@@ -191,7 +180,7 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   HAS_TREADY true
   HAS_PHASE_OUT true
 } {
-  S_AXIS_PHASE bcast_f/M00_AXIS
+  S_AXIS_PHASE phase_0/M_AXIS
   aclk ps_0/FCLK_CLK0
 }
 
@@ -247,6 +236,16 @@ cell xilinx.com:ip:cmpy:6.0 mult_0 {
   aclk ps_0/FCLK_CLK0
 }
 
+
+# create filter
+module filter_0 {
+  source projects/filter_test/filter_NO_FIR_32.tcl
+} {
+  s_axis mult_0/M_AXIS_DOUT
+  cfg cfg_0/cfg_data
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
@@ -351,66 +350,11 @@ cell pavel-demin:user:axis_snapshot:1.0 snap_phase {
 }
 
 
-# create filter
-module filter_xyf {
-  source projects/filter_test/filter_xyf.tcl
-} {
-  s_axis mult_0/M_AXIS_DOUT
-  s_axis_f  bcast_f/M01_AXIS
-  cfg cfg_0/cfg_data
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-
-
-# Create axis_data_fifo
-cell xilinx.com:ip:axis_data_fifo:1.1 fifo_xyf {
-  FIFO_DEPTH 16384
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 12
-} {
-  s_axis  filter_xyf/m_axis
-  s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
-}
-
-# Create axis_dwidth_converter
-cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_xyf {
-  S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 8
-} {
-  S_AXIS fifo_xyf/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-
-# Create axi_axis_reader
-cell pavel-demin:user:axi_axis_reader:1.0 reader_xyf {
-  AXI_DATA_WIDTH 32
-} {
-  S_AXIS conv_xyf/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins reader_xyf/S_AXI]
-
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
-set_property OFFSET 0x40004000 [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
-
-
 # Create axis_value
 cell pavel-demin:user:axis_value:1.0 value_xy {
-  AXIS_TDATA_WIDTH 96
+  AXIS_TDATA_WIDTH 64
 } {
-  
+  S_AXIS filter_0/m_axis
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
@@ -422,7 +366,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_status {
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 32
-  IN3_WIDTH 96
+  IN3_WIDTH 64
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
@@ -432,13 +376,12 @@ cell xilinx.com:ip:xlconcat:2.1 concat_status {
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 256
+  STS_DATA_WIDTH 160
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {
   sts_data concat_status/dout
 }
-
 
 # Create all required interconnections
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
@@ -446,7 +389,5 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
   Clk Auto
 } [get_bd_intf_pins sts_0/S_AXI]
 
-
 set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
 set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
-
