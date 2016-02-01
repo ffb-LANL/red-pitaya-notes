@@ -418,16 +418,18 @@ cell pavel-demin:user:axis_value:1.0 value_xy {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_status {
-  NUM_PORTS 4
+  NUM_PORTS 5
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 32
   IN3_WIDTH 96
+  IN4_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 snap_phase/data
   In3 value_xy/data
+  In4 fifo_xyf/axis_data_count
 }
 
 # Create axi_sts_register

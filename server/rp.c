@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
+#define READ_DATA 0x40010000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
@@ -26,11 +27,12 @@
 #define RECORD_START_POS_OFFSET 4
 #define WRITER_STS_OFFSET 0
 #define VALUE_OFFSET 16
-
+#define RX_FIFO_CNT_OFFSET 24
 
 int interrupted = 0;
-int main()
+int main(int argc, char *argv[])
 {
+  void *rx_data;
   int fd,fdio, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
   uint32_t status, trigger_pos, start_offset, end_offset, config;
@@ -45,6 +47,13 @@ int main()
   off_t offset=0x8000000;
   samples = 0x10000 * 1024 - 1;
   FILE *fp;
+  int verbose=0;
+  char buffer[49152];
+  if (argc >=2 ) {
+	  if (argv[1][0]=='v' ) verbose = 1;
+	  if (argv[1][0]=='V' ) verbose = 2;
+  }
+
   if((fd = open(name, O_RDWR)) < 0)
   {
     perror("open");
@@ -54,6 +63,7 @@ int main()
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   ram = mmap(NULL,length , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
+  rx_data = mmap(NULL, 8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
   // reset writer
  //*((uint32_t *)(cfg + 0)) &= ~2;
  //*((uint32_t *)(cfg + 0)) |= 2;
@@ -102,15 +112,15 @@ int main()
   fscanf(fp,"%d", &temperature_raw);
   fclose(fp);
   temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
-  printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
+  if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
   listen(sockServer, 1024);
-  printf("waiting on client\n");
+  if(verbose)printf("waiting on client\n");
   if((sockClient = accept(sockServer, NULL, NULL)) < 0)
         {
           perror("accept");
           return 1;
         }
-  printf("new connection\n");
+  if(verbose)printf("new connection\n");
 
   while(!interrupted)
       {
@@ -122,7 +132,7 @@ int main()
           switch(command >> 60)
           {
             case 0:
-            	printf("Sending phase word %d\n",(int)command);
+            	if(verbose)printf("Sending phase word %d\n",(int)command);
                 /* set phase increment */
                 *((uint32_t *)(cfg + FREQ_OFFSET)) = (uint32_t)command;
               	break;
@@ -137,7 +147,7 @@ int main()
          		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
             	  // set number of samples
             	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
-            	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
+            	  if(verbose)printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
 
             	  // enter normal mode
             	 *((uint32_t *)(cfg + 0)) |= 15; // ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
@@ -145,12 +155,12 @@ int main()
             	//  *((uint32_t *)(cfg + 0)) |=
 
             	  wait=rand()/1000;
-            	  printf("Waiting to trigger for %ld usec\n", wait);
+            	  if(verbose)printf("Waiting to trigger for %ld usec\n", wait);
                   usleep(wait);
                   //trigger
                   *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
                   sleep(1);
-           		 printf("Sending data\n");
+                  if(verbose)printf("Sending data\n");
            		 //read start pos
            		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
            		 start_offset=((trigger_pos*2)/packet_size)*packet_size-packet_size;
@@ -160,7 +170,7 @@ int main()
            			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
            			 }
            		config=*((uint32_t *)(cfg + 0));
-           		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
+           		if(verbose)printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
          		  break;
             case 2:
             	interrupted=1;
@@ -168,7 +178,7 @@ int main()
             case 3: //get status
             	offset = command & 0xFFFFFFFF;
             	 status=*((uint32_t *)(sts + offset));
-            	 printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
+            	 if(verbose>1)printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
    			 	 if(send(sockClient, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
             	 break;
             case 4: //get temperature
@@ -189,7 +199,7 @@ int main()
                   *((uint32_t *)(cfg + 0)) |= UPDATE_CIC_FLAG;
                   value=*((uint32_t *)(cfg + DESIMATION_OFFSET));
               	  config=*((uint32_t *)(cfg + 0));
-                  printf("Decimation rate =%u, config = %x\n",(uint32_t)value, config);
+              	if(verbose)printf("Decimation rate =%u, config = %x\n",(uint32_t)value, config);
                   break;
             case 6:  // arm
 
@@ -201,23 +211,23 @@ int main()
           		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
              	  // set number of samples
              	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
-             	  printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
+             	 if(verbose)printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
 
              	  // enter normal mode
              	 *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
              	 // *((uint32_t *)(cfg + 0)) |= PKTZR_RESET_FLAG;
              	//  *((uint32_t *)(cfg + 0)) |=
 
-             	   printf("Armed, status %d\n", *((uint32_t *)(cfg + 0)));
+             	if(verbose)printf("Armed, status %d\n", *((uint32_t *)(cfg + 0)));
              	   break;
             case 7: //software trigger
                 //trigger
                  *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
-                printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
+                 if(verbose)printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
             	break;
             case 8: //read from start of buffer
              	samples = command & 0xFFFFFFFF;
-          		 printf("Sending data\n");
+             	if(verbose)printf("Sending data\n");
           		 //read start pos
           		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
           		 start_offset=((trigger_pos*2)/packet_size)*packet_size-packet_size;
@@ -226,53 +236,59 @@ int main()
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
           		 	 }
-  			 	 printf("Offset %d\n",offset);
+          		if(verbose)printf("Offset %d\n",offset);
           		config=*((uint32_t *)(cfg + 0));
-          		 printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+          		if(verbose)printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
                 break;
             case 9: //read data chunk
             	start_offset= command & 0x3FFFFFFF;
             	end_offset = (command  >> 30)& 0x3FFFFFFF;
          		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-          		 printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
+         		if(verbose)printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
           		 for(offset=start_offset;offset < end_offset;offset +=packet_size)
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
           		 	 }
-  			 	 printf("Offset %d\n",offset);
+          		if(verbose)printf("Offset %d\n",offset);
           		config=*((uint32_t *)(cfg + 0));
-          		 printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+          		if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
                 break;
             case 10:
             	i = command & 0xFFFF;
             	if(i < SYSTEM_CALL_MAX) {
-            		printf("Call: %s\n",system_call[i]);
+            		if(verbose)printf("Call: %s\n",system_call[i]);
             		system(system_call[i]);
             	}
             	break;
             case 11: //get config
             	offset = command & 0xFFFFFFFF;
             	 status=*((uint32_t *)(cfg + offset));
-            	 printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
+            	 if(verbose)printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
    			 	 if(send(sockClient, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
             	 break;
             case 12: //set config
             	offset = (command >> 32)& 0xFF;
             	 status=command & 0xFFFFFFFF;
-            	 printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
+            	 if(verbose)printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
             	 *((uint32_t *)(cfg + offset)) = status;
    			 	 break;
+            case 13: // read RX FIFO
+            	if(verbose)printf("Read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+            	while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
+                memcpy(buffer, rx_data, 49152);
+                if(send(sockClient, buffer, 49152, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+                break;
           }
         }
       }
 close(sockClient);
-printf("closed connection\n");
+if(verbose)printf("closed connection\n");
 
 
 
   munmap(cfg, sysconf(_SC_PAGESIZE));
   munmap(ram, sysconf(_SC_PAGESIZE));
   munmap(sts, sysconf(_SC_PAGESIZE));
-
+  munmap(rx_data, sysconf(_SC_PAGESIZE));
   return 0;
 }
