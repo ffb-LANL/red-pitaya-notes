@@ -12,7 +12,7 @@
 #include <arpa/inet.h>
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
-#define READ_DATA 0x40010000
+#define READ_DATA 0x40004000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   ram = mmap(NULL,length , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
-  rx_data = mmap(NULL, 8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
+  rx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
   // reset writer
  //*((uint32_t *)(cfg + 0)) &= ~2;
  //*((uint32_t *)(cfg + 0)) |= 2;
@@ -274,9 +274,10 @@ int main(int argc, char *argv[])
    			 	 break;
             case 13: // read RX FIFO
             	if(verbose)printf("Read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
-            	while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
-                memcpy(buffer, rx_data, 49152);
-                if(send(sockClient, buffer, 49152, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+            	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
+                memcpy(buffer, rx_data, 12228);
+            	if(verbose)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+                if(send(sockClient, buffer, 12228, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
                 break;
           }
         }

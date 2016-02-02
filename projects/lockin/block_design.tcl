@@ -378,8 +378,8 @@ cell xilinx.com:ip:axis_data_fifo:1.1 fifo_xyf {
 # Create axis_dwidth_converter
 cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_xyf {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 8
+  S_TDATA_NUM_BYTES 12
+  M_TDATA_NUM_BYTES 4
 } {
   S_AXIS fifo_xyf/M_AXIS
   aclk ps_0/FCLK_CLK0
@@ -402,7 +402,7 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
   Clk Auto
 } [get_bd_intf_pins reader_xyf/S_AXI]
 
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
+set_property RANGE 16K [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 set_property OFFSET 0x40004000 [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 
 
