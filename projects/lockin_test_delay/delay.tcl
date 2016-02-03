@@ -8,6 +8,8 @@ create_bd_pin -dir I -type clc aclk
 cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_0 {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
+  HAS_TREADY.VALUE_SRC USER
+  HAS_TREADY 1
 } {
   S_AXIS S_AXIS
   aclk aclk
@@ -33,6 +35,8 @@ cell xilinx.com:ip:c_shift_ram:12.0 c_shift_ram_0 {
 cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_1 {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
+  HAS_TREADY.VALUE_SRC USER
+  HAS_TREADY 1
 } {
   s_axis_tdata c_shift_ram_0/Q
   s_axis_tvalid axi_slice_0/m_axis_tvalid
