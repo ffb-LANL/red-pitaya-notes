@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
             	break;
             case 8: //read from start of buffer
              	samples = command & 0xFFFFFFFF;
-             	if(verbose)printf("Sending data\n");
+             	if(verbose)printf("Sending %d samples from the start of buffer\n",samples);
           		 //read start pos
           		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
           		 start_offset=((trigger_pos*2)/packet_size)*packet_size-packet_size;
@@ -235,6 +235,7 @@ int main(int argc, char *argv[])
           		 for(offset=0;offset < samples*4;offset +=packet_size)
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
+          			 	 if(verbose > 1) if((offset)%(packet_size*256)==0)printf("Offset %d\n",offset);
           		 	 }
           		if(verbose)printf("Offset %d\n",offset);
           		config=*((uint32_t *)(cfg + 0));
@@ -248,8 +249,9 @@ int main(int argc, char *argv[])
           		 for(offset=start_offset;offset < end_offset;offset +=packet_size)
           		 	 {
           			 	 if(send(sockClient, ram + offset, packet_size, 0) < 0){   perror("send");break;}
+          			 	 if(verbose > 1) if((offset-start_offset)%(packet_size*128)==0)printf("Offset %d\n",offset);
           		 	 }
-          		if(verbose)printf("Offset %d\n",offset);
+          		if(verbose)printf("Last offset %d\n",offset);
           		config=*((uint32_t *)(cfg + 0));
           		if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
                 break;
@@ -273,12 +275,39 @@ int main(int argc, char *argv[])
             	 *((uint32_t *)(cfg + offset)) = status;
    			 	 break;
             case 13: // read RX FIFO
-            	if(verbose)printf("Read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+            	if(verbose>1)printf("Read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
             	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
-                memcpy(buffer, rx_data, 12228);
-            	if(verbose)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
-                if(send(sockClient, buffer, 12228, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+                memcpy(buffer, rx_data, 12288);
+            	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+                if(send(sockClient, buffer, 12288, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
                 break;
+            case 14: //generate test pattern
+
+             	samples = command & 0xFFFFFFFF;
+             	// reset writer and packetizer
+             	  *((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG ) ;
+          		  // reset trigger
+          		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
+             	  // set number of samples
+             	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
+             	 if(verbose)printf("Setting up test pattern. Samples = %d, buffer length = %d bytes\n", samples, length);
+             	  // enter normal mode
+             	 *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
+
+             	if(verbose)printf("Armed for pattern, status %d\n", *((uint32_t *)(cfg + 0)));
+                //trigger
+                 *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
+            	usleep(20);
+
+
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)34703340;
+                  usleep(10);
+                  *((uint32_t *)(cfg + 8)) = (uint32_t)347033400;
+                //  usleep(10);
+                //  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
+           		  break;
           }
         }
       }
