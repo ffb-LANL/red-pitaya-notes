@@ -298,7 +298,7 @@ cell xilinx.com:ip:xlslice:1.0 slice_trig_record {
 # Create axis_packetizer
 cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
   AXIS_TDATA_WIDTH 32
-  CNTR_WIDTH 21
+  CNTR_WIDTH 25
   CONTINUOUS FALSE
   NON_BLOCKING TRUE
 } {
