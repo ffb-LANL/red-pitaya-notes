@@ -48,22 +48,22 @@ module cic_filter_1 {
   aresetn aresetn 
 }
 
-cell xilinx.com:ip:axis_data_fifo:1.1 fifo_f {
-  FIFO_DEPTH 32
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
+# create delay
+module delay_f {
+  source projects/lockin_test_delay/delay.tcl
 } {
   s_axis s_axis_f
-  s_axis_aclk aclk
-  s_axis_aresetn aresetn
+  aclk aclk 
+  aresetn aresetn
 }
+
 
 # Create axis_decimator
 cell pavel-demin:user:axis_decimator:1.0 dcmtr_f {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 16
 } {
-  S_AXIS fifo_f/M_AXIS
+  S_AXIS delay_f/M_AXIS
   cfg_data slice_decimate/Dout
   aclk aclk 
   aresetn aresetn 
