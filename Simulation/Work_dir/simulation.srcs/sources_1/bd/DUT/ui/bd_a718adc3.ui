@@ -1,0 +1,15 @@
+{
+   guistr: "# # String gsaved with Nlview 6.5.5  2015-06-26 bk=1.3371 VDI=38 GEI=35 GUI=JA:1.6
+#  -string -flagsOSRD
+preplace port aclk -pg 1 -y -240 -defaultsOSRD
+preplace port M_AXIS -pg 1 -y -180 -defaultsOSRD
+preplace port aresetn -pg 1 -y -220 -defaultsOSRD
+preplace inst dds_compiler_0 -pg 1 -lvl 1 -y -50 -defaultsOSRD
+preplace inst axis_subset_converter_0 -pg 1 -lvl 2 -y -60 -defaultsOSRD
+preplace netloc axis_subset_converter_0_M_AXIS 1 2 1 290
+preplace netloc aresetn_1 1 0 2 -270 40 30
+preplace netloc dds_compiler_0_M_AXIS_DATA 1 1 1 N
+preplace netloc aclk_1 1 0 2 -260 30 20
+levelinfo -pg 1 -290 -120 160 320 -top -300 -bot 110
+",
+}
