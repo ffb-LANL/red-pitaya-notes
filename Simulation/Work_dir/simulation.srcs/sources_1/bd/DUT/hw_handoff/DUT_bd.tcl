@@ -144,10 +144,25 @@ proc create_root_design { parentCell } {
 
   # Create interface ports
   set M_AXIS [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS ]
+  set_property -dict [ list \
+CONFIG.FREQ_HZ {125000000} \
+ ] $M_AXIS
 
   # Create ports
   set aclk [ create_bd_port -dir I -type clk aclk ]
+  set_property -dict [ list \
+CONFIG.FREQ_HZ {125000000} \
+ ] $aclk
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
+  set clk_out1 [ create_bd_port -dir O -type clk clk_out1 ]
+  set trig [ create_bd_port -dir I -type data trig ]
+  set trig_out [ create_bd_port -dir O -from 0 -to 0 -type data trig_out ]
+
+  # Create instance: axis_clock_converter_0, and set properties
+  set axis_clock_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter:1.1 axis_clock_converter_0 ]
+  set_property -dict [ list \
+CONFIG.TUSER_WIDTH {1} \
+ ] $axis_clock_converter_0
 
   # Create instance: axis_subset_converter_0, and set properties
   set axis_subset_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_0 ]
@@ -156,6 +171,51 @@ CONFIG.M_TDATA_NUM_BYTES {2} \
 CONFIG.S_TDATA_NUM_BYTES {4} \
 CONFIG.TDATA_REMAP {tdata[15:0]} \
  ] $axis_subset_converter_0
+
+  # Create instance: axis_usr_merge_0, and set properties
+  set axis_usr_merge_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_usr_merge:1.0 axis_usr_merge_0 ]
+  set_property -dict [ list \
+CONFIG.AXIS_TDATA_WIDTH {16} \
+ ] $axis_usr_merge_0
+
+  # Create instance: axis_usr_split_0, and set properties
+  set axis_usr_split_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_usr_split:1.0 axis_usr_split_0 ]
+  set_property -dict [ list \
+CONFIG.AXIS_TDATA_WIDTH {16} \
+ ] $axis_usr_split_0
+
+  # Create instance: clk_wiz_0, and set properties
+  set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.2 clk_wiz_0 ]
+  set_property -dict [ list \
+CONFIG.CLKIN1_JITTER_PS {80.0} \
+CONFIG.CLKOUT1_DRIVES {BUFG} \
+CONFIG.CLKOUT1_JITTER {119.348} \
+CONFIG.CLKOUT1_PHASE_ERROR {96.948} \
+CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125} \
+CONFIG.CLKOUT2_DRIVES {BUFG} \
+CONFIG.CLKOUT2_JITTER {104.759} \
+CONFIG.CLKOUT2_PHASE_ERROR {96.948} \
+CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {250} \
+CONFIG.CLKOUT2_USED {true} \
+CONFIG.CLKOUT3_DRIVES {BUFG} \
+CONFIG.CLKOUT4_DRIVES {BUFG} \
+CONFIG.CLKOUT5_DRIVES {BUFG} \
+CONFIG.CLKOUT6_DRIVES {BUFG} \
+CONFIG.CLKOUT7_DRIVES {BUFG} \
+CONFIG.JITTER_SEL {No_Jitter} \
+CONFIG.MMCM_CLKFBOUT_MULT_F {8} \
+CONFIG.MMCM_CLKIN1_PERIOD {8.0} \
+CONFIG.MMCM_CLKOUT0_DIVIDE_F {8} \
+CONFIG.MMCM_CLKOUT0_DUTY_CYCLE {0.5} \
+CONFIG.MMCM_CLKOUT1_DIVIDE {4} \
+CONFIG.MMCM_CLKOUT1_DUTY_CYCLE {0.5} \
+CONFIG.MMCM_COMPENSATION {ZHOLD} \
+CONFIG.MMCM_DIVCLK_DIVIDE {1} \
+CONFIG.NUM_OUT_CLKS {2} \
+CONFIG.PRIMITIVE {PLL} \
+CONFIG.PRIM_IN_FREQ {125} \
+CONFIG.USE_MIN_POWER {true} \
+ ] $clk_wiz_0
 
   # Create instance: dds_compiler_0, and set properties
   set dds_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_0 ]
@@ -175,12 +235,18 @@ CONFIG.Phase_Width {32} \
  ] $dds_compiler_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net axis_subset_converter_0_M_AXIS [get_bd_intf_ports M_AXIS] [get_bd_intf_pins axis_subset_converter_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_clock_converter_0_M_AXIS [get_bd_intf_pins axis_clock_converter_0/M_AXIS] [get_bd_intf_pins axis_usr_split_0/S_AXIS]
+  connect_bd_intf_net -intf_net axis_subset_converter_0_M_AXIS [get_bd_intf_pins axis_subset_converter_0/M_AXIS] [get_bd_intf_pins axis_usr_merge_0/S_AXIS]
+  connect_bd_intf_net -intf_net axis_usr_merge_0_M_AXIS [get_bd_intf_pins axis_clock_converter_0/S_AXIS] [get_bd_intf_pins axis_usr_merge_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_usr_split_0_M_AXIS [get_bd_intf_ports M_AXIS] [get_bd_intf_pins axis_usr_split_0/M_AXIS]
   connect_bd_intf_net -intf_net dds_compiler_0_M_AXIS_DATA [get_bd_intf_pins axis_subset_converter_0/S_AXIS] [get_bd_intf_pins dds_compiler_0/M_AXIS_DATA]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins dds_compiler_0/aclk]
-  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins dds_compiler_0/aresetn]
+  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins axis_usr_merge_0/aclk] [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins dds_compiler_0/aclk]
+  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins dds_compiler_0/aresetn]
+  connect_bd_net -net axis_usr_split_0_user_data [get_bd_ports trig_out] [get_bd_pins axis_usr_split_0/user_data]
+  connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_ports clk_out1] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_usr_split_0/aclk] [get_bd_pins clk_wiz_0/clk_out1]
+  connect_bd_net -net trig_1 [get_bd_ports trig] [get_bd_pins axis_usr_merge_0/user_data]
 
   # Create address segments
 
@@ -188,16 +254,29 @@ CONFIG.Phase_Width {32} \
   regenerate_bd_layout -layout_string {
    guistr: "# # String gsaved with Nlview 6.5.5  2015-06-26 bk=1.3371 VDI=38 GEI=35 GUI=JA:1.6
 #  -string -flagsOSRD
-preplace port aclk -pg 1 -y -240 -defaultsOSRD
-preplace port M_AXIS -pg 1 -y -180 -defaultsOSRD
-preplace port aresetn -pg 1 -y -220 -defaultsOSRD
-preplace inst dds_compiler_0 -pg 1 -lvl 1 -y -50 -defaultsOSRD
-preplace inst axis_subset_converter_0 -pg 1 -lvl 2 -y -60 -defaultsOSRD
-preplace netloc axis_subset_converter_0_M_AXIS 1 2 1 290
-preplace netloc aresetn_1 1 0 2 -270 40 30
+preplace port clk_out1 -pg 1 -y 290 -defaultsOSRD
+preplace port trig -pg 1 -y 20 -defaultsOSRD
+preplace port aclk -pg 1 -y 40 -defaultsOSRD
+preplace port M_AXIS -pg 1 -y 170 -defaultsOSRD
+preplace port aresetn -pg 1 -y 60 -defaultsOSRD
+preplace portBus trig_out -pg 1 -y 150 -defaultsOSRD
+preplace inst dds_compiler_0 -pg 1 -lvl 1 -y 100 -defaultsOSRD
+preplace inst axis_usr_merge_0 -pg 1 -lvl 3 -y 150 -defaultsOSRD
+preplace inst axis_clock_converter_0 -pg 1 -lvl 4 -y 170 -defaultsOSRD
+preplace inst axis_usr_split_0 -pg 1 -lvl 5 -y 230 -defaultsOSRD
+preplace inst axis_subset_converter_0 -pg 1 -lvl 2 -y 120 -defaultsOSRD
+preplace inst clk_wiz_0 -pg 1 -lvl 2 -y 310 -defaultsOSRD
+preplace netloc axis_usr_merge_0_M_AXIS 1 3 1 760
+preplace netloc axis_subset_converter_0_M_AXIS 1 2 1 500
+preplace netloc axis_usr_split_0_M_AXIS 1 5 1 1230
+preplace netloc axis_usr_split_0_user_data 1 5 1 1220
+preplace netloc axis_clock_converter_0_M_AXIS 1 4 1 1000
+preplace netloc clk_wiz_0_clk_out1 1 2 4 NJ 260 770 260 NJ 290 NJ
+preplace netloc aresetn_1 1 0 4 10 40 210 50 NJ 50 770
 preplace netloc dds_compiler_0_M_AXIS_DATA 1 1 1 N
-preplace netloc aclk_1 1 0 2 -260 30 20
-levelinfo -pg 1 -290 -120 160 320 -top -300 -bot 110
+preplace netloc aclk_1 1 0 4 0 20 220 190 NJ 220 760
+preplace netloc trig_1 1 0 3 NJ 10 NJ 10 NJ
+levelinfo -pg 1 -30 110 370 650 890 1110 1260 -top 0 -bot 1170
 ",
 }
 

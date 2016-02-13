@@ -12,13 +12,17 @@
    </db_ref_list>
    <zoom_setting>
       <ZoomStartTime time="0fs"></ZoomStartTime>
-      <ZoomEndTime time="1000000001fs"></ZoomEndTime>
+      <ZoomEndTime time="1000000003fs"></ZoomEndTime>
       <Cursor1Time time="39574000fs"></Cursor1Time>
    </zoom_setting>
-   <WVObjectSize size="5" />
+   <WVObjectSize size="8" />
    <wvobject db_ref_id="1" fp_name="/testbench/clk" type="logic">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/testbench/clk_out" type="logic">
+      <obj_property name="ElementShortName">clk_out</obj_property>
+      <obj_property name="ObjectShortName">clk_out</obj_property>
    </wvobject>
    <wvobject db_ref_id="1" fp_name="/testbench/reset" type="logic">
       <obj_property name="ElementShortName">reset</obj_property>
@@ -36,7 +40,6 @@
       <obj_property name="AnalogInterpolation">ANALOG_INTERPOLATION_HOLD</obj_property>
       <obj_property name="AnalogOffscale">ANALOG_OFFSCALE_HIDE</obj_property>
       <obj_property name="AnalogHorizLine">0.000000</obj_property>
-      <obj_property name="isExpanded"></obj_property>
    </wvobject>
    <wvobject db_ref_id="1" fp_name="/testbench/m_axis_tvalid" type="logic">
       <obj_property name="ElementShortName">m_axis_tvalid</obj_property>
@@ -45,5 +48,13 @@
    <wvobject db_ref_id="1" fp_name="/testbench/m_axis_tready" type="logic">
       <obj_property name="ElementShortName">m_axis_tready</obj_property>
       <obj_property name="ObjectShortName">m_axis_tready</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/testbench/trig" type="logic">
+      <obj_property name="ElementShortName">trig</obj_property>
+      <obj_property name="ObjectShortName">trig</obj_property>
+   </wvobject>
+   <wvobject db_ref_id="1" fp_name="/testbench/trig_out" type="logic">
+      <obj_property name="ElementShortName">trig_out</obj_property>
+      <obj_property name="ObjectShortName">trig_out</obj_property>
    </wvobject>
 </wave_config>
