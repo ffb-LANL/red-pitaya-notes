@@ -127,9 +127,22 @@ cell xilinx.com:ip:xlslice:1.0 slice_trig_record {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_1
 
+# Create axis_usr_merge
+cell pavel-demin:user:axis_usr_merge:1.0 merge_adc {
+  AXIS_TDATA_WIDTH 32
+  AXIS_TUSER_WIDTH 1
+} {
+  s_axis adc_0/M_AXIS
+
+  aclk adc_0/adc_clk
+}
+
 # Create axis_clock_converter
-cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
-  S_AXIS adc_0/M_AXIS
+cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC { 
+ TUSER_WIDTH.VALUE_SRC USER
+ TUSER_WIDTH 1
+} {
+  S_AXIS merge_adc/m_axis
   s_axis_aclk adc_0/adc_clk
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
@@ -175,15 +188,25 @@ cell xilinx.com:ip:xlconstant:1.1 const_pktzr_length {
   CONST_VAL 2048
 }
 
+# Create axis_usr_split
+cell pavel-demin:user:axis_usr_split:1.0 split_adc {
+  AXIS_TDATA_WIDTH 32
+  AXIS_TUSER_WIDTH 1
+} {
+  s_axis fifo_ADC/M_AXIS
+  aclk ps_0/FCLK_CLK0
+}
+
+
 # Create axis_circular_packetizer
 cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 26
   CONTINUOUS FALSE
 } {
-  S_AXIS fifo_ADC/M_AXIS
+  S_AXIS split_adc/m_axis
   cfg_data slice_record_length/Dout
-  trigger trigger_0/trigger
+  trigger split_adc/user_data
   aclk ps_0/FCLK_CLK0
   aresetn slice_pktzr_reset/Dout
 }
@@ -275,24 +298,48 @@ cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
   clk_in1 adc_0/adc_clk
 }
 
+
+# Create axis_usr_merge
+cell pavel-demin:user:axis_usr_merge:1.0 merge_trig {
+  AXIS_TDATA_WIDTH 32
+  AXIS_TUSER_WIDTH 1
+} {
+  s_axis dds_0/M_AXIS_DATA
+  user_data trigger_0/trigger
+  aclk ps_0/FCLK_CLK0
+}
+
 # Create dac_clock_converter
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
+  TUSER_WIDTH.VALUE_SRC USER
+  TUSER_WIDTH 1
 } {
-  S_AXIS dds_0/M_AXIS_DATA
+  S_AXIS merge_trig/m_axis
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk pll_0/clk_out1
   m_axis_aresetn const_1/dout
 }
 
+# Create axis_usr_split
+cell pavel-demin:user:axis_usr_split:1.0 split_trig {
+  AXIS_TDATA_WIDTH 32
+  AXIS_TUSER_WIDTH 1
+} {
+  s_axis fifo_DAC/M_AXIS
+  user_data merge_adc/user_data
+  aclk pll_0/clk_out1
+}
+
+
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
   aclk pll_0/clk_out1
   ddr_clk pll_0/clk_out2
   locked pll_0/locked
-  S_AXIS fifo_DAC/M_AXIS
+  S_AXIS split_trig/m_axis
   dac_clk dac_clk_o
   dac_rst dac_rst_o
   dac_sel dac_sel_o
