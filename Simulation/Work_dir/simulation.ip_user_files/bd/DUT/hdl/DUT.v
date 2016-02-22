@@ -1,7 +1,7 @@
 //Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2015.4 (win64) Build 1412921 Wed Nov 18 09:43:45 MST 2015
-//Date        : Sat Feb 13 14:47:04 2016
+//Date        : Sat Feb 20 15:07:20 2016
 //Host        : FFBLP running 64-bit Service Pack 1  (build 7601)
 //Command     : generate_target DUT.bd
 //Design      : DUT
@@ -9,7 +9,7 @@
 //--------------------------------------------------------------------------------
 `timescale 1 ps / 1 ps
 
-(* CORE_GENERATION_INFO = "DUT,IP_Integrator,{x_ipVendor=xilinx.com,x_ipLibrary=BlockDiagram,x_ipName=DUT,x_ipVersion=1.00.a,x_ipLanguage=VERILOG,numBlks=6,numReposBlks=6,numNonXlnxBlks=2,numHierBlks=0,maxHierDepth=0,synth_mode=Global}" *) (* HW_HANDOFF = "DUT.hwdef" *) 
+(* CORE_GENERATION_INFO = "DUT,IP_Integrator,{x_ipVendor=xilinx.com,x_ipLibrary=BlockDiagram,x_ipName=DUT,x_ipVersion=1.00.a,x_ipLanguage=VERILOG,numBlks=7,numReposBlks=7,numNonXlnxBlks=3,numHierBlks=0,maxHierDepth=0,synth_mode=Global}" *) (* HW_HANDOFF = "DUT.hwdef" *) 
 module DUT
    (M_AXIS_tdata,
     M_AXIS_tready,
@@ -32,11 +32,12 @@ module DUT
   wire aresetn_1;
   wire [15:0]axis_clock_converter_0_M_AXIS_TDATA;
   wire axis_clock_converter_0_M_AXIS_TREADY;
-  wire [0:0]axis_clock_converter_0_M_AXIS_TUSER;
+  wire [1:0]axis_clock_converter_0_M_AXIS_TUSER;
   wire axis_clock_converter_0_M_AXIS_TVALID;
   wire [15:0]axis_subset_converter_0_M_AXIS_TDATA;
   wire axis_subset_converter_0_M_AXIS_TREADY;
   wire axis_subset_converter_0_M_AXIS_TVALID;
+  wire axis_subset_converter_0_s_axis_tready;
   wire [15:0]axis_usr_merge_0_M_AXIS_TDATA;
   wire axis_usr_merge_0_M_AXIS_TREADY;
   wire [0:0]axis_usr_merge_0_M_AXIS_TUSER;
@@ -47,8 +48,9 @@ module DUT
   wire [0:0]axis_usr_split_0_user_data;
   wire clk_wiz_0_clk_out1;
   wire [31:0]dds_compiler_0_M_AXIS_DATA_TDATA;
-  wire dds_compiler_0_M_AXIS_DATA_TREADY;
   wire dds_compiler_0_M_AXIS_DATA_TVALID;
+  wire [31:0]dds_compiler_0_M_AXIS_PHASE_TDATA;
+  wire dds_compiler_0_M_AXIS_PHASE_TVALID;
   wire trig_1;
 
   assign M_AXIS_tdata[15:0] = axis_usr_split_0_M_AXIS_TDATA;
@@ -70,8 +72,13 @@ module DUT
         .s_axis_aresetn(aresetn_1),
         .s_axis_tdata(axis_usr_merge_0_M_AXIS_TDATA),
         .s_axis_tready(axis_usr_merge_0_M_AXIS_TREADY),
-        .s_axis_tuser(axis_usr_merge_0_M_AXIS_TUSER),
+        .s_axis_tuser({1'b0,axis_usr_merge_0_M_AXIS_TUSER}),
         .s_axis_tvalid(axis_usr_merge_0_M_AXIS_TVALID));
+  DUT_axis_snapshot_0_0 axis_snapshot_0
+       (.aclk(aclk_1),
+        .aresetn(trig_1),
+        .s_axis_tdata(dds_compiler_0_M_AXIS_PHASE_TDATA),
+        .s_axis_tvalid(dds_compiler_0_M_AXIS_PHASE_TVALID));
   DUT_axis_subset_converter_0_0 axis_subset_converter_0
        (.aclk(aclk_1),
         .aresetn(aresetn_1),
@@ -79,7 +86,7 @@ module DUT
         .m_axis_tready(axis_subset_converter_0_M_AXIS_TREADY),
         .m_axis_tvalid(axis_subset_converter_0_M_AXIS_TVALID),
         .s_axis_tdata(dds_compiler_0_M_AXIS_DATA_TDATA),
-        .s_axis_tready(dds_compiler_0_M_AXIS_DATA_TREADY),
+        .s_axis_tready(axis_subset_converter_0_s_axis_tready),
         .s_axis_tvalid(dds_compiler_0_M_AXIS_DATA_TVALID));
   DUT_axis_usr_merge_0_0 axis_usr_merge_0
        (.aclk(aclk_1),
@@ -98,7 +105,7 @@ module DUT
         .m_axis_tvalid(axis_usr_split_0_M_AXIS_TVALID),
         .s_axis_tdata(axis_clock_converter_0_M_AXIS_TDATA),
         .s_axis_tready(axis_clock_converter_0_M_AXIS_TREADY),
-        .s_axis_tuser(axis_clock_converter_0_M_AXIS_TUSER),
+        .s_axis_tuser(axis_clock_converter_0_M_AXIS_TUSER[0]),
         .s_axis_tvalid(axis_clock_converter_0_M_AXIS_TVALID),
         .user_data(axis_usr_split_0_user_data));
   DUT_clk_wiz_0_0 clk_wiz_0
@@ -107,8 +114,10 @@ module DUT
         .reset(1'b0));
   DUT_dds_compiler_0_0 dds_compiler_0
        (.aclk(aclk_1),
-        .aresetn(aresetn_1),
         .m_axis_data_tdata(dds_compiler_0_M_AXIS_DATA_TDATA),
-        .m_axis_data_tready(dds_compiler_0_M_AXIS_DATA_TREADY),
-        .m_axis_data_tvalid(dds_compiler_0_M_AXIS_DATA_TVALID));
+        .m_axis_data_tready(axis_subset_converter_0_s_axis_tready),
+        .m_axis_data_tvalid(dds_compiler_0_M_AXIS_DATA_TVALID),
+        .m_axis_phase_tdata(dds_compiler_0_M_AXIS_PHASE_TDATA),
+        .m_axis_phase_tready(axis_subset_converter_0_s_axis_tready),
+        .m_axis_phase_tvalid(dds_compiler_0_M_AXIS_PHASE_TVALID));
 endmodule

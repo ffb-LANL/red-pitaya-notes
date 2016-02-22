@@ -81,7 +81,7 @@ output wire s_axis_tready;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 S_AXIS TDATA" *)
 input wire [15 : 0] s_axis_tdata;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 S_AXIS TUSER" *)
-input wire [0 : 0] s_axis_tuser;
+input wire [1 : 0] s_axis_tuser;
 (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 M_CLKIF CLK" *)
 input wire m_axis_aclk;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 M_AXIS TVALID" *)
@@ -91,14 +91,14 @@ input wire m_axis_tready;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 M_AXIS TDATA" *)
 output wire [15 : 0] m_axis_tdata;
 (* X_INTERFACE_INFO = "xilinx.com:interface:axis:1.0 M_AXIS TUSER" *)
-output wire [0 : 0] m_axis_tuser;
+output wire [1 : 0] m_axis_tuser;
 
   axis_clock_converter_v1_1_8_axis_clock_converter #(
     .C_FAMILY("zynq"),
     .C_AXIS_TDATA_WIDTH(16),
     .C_AXIS_TID_WIDTH(1),
     .C_AXIS_TDEST_WIDTH(1),
-    .C_AXIS_TUSER_WIDTH(1),
+    .C_AXIS_TUSER_WIDTH(2),
     .C_AXIS_SIGNAL_SET('B00000000000000000000000010000011),
     .C_IS_ACLK_ASYNC(1),
     .C_SYNCHRONIZER_STAGE(2),

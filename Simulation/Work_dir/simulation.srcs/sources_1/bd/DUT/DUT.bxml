@@ -2,9 +2,9 @@
 <Root MajorVersion="0" MinorVersion="33">
   <CompositeFile CompositeFileTopName="DUT" CanBeSetAsTop="true" CanDisplayChildGraph="true">
     <Description>Composite Fileset</Description>
-    <Generation Name="SYNTHESIS" State="STALE" Timestamp="1455400025"/>
-    <Generation Name="IMPLEMENTATION" State="STALE" Timestamp="1455400024"/>
-    <Generation Name="SIMULATION" State="STALE" Timestamp="1455400550"/>
+    <Generation Name="SYNTHESIS" State="GENERATED" Timestamp="1456006042"/>
+    <Generation Name="IMPLEMENTATION" State="GENERATED" Timestamp="1456006042"/>
+    <Generation Name="SIMULATION" State="GENERATED" Timestamp="1456006042"/>
     <FileCollection Name="SOURCES" Type="SOURCES">
       <File Name="ip\DUT_dds_compiler_0_0\DUT_dds_compiler_0_0.xci" Type="IP">
         <Instance HierarchyPath="dds_compiler_0"/>
@@ -48,6 +48,14 @@
       </File>
       <File Name="ip\DUT_clk_wiz_0_0\DUT_clk_wiz_0_0.xci" Type="IP">
         <Instance HierarchyPath="clk_wiz_0"/>
+        <Properties IsEditable="false" IsVisible="true" Timestamp="0" IsTrackable="true" IsStatusTracked="true"/>
+        <Library Name="xil_defaultlib"/>
+        <UsedIn Val="SYNTHESIS"/>
+        <UsedIn Val="IMPLEMENTATION"/>
+        <UsedIn Val="SIMULATION"/>
+      </File>
+      <File Name="ip\DUT_axis_snapshot_0_0\DUT_axis_snapshot_0_0.xci" Type="IP">
+        <Instance HierarchyPath="axis_snapshot_0"/>
         <Properties IsEditable="false" IsVisible="true" Timestamp="0" IsTrackable="true" IsStatusTracked="true"/>
         <Library Name="xil_defaultlib"/>
         <UsedIn Val="SYNTHESIS"/>

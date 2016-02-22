@@ -59,10 +59,12 @@ USE dds_compiler_v6_0_11.dds_compiler_v6_0_11;
 ENTITY DUT_dds_compiler_0_0 IS
   PORT (
     aclk : IN STD_LOGIC;
-    aresetn : IN STD_LOGIC;
     m_axis_data_tvalid : OUT STD_LOGIC;
     m_axis_data_tready : IN STD_LOGIC;
-    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+    m_axis_data_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
+    m_axis_phase_tvalid : OUT STD_LOGIC;
+    m_axis_phase_tready : IN STD_LOGIC;
+    m_axis_phase_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
 END DUT_dds_compiler_0_0;
 
@@ -140,7 +142,7 @@ ARCHITECTURE DUT_dds_compiler_0_0_arch OF DUT_dds_compiler_0_0 IS
       m_axis_data_tuser : OUT STD_LOGIC_VECTOR(0 DOWNTO 0);
       m_axis_phase_tvalid : OUT STD_LOGIC;
       m_axis_phase_tready : IN STD_LOGIC;
-      m_axis_phase_tdata : OUT STD_LOGIC_VECTOR(0 DOWNTO 0);
+      m_axis_phase_tdata : OUT STD_LOGIC_VECTOR(31 DOWNTO 0);
       m_axis_phase_tlast : OUT STD_LOGIC;
       m_axis_phase_tuser : OUT STD_LOGIC_VECTOR(0 DOWNTO 0);
       event_pinc_invalid : OUT STD_LOGIC;
@@ -155,10 +157,12 @@ ARCHITECTURE DUT_dds_compiler_0_0_arch OF DUT_dds_compiler_0_0 IS
   END COMPONENT dds_compiler_v6_0_11;
   ATTRIBUTE X_INTERFACE_INFO : STRING;
   ATTRIBUTE X_INTERFACE_INFO OF aclk: SIGNAL IS "xilinx.com:signal:clock:1.0 aclk_intf CLK";
-  ATTRIBUTE X_INTERFACE_INFO OF aresetn: SIGNAL IS "xilinx.com:signal:reset:1.0 aresetn_intf RST";
   ATTRIBUTE X_INTERFACE_INFO OF m_axis_data_tvalid: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_DATA TVALID";
   ATTRIBUTE X_INTERFACE_INFO OF m_axis_data_tready: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_DATA TREADY";
   ATTRIBUTE X_INTERFACE_INFO OF m_axis_data_tdata: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_DATA TDATA";
+  ATTRIBUTE X_INTERFACE_INFO OF m_axis_phase_tvalid: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_PHASE TVALID";
+  ATTRIBUTE X_INTERFACE_INFO OF m_axis_phase_tready: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_PHASE TREADY";
+  ATTRIBUTE X_INTERFACE_INFO OF m_axis_phase_tdata: SIGNAL IS "xilinx.com:interface:axis:1.0 M_AXIS_PHASE TDATA";
 BEGIN
   U0 : dds_compiler_v6_0_11
     GENERIC MAP (
@@ -167,7 +171,7 @@ BEGIN
       C_MODULUS => 9,
       C_ACCUMULATOR_WIDTH => 32,
       C_CHANNELS => 1,
-      C_HAS_PHASE_OUT => 0,
+      C_HAS_PHASE_OUT => 1,
       C_HAS_PHASEGEN => 1,
       C_HAS_SINCOS => 1,
       C_LATENCY => 9,
@@ -180,7 +184,7 @@ BEGIN
       C_OUTPUT_WIDTH => 14,
       C_PHASE_ANGLE_WIDTH => 14,
       C_PHASE_INCREMENT => 2,
-      C_PHASE_INCREMENT_VALUE => "1000000000000000000000000000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
+      C_PHASE_INCREMENT_VALUE => "1000000000000000000000000000000,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
       C_RESYNC => 0,
       C_PHASE_OFFSET => 0,
       C_PHASE_OFFSET_VALUE => "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -189,7 +193,7 @@ BEGIN
       C_POR_MODE => 0,
       C_AMPLITUDE => 0,
       C_HAS_ACLKEN => 0,
-      C_HAS_ARESETN => 1,
+      C_HAS_ARESETN => 0,
       C_HAS_TLAST => 0,
       C_HAS_TREADY => 1,
       C_HAS_S_PHASE => 0,
@@ -203,8 +207,8 @@ BEGIN
       C_M_DATA_TDATA_WIDTH => 32,
       C_M_DATA_HAS_TUSER => 0,
       C_M_DATA_TUSER_WIDTH => 1,
-      C_HAS_M_PHASE => 0,
-      C_M_PHASE_TDATA_WIDTH => 1,
+      C_HAS_M_PHASE => 1,
+      C_M_PHASE_TDATA_WIDTH => 32,
       C_M_PHASE_HAS_TUSER => 0,
       C_M_PHASE_TUSER_WIDTH => 1,
       C_DEBUG_INTERFACE => 0,
@@ -213,7 +217,7 @@ BEGIN
     PORT MAP (
       aclk => aclk,
       aclken => '1',
-      aresetn => aresetn,
+      aresetn => '1',
       s_axis_phase_tvalid => '0',
       s_axis_phase_tdata => STD_LOGIC_VECTOR(TO_UNSIGNED(0, 1)),
       s_axis_phase_tlast => '0',
@@ -224,6 +228,8 @@ BEGIN
       m_axis_data_tvalid => m_axis_data_tvalid,
       m_axis_data_tready => m_axis_data_tready,
       m_axis_data_tdata => m_axis_data_tdata,
-      m_axis_phase_tready => '0'
+      m_axis_phase_tvalid => m_axis_phase_tvalid,
+      m_axis_phase_tready => m_axis_phase_tready,
+      m_axis_phase_tdata => m_axis_phase_tdata
     );
 END DUT_dds_compiler_0_0_arch;

@@ -16,6 +16,7 @@
     <Option Name="CompiledLibDirRiviera" Val="$PCACHEDIR/compile_simlib/riviera"/>
     <Option Name="CompiledLibDirActivehdl" Val="$PCACHEDIR/compile_simlib/activehdl"/>
     <Option Name="BoardPart" Val=""/>
+    <Option Name="SourceMgmtMode" Val="DisplayOnly"/>
     <Option Name="ActiveSimSet" Val="sim_1"/>
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../../tmp/cores"/>
@@ -34,12 +35,18 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_clock_converter_0_0/DUT_axis_clock_converter_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="hdl/DUT.hwdef"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="hw_handoff/DUT.hwh"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="hdl/DUT.v"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_snapshot_0_0/DUT_axis_snapshot_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_clk_wiz_0_0/DUT_clk_wiz_0_0.xci"/>
         <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_usr_split_0_0/DUT_axis_usr_split_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="hw_handoff/DUT_bd.tcl"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="DUT_ooc.xdc"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_usr_merge_0_0/DUT_axis_usr_merge_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_clock_converter_0_0/DUT_axis_clock_converter_0_0.xci"/>
         <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_subset_converter_0_0/DUT_axis_subset_converter_0_0.xci"/>
         <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_dds_compiler_0_0/DUT_dds_compiler_0_0.xci"/>
-        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_clk_wiz_0_0/DUT_clk_wiz_0_0.xci"/>
-        <CompFileExtendedInfo CompFileName="DUT.bd" FileRelPathName="ip/DUT_axis_usr_merge_0_0/DUT_axis_usr_merge_0_0.xci"/>
       </File>
       <File Path="$PPRDIR/../Testbench/testbench.v">
         <FileInfo>
@@ -48,12 +55,36 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/sources_1/bd/DUT_2/DUT_2.bd">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="hdl/DUT_2.v"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="ip/DUT_2_dds_compiler_0_0/DUT_2_dds_compiler_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="ip/DUT_2_axis_circular_packetizer_0_0/DUT_2_axis_circular_packetizer_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="ip/DUT_2_axis_dwidth_converter_0_1/DUT_2_axis_dwidth_converter_0_1.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="ip/DUT_2_axis_ram_writer_0_0/DUT_2_axis_ram_writer_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="ip/DUT_2_xlconstant_0_0/DUT_2_xlconstant_0_0.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="hdl/DUT_2.hwdef"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="hw_handoff/DUT_2_bd.tcl"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="hw_handoff/DUT_2.hwh"/>
+        <CompFileExtendedInfo CompFileName="DUT_2.bd" FileRelPathName="DUT_2_ooc.xdc"/>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/testbench2.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PSRCDIR/sources_1/bd/DUT/ip/DUT_axis_usr_merge_0_0/DUT_axis_usr_merge_0_0.upgrade_log"/>
       <File Path="$PSRCDIR/sources_1/bd/DUT/ip/DUT_axis_usr_split_0_0/DUT_axis_usr_split_0_0.upgrade_log"/>
+      <File Path="$PSRCDIR/sources_1/bd/DUT/ip/DUT_axis_snapshot_0_0/DUT_axis_snapshot_0_0.upgrade_log"/>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="testbench"/>
-        <Option Name="TopAutoSet" Val="TRUE"/>
+        <Option Name="TopModule" Val="testbench_2"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1">
@@ -76,13 +107,19 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/testbench_2_behav.wcfg">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="testbench"/>
+        <Option Name="TopModule" Val="testbench_2"/>
         <Option Name="TopLib" Val="xil_defaultlib"/>
-        <Option Name="TopAutoSet" Val="TRUE"/>
         <Option Name="SrcSet" Val="sources_1"/>
         <Option Name="XSimWcfgFile" Val="$PPRDIR/../Testbench/testbench_behav.wcfg"/>
+        <Option Name="XSimWcfgFile" Val="$PPRDIR/testbench_2_behav.wcfg"/>
+        <Option Name="xsim.simulate.runtime" Val="2000ns"/>
       </Config>
     </FileSet>
   </FileSets>
