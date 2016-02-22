@@ -3,7 +3,8 @@
 
 module axis_snapshot #
 (
-  parameter integer AXIS_TDATA_WIDTH = 32
+  parameter integer AXIS_TDATA_WIDTH = 32 
+//,  parameter         EXT_M_TREADY = "FALSE"
 )
 (
   // System signals
@@ -14,9 +15,14 @@ module axis_snapshot #
   input wire [AXIS_TDATA_WIDTH-1:0] s_axis_tdata,
   input wire                        s_axis_tvalid,
   output wire                       s_axis_tready,
+  
+  
+    // Master side
+  // input wire m_axis_tready,
 
+  output wire [AXIS_TDATA_WIDTH-1:0] data 
 
-  output wire [AXIS_TDATA_WIDTH-1:0] data
+ 
 
 );
  
@@ -27,7 +33,7 @@ always @(posedge aclk)
   begin
     if(~aresetn)
     begin
-      int_data_reg <= int_data_reg;
+      int_data_reg <= {(AXIS_TDATA_WIDTH-1){1'b0}};
       int_enbl_reg <= 1'b0;
     end
     else
@@ -44,6 +50,9 @@ always @(posedge aclk)
         end
     end
   end
+//if(EXT_M_TREADY == "TRUE")
+//  assign s_axis_tready = m_axis_tready;
+//else
   assign s_axis_tready = 1'b1; 
   assign data = int_data_reg; 
 endmodule
