@@ -305,6 +305,8 @@ cell pavel-demin:user:axis_usr_merge:1.0 merge_trig {
   AXIS_TUSER_WIDTH 1
 } {
   s_axis dds_0/M_AXIS_DATA
+  s_axis_tready dds_0/m_axis_data_tready
+  s_axis_tready dds_0/m_axis_phase_tready
   user_data trigger_0/trigger
   aclk ps_0/FCLK_CLK0
 }
