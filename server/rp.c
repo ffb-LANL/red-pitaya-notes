@@ -208,10 +208,7 @@ int main(int argc, char *argv[])
 
              	samples = command & 0xFFFFFFFF;
              	// reset writer and packetizer
-             	  *((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG ) ;
-
-          		  // reset trigger
-          		  *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
+             	  *((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG | TRIGGER_RECORD_FLAG) ;
              	  // set number of samples
              	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
              	 if(verbose)printf("Entering normal mode. Samples = %d, buffer length = %d bytes\n", samples, length);
