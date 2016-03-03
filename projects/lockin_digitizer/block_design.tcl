@@ -127,22 +127,12 @@ cell xilinx.com:ip:xlslice:1.0 slice_trig_record {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_1
 
-# Create axis_usr_merge
-cell pavel-demin:user:axis_usr_merge:1.0 merge_adc {
-  AXIS_TDATA_WIDTH 32
-  AXIS_TUSER_WIDTH 1
-} {
-  s_axis adc_0/M_AXIS
 
-  aclk adc_0/adc_clk
-}
 
 # Create axis_clock_converter
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC { 
- TUSER_WIDTH.VALUE_SRC USER
- TUSER_WIDTH 1
 } {
-  S_AXIS merge_adc/m_axis
+  S_AXIS adc_0/M_AXIS
   s_axis_aclk adc_0/adc_clk
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
@@ -150,27 +140,6 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {
 }
 
 
-# create filter
-#module filter_0 {
-#  source projects/filter_test/filter_FIR.tcl
-#} {
-#  s_axis fifo_ADC/M_AXIS
-#  cfg cfg_0/cfg_data
-#  aclk ps_0/FCLK_CLK0
-#  aresetn rst_0/peripheral_aresetn
-#}
-
-
-# Create axis_dwidth_converter
-#cell xilinx.com:ip:axis_dwidth_converter:1.1 filter_0 {
-#  S_TDATA_NUM_BYTES.VALUE_SRC USER
-#  S_TDATA_NUM_BYTES 4
-#  M_TDATA_NUM_BYTES 8
-#} {
-#  S_AXIS fifo_ADC/m_axis
-#  aclk ps_0/FCLK_CLK0
-#  aresetn rst_0/peripheral_aresetn
-#}
 
 # Create gpio_trigger
 cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
@@ -182,27 +151,12 @@ cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
   aresetn slice_pktzr_reset/Dout
 }
 
-# Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_pktzr_length {
-  CONST_WIDTH 32
-  CONST_VAL 2048
-}
-
-# Create axis_usr_split
-cell pavel-demin:user:axis_usr_split:1.0 split_adc {
-  AXIS_TDATA_WIDTH 32
-  AXIS_TUSER_WIDTH 1
-} {
-  s_axis fifo_ADC/M_AXIS
-  aclk ps_0/FCLK_CLK0
-}
-
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster:1.1 bcast_ADC {
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
  } {
-  S_AXIS split_adc/m_axis
+  S_AXIS fifo_ADC/M_AXIS
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
@@ -229,7 +183,7 @@ cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
 } {
   S_AXIS bcast_ADC/M00_AXIS
   cfg_data slice_record_length/Dout
-  trigger split_adc/user_data
+  trigger trigger_0/trigger
   aclk ps_0/FCLK_CLK0
   aresetn slice_pktzr_reset/Dout
 }
@@ -324,29 +278,14 @@ cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
 }
 
 
-# Create axis_usr_merge
-cell pavel-demin:user:axis_usr_merge:1.0 merge_trig {
-  AXIS_TDATA_WIDTH 32
-  AXIS_TUSER_WIDTH 1
-} {
-  s_axis dds_0/M_AXIS_DATA
-  s_axis_tready dds_0/m_axis_data_tready
-  s_axis_tready dds_0/m_axis_phase_tready
-  user_data trigger_0/trigger
-  aclk ps_0/FCLK_CLK0
-}
-
-
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
-  M_TUSER_WIDTH.VALUE_SRC USER
-  M_TUSER_WIDTH 1
-  S_TUSER_WIDTH.VALUE_SRC USER
-  S_TUSER_WIDTH 1
  } {
-  S_AXIS  merge_trig/m_axis
+  S_AXIS  dds_0/M_AXIS_DATA
+  s_axis_tready dds_0/m_axis_data_tready
+  s_axis_tready dds_0/m_axis_phase_tready
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
@@ -419,8 +358,6 @@ AXIS_TDATA_WIDTH 64
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
-  TUSER_WIDTH.VALUE_SRC USER
-  TUSER_WIDTH 1
 } {
   s_axis bcast_DDS/M00_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
@@ -429,23 +366,12 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   m_axis_aresetn const_1/dout
 }
 
-# Create axis_usr_split
-cell pavel-demin:user:axis_usr_split:1.0 split_trig {
-  AXIS_TDATA_WIDTH 32
-  AXIS_TUSER_WIDTH 1
-} {
-  s_axis fifo_DAC/M_AXIS
-  user_data merge_adc/user_data
-  aclk pll_0/clk_out1
-}
-
-
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
   aclk pll_0/clk_out1
   ddr_clk pll_0/clk_out2
   locked pll_0/locked
-  S_AXIS split_trig/m_axis
+  S_AXIS fifo_DAC/M_AXIS
   dac_clk dac_clk_o
   dac_rst dac_rst_o
   dac_sel dac_sel_o
