@@ -15,10 +15,11 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-uint32_t *rx_freq[2], *rx_rate[2], *tx_freq;
-uint16_t *rx_cntr[2], *tx_cntr;
-uint8_t *gpio, *rx_rst, *tx_rst;
-void *rx_data[2], *tx_data;
+uint32_t *rx_freq[4], *rx_rate, *tx_freq;
+uint16_t *rx_cntr[4], *tx_cntr;
+uint8_t *gpio_in, *gpio_out, *rx_rst, *tx_rst;
+uint64_t *rx_data[4];
+void *tx_data;
 
 const uint32_t freq_min = 0;
 const uint32_t freq_max = 61440000;
@@ -33,7 +34,7 @@ int active_thread = 0;
 
 int vna = 0;
 
-void process_ep2(char *frame);
+void process_ep2(uint8_t *frame);
 void *handler_ep6(void *arg);
 
 int main(int argc, char *argv[])
@@ -43,7 +44,7 @@ int main(int argc, char *argv[])
   pthread_t thread;
   void *cfg, *sts;
   char *name = "/dev/mem";
-  char buffer[1032];
+  uint8_t buffer[1032];
   uint8_t reply[11] = {0xef, 0xfe, 2, 0, 0, 0, 0, 0, 0, 21, 0};
   struct ifreq hwaddr;
   struct sockaddr_in addr_ep2, addr_from;
@@ -56,42 +57,53 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
-  sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
+  sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
+  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
   rx_data[0] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000);
   rx_data[1] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40004000);
+  rx_data[2] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40006000);
+  rx_data[3] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40008000);
   tx_data = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40010000);
 
   *(uint32_t *)(tx_data + 8) = 165;
 
   rx_rst = ((uint8_t *)(cfg + 0));
   tx_rst = ((uint8_t *)(cfg + 1));
-  gpio = ((uint8_t *)(cfg + 2));
+  gpio_out = ((uint8_t *)(cfg + 2));
 
-  rx_freq[0] = ((uint32_t *)(cfg + 4));
-  rx_rate[0] = ((uint32_t *)(cfg + 8));
-  rx_cntr[0] = ((uint16_t *)(sts + 0));
+  rx_rate = ((uint32_t *)(cfg + 4));
+
+  rx_freq[0] = ((uint32_t *)(cfg + 8));
+  rx_cntr[0] = ((uint16_t *)(sts + 12));
 
   rx_freq[1] = ((uint32_t *)(cfg + 12));
-  rx_rate[1] = ((uint32_t *)(cfg + 16));
-  rx_cntr[1] = ((uint16_t *)(sts + 2));
+  rx_cntr[1] = ((uint16_t *)(sts + 14));
 
-  tx_freq = ((uint32_t *)(cfg + 28));
-  tx_cntr = ((uint16_t *)(sts + 4));
+  rx_freq[2] = ((uint32_t *)(cfg + 16));
+  rx_cntr[2] = ((uint16_t *)(sts + 16));
+
+  rx_freq[3] = ((uint32_t *)(cfg + 20));
+  rx_cntr[3] = ((uint16_t *)(sts + 18));
+
+  tx_freq = ((uint32_t *)(cfg + 32));
+  tx_cntr = ((uint16_t *)(sts + 20));
+
+  gpio_in = ((uint8_t *)(sts + 22));
 
   /* set I/Q data for the VNA mode */
-  *((uint64_t *)(cfg + 20)) = 2000000;
+  *((uint64_t *)(cfg + 24)) = 2000000;
   *tx_rst &= ~2;
 
-  /* set PTT pin to low */
-  *gpio = 0;
+  /* set all GPIO pins to low */
+  *gpio_out = 0;
 
   /* set default rx phase increment */
   *rx_freq[0] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
   *rx_freq[1] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
+  *rx_freq[2] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
+  *rx_freq[3] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
   /* set default rx sample rate */
-  *rx_rate[0] = 1000;
-  *rx_rate[1] = 1000;
+  *rx_rate = 1000;
 
   /* set default tx phase increment */
   *tx_freq = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
@@ -137,7 +149,7 @@ int main(int argc, char *argv[])
       case 0x0201feef:
         while(*tx_cntr > 16258) usleep(1000);
         if(*tx_cntr == 0) memset(tx_data, 0, 65032);
-        if(*gpio)
+        if((*gpio_out & 1) | (*gpio_in & 1))
         {
           for(i = 0; i < 504; i += 8) memcpy(tx_data, buffer + 20 + i, 4);
           for(i = 0; i < 504; i += 8) memcpy(tx_data, buffer + 532 + i, 4);
@@ -185,7 +197,7 @@ int main(int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
-void process_ep2(char *frame)
+void process_ep2(uint8_t *frame)
 {
   uint32_t freq;
 
@@ -195,25 +207,25 @@ void process_ep2(char *frame)
     case 1:
       receivers = ((frame[4] >> 3) & 7) + 1;
       /* set PTT pin */
-      *gpio = frame[0] & 1;
+      if(frame[0] & 1) *gpio_out |= 1;
+      else *gpio_out &= ~1;
+      /* set preamp pin */
+      if(frame[3] & 4) *gpio_out |= 2;
+      else *gpio_out &= ~2;
       /* set rx sample rate */
       switch(frame[1] & 3)
       {
         case 0:
-          *rx_rate[0] = 1000;
-          *rx_rate[1] = 1000;
+          *rx_rate = 1000;
           break;
         case 1:
-          *rx_rate[0] = 500;
-          *rx_rate[1] = 500;
+          *rx_rate = 500;
           break;
         case 2:
-          *rx_rate[0] = 250;
-          *rx_rate[1] = 250;
+          *rx_rate = 250;
           break;
         case 3:
-          *rx_rate[0] = 125;
-          *rx_rate[1] = 125;
+          *rx_rate = 125;
           break;
       }
       break;
@@ -238,6 +250,20 @@ void process_ep2(char *frame)
       if(freq < freq_min || freq > freq_max) break;
       *rx_freq[1] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
       break;
+    case 8:
+    case 9:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[2] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      break;
+    case 10:
+    case 11:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[3] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      break;
     case 18:
     case 19:
       /* set VNA mode */
@@ -253,9 +279,11 @@ void *handler_ep6(void *arg)
   int i, j, n, m, size;
   int data_offset, header_offset, buffer_offset;
   uint32_t counter;
-  char data0[4096];
-  char data1[4096];
-  char buffer[25][1032];
+  uint8_t data0[4096];
+  uint8_t data1[4096];
+  uint8_t data2[4096];
+  uint8_t data3[4096];
+  uint8_t buffer[25][1032];
   struct iovec iovec[25][1];
   struct mmsghdr datagram[25];
   uint8_t header[40] =
@@ -303,8 +331,13 @@ void *handler_ep6(void *arg)
 
     while(*rx_cntr[0] < m * n * 4) usleep(1000);
 
-    memcpy(data0, rx_data[0], m * n * 16);
-    memcpy(data1, rx_data[1], m * n * 16);
+    for(i = 0; i < m * n * 16; i += 8)
+    {
+       *(uint64_t *)(data0 + i) = *rx_data[0];
+       *(uint64_t *)(data1 + i) = *rx_data[1];
+       *(uint64_t *)(data2 + i) = *rx_data[2];
+       *(uint64_t *)(data3 + i) = *rx_data[3];
+    }
 
     data_offset = 0;
     for(i = 0; i < m; ++i)
@@ -312,6 +345,7 @@ void *handler_ep6(void *arg)
       *(uint32_t *)(buffer[i] + 4) = htonl(counter);
 
       memcpy(buffer[i] + 8, header + header_offset, 8);
+      buffer[i][11] |= *gpio_in & 7;
       header_offset = header_offset >= 32 ? 0 : header_offset + 8;
       memset(buffer[i] + 16, 0, 504);
 
@@ -323,11 +357,20 @@ void *handler_ep6(void *arg)
         {
           memcpy(buffer[i] + buffer_offset + 6, data1 + data_offset, 6);
         }
+        if(size > 14)
+        {
+          memcpy(buffer[i] + buffer_offset + 12, data2 + data_offset, 6);
+        }
+        if(size > 20)
+        {
+          memcpy(buffer[i] + buffer_offset + 18, data3 + data_offset, 6);
+        }
         data_offset += 8;
         buffer_offset += size;
       }
 
       memcpy(buffer[i] + 520, header + header_offset, 8);
+      buffer[i][523] |= *gpio_in & 7;
       header_offset = header_offset >= 32 ? 0 : header_offset + 8;
       memset(buffer[i] + 528, 0, 504);
 
@@ -338,6 +381,14 @@ void *handler_ep6(void *arg)
         if(size > 8)
         {
           memcpy(buffer[i] + buffer_offset + 6, data1 + data_offset, 6);
+        }
+        if(size > 14)
+        {
+          memcpy(buffer[i] + buffer_offset + 12, data2 + data_offset, 6);
+        }
+        if(size > 20)
+        {
+          memcpy(buffer[i] + buffer_offset + 18, data3 + data_offset, 6);
         }
         data_offset += 8;
         buffer_offset += size;

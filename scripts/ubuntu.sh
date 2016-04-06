@@ -3,7 +3,7 @@ device=$1
 boot_dir=/tmp/BOOT
 root_dir=/tmp/ROOT
 
-root_tar=ubuntu-core-14.04.3-core-armhf.tar.gz
+root_tar=ubuntu-core-14.04.4-core-armhf.tar.gz
 root_url=http://cdimage.ubuntu.com/ubuntu-core/releases/14.04/release/$root_tar
 
 hostapd_url=https://googledrive.com/host/0B-t5klOOymMNfmJ0bFQzTVNXQ3RtWm5SQ2NGTE1hRUlTd3V2emdSNzN6d0pYamNILW83Wmc/rtl8192cu/hostapd-armhf
@@ -57,6 +57,7 @@ chmod +x $root_dir/usr/local/sbin/hostapd
 
 chroot $root_dir <<- EOF_CHROOT
 export LANG=C
+export LC_ALL=C
 
 cat <<- EOF_CAT > etc/apt/apt.conf.d/99norecommends
 APT::Install-Recommends "0";
@@ -82,8 +83,10 @@ echo red-pitaya > etc/hostname
 
 sed -i '/^# deb .* universe$/s/^# //' etc/apt/sources.list
 
+sed -i '/### END INIT INFO/aexit 0' /etc/init.d/udev
 apt-get update
 apt-get -y upgrade
+sed -i '/### END INIT INFO/{n;d}' /etc/init.d/udev
 
 apt-get -y install locales
 
