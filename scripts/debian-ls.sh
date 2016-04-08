@@ -51,9 +51,9 @@ cp patches/fw_env.config $root_dir/etc/
 
 # copy bit file and server
 
-cp tmp/lockin_sweep.bit $root_dir/opt/
-cp server/rp $root_dir/opt/bin
-chmod 777 $root_dir/opt/bin/rp
+cp tmp/lockin_sweep.bit $root_dir/usr/bin/
+cp server/rp $root_dir/usr/bin
+chmod 777 $root_dir/usr/bin/rp
 
 test -f $ecosystem_tar || curl -L $ecosystem_url -o $ecosystem_tar
 
@@ -282,9 +282,9 @@ cat <<- EOF_CAT >> etc/rc.local
 
 # start RUS lockin
 
-cat /opt/lockin_sweep.bit > /dev/xdevcfg
+cat /usr/bin/lockin_sweep.bit > /dev/xdevcfg
 
-/opt/bin/rp &
+/usr/bin/rp &
 
 EOF_CAT
 
