@@ -281,7 +281,6 @@ EOF_CAT
 
 
 cat <<- EOF_CAT > etc/rc.local
-
 #!/bin/sh -e
 #
 # rc.local
