@@ -51,9 +51,11 @@ cp patches/fw_env.config $root_dir/etc/
 
 # copy bit file and server
 
-cp tmp/lockin_sweep.bit $root_dir/usr/bin/
-cp server/rp $root_dir/usr/bin
-chmod 777 $root_dir/usr/bin/rp
+mkdir $root_dir/opt
+mkdir $root_dir/opt/bin
+cp tmp/lockin_sweep.bit $root_dir/opt/
+cp server/rp $root_dir/opt/bin/
+chmod 777 $root_dir/opt/bin/rp
 
 test -f $ecosystem_tar || curl -L $ecosystem_url -o $ecosystem_tar
 
@@ -278,13 +280,29 @@ COMMIT
 EOF_CAT
 
 
-cat <<- EOF_CAT >> etc/rc.local
+cat <<- EOF_CAT > etc/rc.local
+
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
 
 # start RUS lockin
 
-cat /usr/bin/lockin_sweep.bit > /dev/xdevcfg
+cat /opt/lockin_sweep.bit > /dev/xdevcfg
 
-/usr/bin/rp &
+/opt/bin/rp &
+
+exit 0
 
 EOF_CAT
 
