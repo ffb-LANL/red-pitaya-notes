@@ -367,19 +367,26 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
 set_property RANGE 16K [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant:1.1 const_ID {
+  CONST_WIDTH 16
+  CONST_VAL 19539
+}
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_status {
-  NUM_PORTS 6
+  NUM_PORTS 7
   IN0_WIDTH 32
   IN1_WIDTH 32
-  IN2_WIDTH 32
-  IN3_WIDTH 96
-  IN4_WIDTH 32
+  IN2_WIDTH 16
+  IN3_WIDTH 16
+  IN4_WIDTH 96
   IN5_WIDTH 32
+  IN6_WIDTH 32
 } {
-  In4 fifo_xyf/axis_data_count
-  In5 fifo_f/axis_data_count
+  IN3 const_ID/dout
+  In5 fifo_xyf/axis_data_count
+  In6 fifo_f/axis_data_count
 }
 
 # Create axi_sts_register
