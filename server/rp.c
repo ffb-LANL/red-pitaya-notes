@@ -31,7 +31,7 @@
 #define VALUE_OFFSET 16
 #define RX_FIFO_CNT_OFFSET 24
 
-int interrupted = 0;
+int interrupted = 0,connected = 0;
 int main(int argc, char *argv[])
 {
   void *rx_data,*tx_data;
@@ -117,21 +117,23 @@ int main(int argc, char *argv[])
   temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
   if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
   listen(sockServer, 1024);
-  if(verbose)printf("waiting on client\n");
-  if((sockClient = accept(sockServer, NULL, NULL)) < 0)
+
+  while(!interrupted) {
+	  if(verbose)printf("waiting on client\n");
+	  if((sockClient = accept(sockServer, NULL, NULL)) < 0)
         {
           perror("accept");
           return 1;
         }
-  if(verbose)printf("new connection\n");
-
-  while(!interrupted)
-      {
-        if(ioctl(sockClient, FIONREAD, &size) < 0) break;
+	  if(verbose)printf("new connection\n");
+	  connected =1;
+	  while(!interrupted && connected)
+       {
+        if(ioctl(sockClient, FIONREAD, &size) < 0){if(verbose)printf("IOCTL\n"); break;}
 
         if(size >= 8)
         {
-          if(recv(sockClient, (char *)&command, 8, MSG_WAITALL) < 0) break;
+          if(recv(sockClient, (char *)&command, 8, MSG_WAITALL) < 0){if(verbose)printf("IOCTL\n");  break;}
           switch(command >> 60)
           {
             case 0:
@@ -176,7 +178,7 @@ int main(int argc, char *argv[])
            		if(verbose)printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, offset = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),offset,config);
          		  break;
             case 2:
-            	interrupted=1;
+            	connected=0;
             	break;
             case 3: //get status
             	offset = command & 0xFFFFFFFF;
@@ -313,13 +315,15 @@ int main(int argc, char *argv[])
              	samples = command & 0xFFFFFFFF;
              	if(verbose)printf("Sending %d phase word bytes\n",samples);
              	if(recv(sockClient, buffer, samples, MSG_WAITALL) < 0) break;
+             	if(verbose)printf("1st phase word %d\n",*(uint32_t *)buffer);
              	memcpy( tx_data, buffer,samples);
                 break;
-
+            }
           }
-        }
-      }
-close(sockClient);
+       }
+	  if(verbose)printf("Connection lost\n");
+    close(sockClient);
+  }
 if(verbose)printf("closed connection\n");
 
 
