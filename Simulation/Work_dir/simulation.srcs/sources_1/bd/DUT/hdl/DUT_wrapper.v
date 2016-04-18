@@ -1,8 +1,8 @@
 //Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2015.4 (win64) Build 1412921 Wed Nov 18 09:43:45 MST 2015
-//Date        : Sat Feb 20 15:07:20 2016
-//Host        : FFBLP running 64-bit Service Pack 1  (build 7601)
+//Date        : Fri Apr 08 14:24:51 2016
+//Host        : ffboff running 64-bit Service Pack 1  (build 7601)
 //Command     : generate_target DUT_wrapper.bd
 //Design      : DUT_wrapper
 //Purpose     : IP block netlist
