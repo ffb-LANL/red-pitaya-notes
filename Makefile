@@ -27,7 +27,7 @@ CORES = axi_axis_reader_v1_0 axi_axis_writer_v1_0 axi_bram_reader_v1_0 \
 
 CORES += axis_delay_v1_0 axis_snapshot_v1_0 axis_circular_packetizer_v1_0 axis_value_v1_0 \
   gpio_trigger_v1_0 axis_cdc_variable_v1_0 axis_usr_split_v1_0 axis_usr_merge_v1_0 \
-  axis_usr_split_test_v1_0 axis_usr_merge_test_v1_0 gpio_delayed_trigger_v1_0
+  axis_usr_split_test_v1_0 axis_usr_merge_test_v1_0 gpio_delayed_trigger_v1_0 axis_measure_pulse_v1_0
 
 VIVADO = vivado -nolog -nojournal -mode batch
 HSI = hsi -nolog -nojournal -mode batch
