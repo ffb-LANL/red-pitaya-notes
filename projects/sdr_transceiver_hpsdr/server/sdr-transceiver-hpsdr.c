@@ -1,3 +1,5 @@
+/* 19.04.2016 DC2PD : add code for bandpass and antenna switching via I2C. */
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -15,10 +17,17 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-uint32_t *rx_freq[4], *rx_rate, *tx_freq;
-uint16_t *rx_cntr[4], *tx_cntr;
+#define I2C_SLAVE       0x0703 /* Use this slave address */
+#define I2C_SLAVE_FORCE 0x0706 /* Use this slave address, even if it
+                                  is already in use by a driver! */
+
+#define ADDR_PENE 0x20 /* PCA9555 address 0 */
+#define ADDR_ALEX 0x21 /* PCA9555 address 1 */
+
+uint32_t *rx_freq[4], *rx_rate, *tx_freq, *alex;
+uint16_t *rx_cntr, *tx_cntr;
 uint8_t *gpio_in, *gpio_out, *rx_rst, *tx_rst;
-uint64_t *rx_data[4];
+uint64_t *rx_data;
 void *tx_data;
 
 const uint32_t freq_min = 0;
@@ -36,6 +45,98 @@ int vna = 0;
 
 void process_ep2(uint8_t *frame);
 void *handler_ep6(void *arg);
+
+/* variables to handle PCA9555 board */
+int i2c_fd;
+int i2c_pene = 0;
+int i2c_alex = 0;
+uint16_t i2c_pene_data = 0;
+uint16_t i2c_alex_data = 0;
+
+ssize_t i2c_write(int fd, uint8_t addr, uint16_t data)
+{
+  uint8_t buffer[3];
+  buffer[0] = addr;
+  buffer[1] = data;
+  buffer[2] = data >> 8;
+  return write(fd, buffer, 3);
+}
+
+uint16_t alex_data_rx = 0;
+uint16_t alex_data_tx = 0;
+uint16_t alex_data_0 = 0;
+uint32_t alex_data_1 = 0;
+uint32_t alex_data_2 = 0;
+uint32_t alex_data_3 = 0;
+uint16_t alex_data_4 = 0;
+
+void alex_write()
+{
+  uint32_t max = alex_data_2 > alex_data_3 ? alex_data_2 : alex_data_3;
+  uint16_t manual = (alex_data_4 >> 15) & 0x01;
+  uint16_t preamp = manual ? (alex_data_4 >> 6) & 0x01 : max > 50000000;
+  uint16_t ptt = alex_data_0 & 0x01;
+  uint32_t freq = 0;
+  uint16_t hpf = 0, lpf = 0, data = 0;
+
+  freq = alex_data_2 < alex_data_3 ? alex_data_2 : alex_data_3;
+
+  if(preamp) hpf = 0;
+  else if(manual) hpf = alex_data_4 & 0x3f;
+  else if(freq < 1416000) hpf = 0x20; /* bypass */
+  else if(freq < 6500000) hpf = 0x10; /* 1.5 MHz HPF */
+  else if(freq < 9500000) hpf = 0x08; /* 6.5 MHz HPF */
+  else if(freq < 13000000) hpf = 0x04; /* 9.5 MHz HPF */
+  else if(freq < 20000000) hpf = 0x01; /* 13 MHz HPF */
+  else hpf = 0x02; /* 20 MHz HPF */
+
+  data =
+    ptt << 15 |
+    ((alex_data_0 >> 1) & 0x01) << 14 |
+    ((alex_data_0 >> 2) & 0x01) << 13 |
+    ((hpf >> 5) & 0x01) << 12 |
+    ((alex_data_0 >> 7) & 0x01) << 11 |
+    (((alex_data_0 >> 5) & 0x03) == 0x01) << 10 |
+    (((alex_data_0 >> 5) & 0x03) == 0x02) << 9 |
+    (((alex_data_0 >> 5) & 0x03) == 0x03) << 8 |
+    ((hpf >> 2) & 0x07) << 4 |
+    preamp << 3 |
+    (hpf & 0x03) << 1 |
+    1;
+
+  if(alex_data_rx != data)
+  {
+    alex_data_rx = data;
+    *alex = 1 << 16 | data;
+  }
+
+  freq = ptt ? alex_data_1 : max;
+
+  if(manual) lpf = (alex_data_4 >> 8) & 0x7f;
+  else if(freq > 32000000) lpf = 0x10; /* bypass */
+  else if(freq > 22000000) lpf = 0x20; /* 12/10 meters */
+  else if(freq > 15000000) lpf = 0x40; /* 17/15 meters */
+  else if(freq > 8000000) lpf = 0x01; /* 30/20 meters */
+  else if(freq > 4500000) lpf = 0x02; /* 60/40 meters */
+  else if(freq > 2400000) lpf = 0x04; /* 80 meters */
+  else lpf = 0x08; /* 160 meters */
+
+  data =
+    ((lpf >> 4) & 0x07) << 13 |
+    ptt << 12 |
+    (~(alex_data_4 >> 7) & ptt) << 11 |
+    (((alex_data_0 >> 8) & 0x03) == 0x02) << 10 |
+    (((alex_data_0 >> 8) & 0x03) == 0x01) << 9 |
+    (((alex_data_0 >> 8) & 0x03) == 0x00) << 8 |
+    (lpf & 0x0f) << 4 |
+    1 << 3;
+
+  if(alex_data_tx != data)
+  {
+    alex_data_tx = data;
+    *alex = 1 << 17 | data;
+  }
+}
 
 int main(int argc, char *argv[])
 {
@@ -57,15 +158,35 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
+  if((i2c_fd = open("/dev/i2c-0", O_RDWR)) >= 0)
+  {
+    if(ioctl(i2c_fd, I2C_SLAVE_FORCE, ADDR_PENE) >= 0)
+    {
+      /* set all pins to low */
+      if(i2c_write(i2c_fd, 0x02, 0x0000) > 0)
+      {
+        i2c_pene = 1;
+        /* configure all pins as output */
+        i2c_write(i2c_fd, 0x06, 0x0000);
+      }
+    }
+    if(ioctl(i2c_fd, I2C_SLAVE, ADDR_ALEX) >= 0)
+    {
+      /* set all pins to low */
+      if(i2c_write(i2c_fd, 0x02, 0x0000) > 0)
+      {
+        i2c_alex = 1;
+        /* configure all pins as output */
+        i2c_write(i2c_fd, 0x06, 0x0000);
+      }
+    }
+  }
+
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
-  rx_data[0] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000);
-  rx_data[1] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40004000);
-  rx_data[2] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40006000);
-  rx_data[3] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40008000);
+  alex = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000);
+  rx_data = mmap(NULL, 8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40008000);
   tx_data = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40010000);
-
-  *(uint32_t *)(tx_data + 8) = 165;
 
   rx_rst = ((uint8_t *)(cfg + 0));
   tx_rst = ((uint8_t *)(cfg + 1));
@@ -74,21 +195,15 @@ int main(int argc, char *argv[])
   rx_rate = ((uint32_t *)(cfg + 4));
 
   rx_freq[0] = ((uint32_t *)(cfg + 8));
-  rx_cntr[0] = ((uint16_t *)(sts + 12));
-
   rx_freq[1] = ((uint32_t *)(cfg + 12));
-  rx_cntr[1] = ((uint16_t *)(sts + 14));
-
   rx_freq[2] = ((uint32_t *)(cfg + 16));
-  rx_cntr[2] = ((uint16_t *)(sts + 16));
-
   rx_freq[3] = ((uint32_t *)(cfg + 20));
-  rx_cntr[3] = ((uint16_t *)(sts + 18));
 
   tx_freq = ((uint32_t *)(cfg + 32));
-  tx_cntr = ((uint16_t *)(sts + 20));
 
-  gpio_in = ((uint8_t *)(sts + 22));
+  rx_cntr = ((uint16_t *)(sts + 12));
+  tx_cntr = ((uint16_t *)(sts + 14));
+  gpio_in = ((uint8_t *)(sts + 16));
 
   /* set I/Q data for the VNA mode */
   *((uint64_t *)(cfg + 24)) = 2000000;
@@ -98,15 +213,16 @@ int main(int argc, char *argv[])
   *gpio_out = 0;
 
   /* set default rx phase increment */
-  *rx_freq[0] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
-  *rx_freq[1] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
-  *rx_freq[2] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
-  *rx_freq[3] = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
+  *rx_freq[0] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
+  *rx_freq[1] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
+  *rx_freq[2] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
+  *rx_freq[3] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
+
   /* set default rx sample rate */
   *rx_rate = 1000;
 
   /* set default tx phase increment */
-  *tx_freq = (uint32_t)floor(600000/125.0e6*(1<<30)+0.5);
+  *tx_freq = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
 
   *tx_rst |= 1;
   *tx_rst &= ~1;
@@ -200,6 +316,7 @@ int main(int argc, char *argv[])
 void process_ep2(uint8_t *frame)
 {
   uint32_t freq;
+  uint16_t data;
 
   switch(frame[0])
   {
@@ -212,6 +329,7 @@ void process_ep2(uint8_t *frame)
       /* set preamp pin */
       if(frame[3] & 4) *gpio_out |= 2;
       else *gpio_out &= ~2;
+
       /* set rx sample rate */
       switch(frame[1] & 3)
       {
@@ -228,41 +346,75 @@ void process_ep2(uint8_t *frame)
           *rx_rate = 125;
           break;
       }
+
+      data = (frame[4] & 0x03) << 8 | (frame[3] & 0xe0) | (frame[3] & 0x03) << 1 | (frame[0] & 0x01);
+      if(alex_data_0 != data)
+      {
+        alex_data_0 = data;
+        alex_write();
+      }
+
+      /* configure PENELOPE */
+      if(i2c_pene)
+      {
+        data = (frame[4] & 0x03) << 11 | (frame[3] & 0x60) << 4 | (frame[3] & 0x03) << 7 | frame[2] >> 1;
+        if(i2c_pene_data != data)
+        {
+          i2c_pene_data = data;
+          ioctl(i2c_fd, I2C_SLAVE, ADDR_PENE);
+          i2c_write(i2c_fd, 0x02, data);
+        }
+      }
       break;
     case 2:
     case 3:
       /* set tx phase increment */
       freq = ntohl(*(uint32_t *)(frame + 1));
+      if(alex_data_1 != freq)
+      {
+        alex_data_1 = freq;
+        alex_write();
+      }
       if(freq < freq_min || freq > freq_max) break;
-      *tx_freq = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      *tx_freq = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       if(!vna) break;
     case 4:
     case 5:
       /* set rx phase increment */
       freq = ntohl(*(uint32_t *)(frame + 1));
+      if(alex_data_2 != freq)
+      {
+        alex_data_2 = freq;
+        alex_write();
+      }
       if(freq < freq_min || freq > freq_max) break;
-      *rx_freq[0] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      *rx_freq[0] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       break;
     case 6:
     case 7:
       /* set rx phase increment */
       freq = ntohl(*(uint32_t *)(frame + 1));
+      if(alex_data_3 != freq)
+      {
+        alex_data_3 = freq;
+        alex_write();
+      }
       if(freq < freq_min || freq > freq_max) break;
-      *rx_freq[1] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      *rx_freq[1] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       break;
     case 8:
     case 9:
       /* set rx phase increment */
       freq = ntohl(*(uint32_t *)(frame + 1));
       if(freq < freq_min || freq > freq_max) break;
-      *rx_freq[2] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      *rx_freq[2] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       break;
     case 10:
     case 11:
       /* set rx phase increment */
       freq = ntohl(*(uint32_t *)(frame + 1));
       if(freq < freq_min || freq > freq_max) break;
-      *rx_freq[3] = (uint32_t)floor(freq/125.0e6*(1<<30)+0.5);
+      *rx_freq[3] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       break;
     case 18:
     case 19:
@@ -270,6 +422,25 @@ void process_ep2(uint8_t *frame)
       vna = frame[2] & 128;
       if(vna) *tx_rst |= 2;
       else *tx_rst &= ~2;
+
+      data = (frame[2] & 0x40) << 9 | frame[4] << 8 | frame[3];
+      if(alex_data_4 != data)
+      {
+        alex_data_4 = data;
+        alex_write();
+      }
+
+      /* configure ALEX */
+      if(i2c_alex)
+      {
+        data = frame[4] << 8 | frame[3];
+        if(i2c_alex_data != data)
+        {
+          i2c_alex_data = data;
+          ioctl(i2c_fd, I2C_SLAVE, ADDR_ALEX);
+          i2c_write(i2c_fd, 0x02, data);
+        }
+      }
       break;
   }
 }
@@ -323,20 +494,20 @@ void *handler_ep6(void *arg)
     n = 504 / size;
     m = 256 / n;
 
-    if(*rx_cntr[0] >= 2048)
+    if(*rx_cntr >= 8192)
     {
       *rx_rst |= 1;
       *rx_rst &= ~1;
     }
 
-    while(*rx_cntr[0] < m * n * 4) usleep(1000);
+    while(*rx_cntr < m * n * 16) usleep(1000);
 
     for(i = 0; i < m * n * 16; i += 8)
     {
-       *(uint64_t *)(data0 + i) = *rx_data[0];
-       *(uint64_t *)(data1 + i) = *rx_data[1];
-       *(uint64_t *)(data2 + i) = *rx_data[2];
-       *(uint64_t *)(data3 + i) = *rx_data[3];
+      *(uint64_t *)(data0 + i) = *rx_data;
+      *(uint64_t *)(data1 + i) = *rx_data;
+      *(uint64_t *)(data2 + i) = *rx_data;
+      *(uint64_t *)(data3 + i) = *rx_data;
     }
 
     data_offset = 0;

@@ -69,9 +69,7 @@ cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
   PRIM_IN_FREQ.VALUE_SRC USER
   PRIM_IN_FREQ 125.0
   CLKOUT1_USED true
-  CLKOUT2_USED true
-  CLKOUT1_REQUESTED_OUT_FREQ 125.0
-  CLKOUT2_REQUESTED_OUT_FREQ 250.0
+  CLKOUT1_REQUESTED_OUT_FREQ 250.0
 } {
   clk_in1 adc_0/adc_clk
 }
@@ -88,14 +86,14 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_0 {
   M00_TDATA_REMAP {tdata[15:0]}
   M01_TDATA_REMAP {tdata[15:0]}
 } {
-  aclk pll_0/clk_out1
+  aclk adc_0/adc_clk
   aresetn const_0/dout
 }
 
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
-  aclk pll_0/clk_out1
-  ddr_clk pll_0/clk_out2
+  aclk adc_0/adc_clk
+  ddr_clk pll_0/clk_out1
   locked pll_0/locked
   dac_clk dac_clk_o
   dac_rst dac_rst_o
@@ -130,6 +128,12 @@ cell xilinx.com:ip:xlslice:1.0 out_slice_0 {
   Dout exp_p_tri_io
 }
 
+# Delete input/output port
+delete_bd_objs [get_bd_ports exp_n_tri_io]
+
+# Create input/output port
+create_bd_port -dir IO -from 3 -to 0 exp_n_tri_io
+
 # Create gpio_debouncer
 cell pavel-demin:user:gpio_debouncer:1.0 gpio_0 {
   DATA_WIDTH 4
@@ -147,7 +151,51 @@ cell xilinx.com:ip:util_vector_logic:2.0 not_0 {
   Op1 gpio_0/out
 }
 
+# ALEX
+
+# Create output port
+create_bd_port -dir O -from 3 -to 0 exp_n_alex
+
+# Create axi_axis_writer
+cell pavel-demin:user:axi_axis_writer:1.0 writer_0 {
+  AXI_DATA_WIDTH 32
+} {
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create axis_data_fifo
+cell xilinx.com:ip:axis_data_fifo:1.1 fifo_0 {
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 4
+  FIFO_DEPTH 1024
+} {
+  S_AXIS writer_0/M_AXIS
+  s_axis_aclk ps_0/FCLK_CLK0
+  s_axis_aresetn rst_0/peripheral_aresetn
+}
+
+# Create axis_alex
+cell pavel-demin:user:axis_alex:1.0 alex_0 {} {
+  S_AXIS fifo_0/M_AXIS
+  alex_data exp_n_alex
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
+
 # RX 0
+
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner:1.1 comb_0 {
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 4
+  NUM_SI 2
+} {
+  S00_AXIS adc_0/M_AXIS
+  S01_AXIS bcast_0/M01_AXIS
+  aclk adc_0/adc_clk
+  aresetn const_0/dout
+}
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 rst_slice_0 {
@@ -172,12 +220,9 @@ module rx_0 {
   slice_3/Din cfg_slice_0/Dout
   slice_4/Din cfg_slice_0/Dout
   slice_5/Din cfg_slice_0/Dout
-  fifo_0/S_AXIS adc_0/M_AXIS
+  fifo_0/S_AXIS comb_0/M_AXIS
   fifo_0/s_axis_aclk adc_0/adc_clk
   fifo_0/s_axis_aresetn const_0/dout
-  fifo_1/S_AXIS bcast_0/M01_AXIS
-  fifo_1/s_axis_aclk pll_0/clk_out1
-  fifo_1/s_axis_aresetn const_0/dout
 }
 
 # TX 0
@@ -204,7 +249,7 @@ module tx_0 {
   slice_2/Din cfg_slice_1/Dout
   slice_3/Din cfg_slice_1/Dout
   fifo_1/M_AXIS bcast_0/S_AXIS
-  fifo_1/m_axis_aclk pll_0/clk_out1
+  fifo_1/m_axis_aclk adc_0/adc_clk
   fifo_1/m_axis_aresetn const_0/dout
 }
 
@@ -221,29 +266,23 @@ cell pavel-demin:user:dna_reader:1.0 dna_0 {} {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_0 {
-  NUM_PORTS 8
+  NUM_PORTS 5
   IN0_WIDTH 32
   IN1_WIDTH 64
   IN2_WIDTH 16
   IN3_WIDTH 16
-  IN4_WIDTH 16
-  IN5_WIDTH 16
-  IN6_WIDTH 16
-  IN7_WIDTH 4
+  IN4_WIDTH 4
 } {
   In0 const_2/dout
   In1 dna_0/dna_data
   In2 rx_0/fifo_generator_0/rd_data_count
-  In3 rx_0/fifo_generator_1/rd_data_count
-  In4 rx_0/fifo_generator_2/rd_data_count
-  In5 rx_0/fifo_generator_3/rd_data_count
-  In6 tx_0/fifo_generator_0/data_count
-  In7 not_0/Res
+  In3 tx_0/fifo_generator_0/data_count
+  In4 not_0/Res
 }
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 192
+  STS_DATA_WIDTH 160
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {
@@ -272,37 +311,19 @@ set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
   Master /ps_0/M_AXI_GP0
   Clk Auto
+} [get_bd_intf_pins writer_0/S_AXI]
+
+set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
+set_property OFFSET 0x40002000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
+
+# Create all required interconnections
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
+  Master /ps_0/M_AXI_GP0
+  Clk Auto
 } [get_bd_intf_pins rx_0/reader_0/S_AXI]
 
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-set_property OFFSET 0x40002000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins rx_0/reader_1/S_AXI]
-
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_1_reg0]
-set_property OFFSET 0x40004000 [get_bd_addr_segs ps_0/Data/SEG_reader_1_reg0]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins rx_0/reader_2/S_AXI]
-
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_2_reg0]
-set_property OFFSET 0x40006000 [get_bd_addr_segs ps_0/Data/SEG_reader_2_reg0]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins rx_0/reader_3/S_AXI]
-
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_3_reg0]
-set_property OFFSET 0x40008000 [get_bd_addr_segs ps_0/Data/SEG_reader_3_reg0]
+set_property RANGE 32K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
+set_property OFFSET 0x40008000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
 
 # Create all required interconnections
 apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
@@ -310,5 +331,5 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
   Clk Auto
 } [get_bd_intf_pins tx_0/writer_0/S_AXI]
 
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
-set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
+set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg01]
+set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg01]
