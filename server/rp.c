@@ -13,8 +13,8 @@
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
 #define READ_DATA 0x40010000
-#define WRITE_DATA 0x40020000
-
+#define WRITE_DATA 0x40040000
+#define WRITE_SIZE 0x00040000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
   samples = 0x10000 * 1024 - 1;
   FILE *fp;
   int verbose=0;
-  char buffer[49152];
+  char buffer[WRITE_SIZE];
   if (argc >=2 ) {
 	  if (argv[1][0]=='v' ) verbose = 1;
 	  if (argv[1][0]=='V' ) verbose = 2;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   ram = mmap(NULL,length , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
   rx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
-  tx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, WRITE_DATA);
+  tx_data = mmap(NULL, WRITE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, WRITE_DATA);
   // reset writer
  //*((uint32_t *)(cfg + 0)) &= ~2;
  //*((uint32_t *)(cfg + 0)) |= 2;
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
            		  break;
             case 15: //Receive a batch of frequencies
              	samples = command & 0xFFFFFFFF;
-             	if(verbose)printf("Sending %d phase word bytes\n",samples);
+             	if(verbose)printf("Writing %d bytes\n",samples);
              	if(recv(sockClient, buffer, samples, MSG_WAITALL) < 0) break;
              	if(verbose)printf("1st phase word %d\n",*(uint32_t *)buffer);
              	memcpy( tx_data, buffer,samples);

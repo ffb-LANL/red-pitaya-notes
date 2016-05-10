@@ -187,7 +187,7 @@ cell pavel-demin:user:axi_bram_writer:1.0 waveform_writer {
   AXI_DATA_WIDTH 32
   AXI_ADDR_WIDTH 32
   BRAM_DATA_WIDTH 32
-  BRAM_ADDR_WIDTH 10
+  BRAM_ADDR_WIDTH 17
 } {
   BRAM_PORTA waveform_bram/BRAM_PORTB
 }
@@ -198,8 +198,8 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
   Clk Auto
 } [get_bd_intf_pins waveform_writer/S_AXI]
 
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_waveform_writer_reg0]
-set_property OFFSET 0x40020000 [get_bd_addr_segs ps_0/Data/SEG_waveform_writer_reg0]
+set_property RANGE 256K [get_bd_addr_segs ps_0/Data/SEG_waveform_writer_reg0]
+set_property OFFSET 0x40040000 [get_bd_addr_segs ps_0/Data/SEG_waveform_writer_reg0]
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_measure_pulse {
