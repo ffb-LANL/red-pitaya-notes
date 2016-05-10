@@ -21,3 +21,5 @@ tmp
 .Xil
 webtalk*
 hs_err*
+/server/rp
+*.o
