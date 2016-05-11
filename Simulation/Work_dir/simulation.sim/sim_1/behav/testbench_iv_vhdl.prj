@@ -1,0 +1,6 @@
+# compile vhdl design source files
+vhdl blk_mem_gen_v8_3_1  "../../../simulation.ip_user_files/ipstatic/blk_mem_gen_v8_3/simulation/blk_mem_gen_v8_3.vhd"
+vhdl xil_defaultlib  "../../../simulation.ip_user_files/bd/DUT_IV/ip/DUT_IV_blk_mem_gen_0_0/sim/DUT_IV_blk_mem_gen_0_0.vhd"
+
+# Do not sort compile order
+nosort
