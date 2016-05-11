@@ -45,7 +45,7 @@ module axis_measure_pulse #
   reg [2:0] int_case_reg, int_case_next;
   reg [31:0] pulse,pulse_next,offset,offset_next,result,result_next,wfrm_start,wfrm_start_next,wfrm_point,wfrm_point_next;
 
-  wire [BRAM_ADDR_WIDTH-1:0] int_addr, int_addr_next;
+  reg [BRAM_ADDR_WIDTH-1:0] int_addr, int_addr_next;
   reg int_enbl_reg, int_enbl_next;
   reg int_conf_reg, int_conf_next;
 
@@ -58,8 +58,6 @@ module axis_measure_pulse #
   assign threshold = cfg_data[PULSE_WIDTH*4+31:PULSE_WIDTH*4];
   assign waveform_length = cfg_data[PULSE_WIDTH*4+63:PULSE_WIDTH*4+32];
   assign pulse_length = cfg_data[PULSE_WIDTH*4+95:PULSE_WIDTH*4+64];
-  assign int_addr = wfrm_start + wfrm_point;
-  assign int_addr_next = wfrm_start_next + wfrm_point_next;
   
   always @(posedge aclk)
   begin
@@ -72,7 +70,7 @@ module axis_measure_pulse #
       result <= 32'd0;
       wfrm_start <= 32'd0;
       wfrm_point <= 32'd0;
-       
+      int_addr <= {(BRAM_ADDR_WIDTH){1'b0}};
       int_enbl_reg <= 1'b0;
       int_conf_reg <= 1'b0;                           
     end
@@ -85,7 +83,7 @@ module axis_measure_pulse #
       result <= result_next;
       wfrm_start <= wfrm_start_next;
       wfrm_point <= wfrm_point_next;
-     
+      int_addr <= int_addr_next;
       int_enbl_reg <= int_enbl_next;
       int_conf_reg <= int_conf_next;
     end
@@ -101,7 +99,8 @@ module axis_measure_pulse #
       int_case_next = int_case_reg;
       offset_next=offset;
       result_next=result;
-      
+      int_addr_next = int_addr;
+      pulse_next = pulse;
       wfrm_start_next = wfrm_start;
       wfrm_point_next = wfrm_point;
 
@@ -115,11 +114,13 @@ module axis_measure_pulse #
        if(m_axis_tready & int_enbl_reg & wfrm_point_comp)
         begin
           wfrm_point_next = wfrm_point + 1'b1;
+          int_addr_next = wfrm_start + wfrm_point;
        end
 
        if(m_axis_tready & int_enbl_reg & ~wfrm_point_comp)
        begin
          wfrm_point_next = 32'b0;
+         int_addr_next = wfrm_start + wfrm_point;
        end
 
       case(int_case_reg)
@@ -227,7 +228,10 @@ module axis_measure_pulse #
                 result_next = $signed(pulse) - $signed(offset); // assume 50% duty cycle
                 offset_next = 32'd0;
                 pulse_next = 32'd0;
-                if((result_next < threshold) & int_comp_wire )
+                wfrm_point_next = 32'd0;
+                int_addr_next = wfrm_start + wfrm_point;
+
+               if((result_next < threshold) & int_comp_wire )
                   begin
                      wfrm_start_next = wfrm_start + pulse_length;
                   end
@@ -247,9 +251,10 @@ module axis_measure_pulse #
   assign m_axis_tdata = bram_porta_rddata;
   assign m_axis_tvalid = int_enbl_reg;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
-  
+  assign sts_data = {ramp,width};
   assign bram_porta_clk = aclk;
   assign bram_porta_rst = ~aresetn;
   assign bram_porta_addr = m_axis_tready & int_enbl_reg ? int_addr_next : int_addr;
+ // assign bram_porta_addr = int_addr;
 
 endmodule
