@@ -19,7 +19,7 @@ module testbench_iv;
 
    // reset logic
    initial begin
-      cfg = {32'd2048,32'd6144,32'd40000000,16'd0,16'd896,16'd64,16'd128};
+      cfg = {32'd2048,32'd6144,32'd94372,16'd0,16'd240,16'd16,16'd120};
       reset = 1'b0;
       trig=1'b0;
       enable=1'b0;

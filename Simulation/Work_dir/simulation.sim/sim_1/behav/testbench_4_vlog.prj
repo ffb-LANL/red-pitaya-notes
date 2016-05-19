@@ -1,0 +1,14 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  "../../../simulation.srcs/sources_1/new/testbench4.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../simulation.ip_user_files/bd/dut_4/hdl/dut_4.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../simulation.ip_user_files/bd/dut_4/ipshared/pavel-demin/axis_variable_v1_0/src/axis_variable.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../simulation.ip_user_files/bd/dut_4/ip/dut_4_axis_variable_0_0/sim/dut_4_axis_variable_0_0.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../../Testbench/testbench.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../simulation.srcs/sources_1/new/testbench3.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+verilog xil_defaultlib  "../../../simulation.srcs/sources_1/new/testbench5.v" --include "../../../simulation.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog"
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

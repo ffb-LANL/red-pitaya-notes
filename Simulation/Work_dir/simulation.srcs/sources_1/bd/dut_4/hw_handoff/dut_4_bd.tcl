@@ -162,27 +162,47 @@ CONFIG.TUSER_WIDTH {0} \
   # Create ports
   set aclk [ create_bd_port -dir I -type clk aclk ]
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
+  set cfg_data [ create_bd_port -dir I -from 15 -to 0 cfg_data ]
 
-  # Create instance: axis_data_fifo_0, and set properties
-  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  # Create instance: axis_register_slice_0, and set properties
+  set axis_register_slice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice:1.1 axis_register_slice_0 ]
+
+  # Create instance: axis_variable_0, and set properties
+  set axis_variable_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_0 ]
   set_property -dict [ list \
-CONFIG.FIFO_DEPTH {16384} \
-CONFIG.HAS_TKEEP {0} \
-CONFIG.HAS_TLAST {0} \
-CONFIG.HAS_TSTRB {0} \
-CONFIG.TDATA_NUM_BYTES {4} \
-CONFIG.TDEST_WIDTH {0} \
-CONFIG.TID_WIDTH {0} \
-CONFIG.TUSER_WIDTH {0} \
- ] $axis_data_fifo_0
+CONFIG.AXIS_TDATA_WIDTH {16} \
+ ] $axis_variable_0
+
+  # Create instance: dds_compiler_0, and set properties
+  set dds_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_0 ]
+  set_property -dict [ list \
+CONFIG.DATA_Has_TLAST {Not_Required} \
+CONFIG.DDS_Clock_Rate {125} \
+CONFIG.DSP48_Use {Maximal} \
+CONFIG.Has_ARESETn {true} \
+CONFIG.Has_TREADY {true} \
+CONFIG.Latency {8} \
+CONFIG.M_DATA_Has_TUSER {Not_Required} \
+CONFIG.Noise_Shaping {None} \
+CONFIG.Output_Frequency1 {0} \
+CONFIG.Output_Width {3} \
+CONFIG.PINC1 {0} \
+CONFIG.Parameter_Entry {Hardware_Parameters} \
+CONFIG.PartsPresent {Phase_Generator_only} \
+CONFIG.Phase_Increment {Programmable} \
+CONFIG.Phase_Width {16} \
+CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+ ] $dds_compiler_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S_AXIS_1 [get_bd_intf_ports S_AXIS] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports M_AXIS] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_register_slice_0_M_AXIS [get_bd_intf_pins axis_register_slice_0/M_AXIS] [get_bd_intf_pins dds_compiler_0/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net axis_variable_0_M_AXIS [get_bd_intf_pins axis_register_slice_0/S_AXIS] [get_bd_intf_pins axis_variable_0/M_AXIS]
+  connect_bd_intf_net -intf_net dds_compiler_0_M_AXIS_PHASE [get_bd_intf_ports M_AXIS] [get_bd_intf_pins dds_compiler_0/M_AXIS_PHASE]
 
   # Create port connections
-  connect_bd_net -net s_axis_aclk_1 [get_bd_ports aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
-  connect_bd_net -net s_axis_aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
+  connect_bd_net -net Net [get_bd_ports aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn]
+  connect_bd_net -net Net1 [get_bd_ports aclk] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins dds_compiler_0/aclk]
+  connect_bd_net -net cfg_data_1 [get_bd_ports cfg_data] [get_bd_pins axis_variable_0/cfg_data]
 
   # Create address segments
 
@@ -190,16 +210,21 @@ CONFIG.TUSER_WIDTH {0} \
   regenerate_bd_layout -layout_string {
    guistr: "# # String gsaved with Nlview 6.5.5  2015-06-26 bk=1.3371 VDI=38 GEI=35 GUI=JA:1.6
 #  -string -flagsOSRD
-preplace port S_AXIS -pg 1 -y -210 -defaultsOSRD
-preplace port aclk -pg 1 -y -170 -defaultsOSRD
-preplace port M_AXIS -pg 1 -y -220 -defaultsOSRD
-preplace port aresetn -pg 1 -y -190 -defaultsOSRD
-preplace inst axis_data_fifo_0 -pg 1 -lvl 1 -y -160 -defaultsOSRD
-preplace netloc s_axis_aclk_1 1 0 1 -20
-preplace netloc S_AXIS_1 1 0 1 N
-preplace netloc axis_data_fifo_0_M_AXIS 1 1 1 N
-preplace netloc s_axis_aresetn_1 1 0 1 -10
-levelinfo -pg 1 -40 160 350 -top -260 -bot -50
+preplace port S_AXIS -pg 1 -y 40 -defaultsOSRD
+preplace port aclk -pg 1 -y 20 -defaultsOSRD
+preplace port M_AXIS -pg 1 -y 90 -defaultsOSRD
+preplace port aresetn -pg 1 -y 80 -defaultsOSRD
+preplace portBus cfg_data -pg 1 -y 100 -defaultsOSRD
+preplace inst dds_compiler_0 -pg 1 -lvl 3 -y 120 -defaultsOSRD
+preplace inst axis_register_slice_0 -pg 1 -lvl 2 -y 100 -defaultsOSRD
+preplace inst axis_variable_0 -pg 1 -lvl 1 -y 80 -defaultsOSRD
+preplace netloc cfg_data_1 1 0 1 NJ
+preplace netloc axis_variable_0_M_AXIS 1 1 1 N
+preplace netloc dds_compiler_0_M_AXIS_PHASE 1 3 1 N
+preplace netloc Net 1 0 3 20 150 250 180 NJ
+preplace netloc Net1 1 0 3 20 10 240 170 NJ
+preplace netloc axis_register_slice_0_M_AXIS 1 2 1 N
+levelinfo -pg 1 0 130 340 610 800 -top 0 -bot 200
 ",
 }
 

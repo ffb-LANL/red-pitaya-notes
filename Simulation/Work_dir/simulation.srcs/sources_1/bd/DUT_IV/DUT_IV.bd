@@ -52,14 +52,6 @@
             <spirit:value>0</spirit:value>
           </spirit:parameter>
           <spirit:parameter>
-            <spirit:name>FREQ_HZ</spirit:name>
-            <spirit:value>100000000</spirit:value>
-          </spirit:parameter>
-          <spirit:parameter>
-            <spirit:name>PHASE</spirit:name>
-            <spirit:value>0.000</spirit:value>
-          </spirit:parameter>
-          <spirit:parameter>
             <spirit:name>LAYERED_METADATA</spirit:name>
             <spirit:value>undef</spirit:value>
           </spirit:parameter>
