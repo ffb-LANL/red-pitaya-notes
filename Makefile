@@ -21,9 +21,9 @@ CORES = axi_axis_reader_v1_0 axi_axis_writer_v1_0 axi_bram_reader_v1_0 \
   axis_packetizer_v1_0 axis_phase_generator_v1_0 \
   axis_pulse_height_analyzer_v1_0 axis_ram_writer_v1_0 \
   axis_red_pitaya_adc_v1_0 axis_red_pitaya_dac_v1_0 axis_stepper_v1_0 \
-  axis_timer_v1_0 axis_trigger_v1_0 axi_sts_register_v1_0 axis_validator_v1_0 \
-  axis_variable_v1_0 axis_zeroer_v1_0 dna_reader_v1_0 gpio_debouncer_v1_0 \
-  pulse_generator_v1_0
+  axis_tagger_v1_0 axis_timer_v1_0 axis_trigger_v1_0 axi_sts_register_v1_0 \
+  axis_validator_v1_0 axis_variable_v1_0 axis_variant_v1_0 axis_zeroer_v1_0 \
+  dna_reader_v1_0 gpio_debouncer_v1_0 pulse_generator_v1_0
 
 CORES += axis_delay_v1_0 axis_snapshot_v1_0 axis_circular_packetizer_v1_0 axis_value_v1_0 \
   gpio_trigger_v1_0 axis_cdc_variable_v1_0 axis_usr_split_v1_0 axis_usr_merge_v1_0 \
@@ -34,9 +34,9 @@ VIVADO = vivado -nolog -nojournal -mode batch
 HSI = hsi -nolog -nojournal -mode batch
 RM = rm -rf
 
-UBOOT_TAG = xilinx-v2015.4
-LINUX_TAG = xilinx-v2015.4
-DTREE_TAG = xilinx-v2015.4
+UBOOT_TAG = xilinx-v2016.1
+LINUX_TAG = xilinx-v2016.1
+DTREE_TAG = xilinx-v2016.1
 
 UBOOT_DIR = tmp/u-boot-xlnx-$(UBOOT_TAG)
 LINUX_DIR = tmp/linux-xlnx-$(LINUX_TAG)
@@ -50,8 +50,8 @@ UBOOT_URL = https://github.com/Xilinx/u-boot-xlnx/archive/$(UBOOT_TAG).tar.gz
 LINUX_URL = https://github.com/Xilinx/linux-xlnx/archive/$(LINUX_TAG).tar.gz
 DTREE_URL = https://github.com/Xilinx/device-tree-xlnx/archive/$(DTREE_TAG).tar.gz
 
-LINUX_CFLAGS = "-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=softfp"
-UBOOT_CFLAGS = "-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=softfp"
+LINUX_CFLAGS = "-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
+UBOOT_CFLAGS = "-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 ARMHF_CFLAGS = "-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 
 RTL_TAR = tmp/rtl8192cu.tgz
@@ -89,7 +89,7 @@ $(UBOOT_DIR): $(UBOOT_TAR)
 $(LINUX_DIR): $(LINUX_TAR) $(RTL_TAR)
 	mkdir -p $@
 	tar -zxf $< --strip-components=1 --directory=$@
-	tar -zxf $(RTL_TAR) --directory=$@/drivers/net/wireless
+	tar -zxf $(RTL_TAR) --directory=$@/drivers/net/wireless/realtek
 	patch -d tmp -p 0 < patches/linux-xlnx-$(LINUX_TAG).patch
 	cp patches/linux-lantiq.c $@/drivers/net/phy/lantiq.c
 
@@ -102,7 +102,7 @@ uImage: $(LINUX_DIR)
 	make -C $< ARCH=arm xilinx_zynq_defconfig
 	make -C $< ARCH=arm CFLAGS=$(LINUX_CFLAGS) \
 	  -j $(shell nproc 2> /dev/null || echo 1) \
-	  CROSS_COMPILE=arm-xilinx-linux-gnueabi- UIMAGE_LOADADDR=0x8000 uImage
+	  CROSS_COMPILE=arm-linux-gnueabihf- UIMAGE_LOADADDR=0x8000 uImage
 	cp $</arch/arm/boot/uImage $@
 
 tmp/u-boot.elf: $(UBOOT_DIR)
@@ -110,7 +110,7 @@ tmp/u-boot.elf: $(UBOOT_DIR)
 	make -C $< mrproper
 	make -C $< ARCH=arm zynq_red_pitaya_defconfig
 	make -C $< ARCH=arm CFLAGS=$(UBOOT_CFLAGS) \
-	  CROSS_COMPILE=arm-xilinx-linux-gnueabi- all
+	  CROSS_COMPILE=arm-linux-gnueabihf- all
 	cp $</u-boot $@
 
 fw_printenv: $(UBOOT_DIR) tmp/u-boot.elf

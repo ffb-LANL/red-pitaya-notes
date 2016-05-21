@@ -41,8 +41,6 @@ struct sockaddr_in addr_ep6;
 int enable_thread = 0;
 int active_thread = 0;
 
-int vna = 0;
-
 void process_ep2(uint8_t *frame);
 void *handler_ep6(void *arg);
 
@@ -199,15 +197,11 @@ int main(int argc, char *argv[])
   rx_freq[2] = ((uint32_t *)(cfg + 16));
   rx_freq[3] = ((uint32_t *)(cfg + 20));
 
-  tx_freq = ((uint32_t *)(cfg + 32));
+  tx_freq = ((uint32_t *)(cfg + 24));
 
   rx_cntr = ((uint16_t *)(sts + 12));
   tx_cntr = ((uint16_t *)(sts + 14));
   gpio_in = ((uint8_t *)(sts + 16));
-
-  /* set I/Q data for the VNA mode */
-  *((uint64_t *)(cfg + 24)) = 2000000;
-  *tx_rst &= ~2;
 
   /* set all GPIO pins to low */
   *gpio_out = 0;
@@ -224,6 +218,7 @@ int main(int argc, char *argv[])
   /* set default tx phase increment */
   *tx_freq = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
 
+  /* reset tx fifo */
   *tx_rst |= 1;
   *tx_rst &= ~1;
 
@@ -377,7 +372,7 @@ void process_ep2(uint8_t *frame)
       }
       if(freq < freq_min || freq > freq_max) break;
       *tx_freq = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
-      if(!vna) break;
+      break;
     case 4:
     case 5:
       /* set rx phase increment */
@@ -418,11 +413,6 @@ void process_ep2(uint8_t *frame)
       break;
     case 18:
     case 19:
-      /* set VNA mode */
-      vna = frame[2] & 128;
-      if(vna) *tx_rst |= 2;
-      else *tx_rst &= ~2;
-
       data = (frame[2] & 0x40) << 9 | frame[4] << 8 | frame[3];
       if(alex_data_4 != data)
       {
@@ -483,6 +473,7 @@ void *handler_ep6(void *arg)
   header_offset = 0;
   counter = 0;
 
+  /* reset rx fifo */
   *rx_rst |= 1;
   *rx_rst &= ~1;
 
@@ -496,6 +487,7 @@ void *handler_ep6(void *arg)
 
     if(*rx_cntr >= 8192)
     {
+      /* reset rx fifo */
       *rx_rst |= 1;
       *rx_rst &= ~1;
     }
