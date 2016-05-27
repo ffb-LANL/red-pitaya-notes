@@ -83,6 +83,14 @@ cell xilinx.com:ip:xlslice:1.0 slice_1 {
   Din cfg_0/cfg_data
 }
 
+# Create xlslice
+cell xilinx.com:ip:xlslice:1.0 slice_trx_reset {
+  DIN_WIDTH 256 DIN_FROM 4 DIN_TO 4
+} {
+  Din cfg_0/cfg_data
+}
+
+
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_0 {
   IN1_WIDTH 2
@@ -135,7 +143,7 @@ cell xilinx.com:ip:axis_data_fifo:1.1 fifo_f {
 } {
   s_axis  writer_f/m_axis
   s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
+  s_axis_aresetn slice_trx_reset/dout
 }
 
 # Create xlslice
@@ -164,7 +172,7 @@ cell pavel-demin:user:axis_interpolator:1.0 inter_f {
   S_AXIS fifo_f/M_AXIS
   cfg_data concat_interpol/Dout
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create all required interconnections
@@ -184,7 +192,7 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_f {
  } {
   S_AXIS inter_f/m_axis
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 
@@ -198,9 +206,11 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   DSP48_USE Maximal
   HAS_TREADY true
   HAS_PHASE_OUT false
+  HAS_ARESETn true
 } {
   S_AXIS_PHASE bcast_f/M00_AXIS
   aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_broadcaster
@@ -210,13 +220,13 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
  } {
   S_AXIS dds_0/M_AXIS_DATA
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_lfsr
 cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # create delay
@@ -225,7 +235,7 @@ module delay_0 {
 } {
   s_axis bcast_DDS/M01_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 
@@ -238,11 +248,13 @@ cell xilinx.com:ip:cmpy:6.0 mult_0 {
   BPORTWIDTH 14
   ROUNDMODE Random_Rounding
   OUTPUTWIDTH 28
+  aresetn true
 } {
   S_AXIS_A subset_ADC_A/M_AXIS
   s_axis_b delay_0/M_AXIS
   S_AXIS_CTRL lfsr_0/M_AXIS
   aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
 }
 
 # Create clk_wiz
@@ -287,7 +299,7 @@ module filter_xy {
   s_axis mult_0/M_AXIS_DOUT
   cfg cfg_0/cfg_data
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 
@@ -297,7 +309,7 @@ module delay_f {
 } {
   s_axis bcast_f/M01_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_decimator
@@ -308,7 +320,7 @@ cell pavel-demin:user:axis_decimator:1.0 dcmtr_f {
   S_AXIS delay_f/M_AXIS
   cfg_data concat_interpol/Dout
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_combiner
@@ -317,11 +329,11 @@ cell  xilinx.com:ip:axis_combiner:1.1 comb_xyf {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S00_AXIS filter_xy/M_AXIS_x
-  S01_AXIS filter_xy/M_AXIS_y
-  S02_AXIS dcmtr_f/M_AXIS
+  S00_AXIS dcmtr_f/M_AXIS
+  S01_AXIS filter_xy/M_AXIS_x
+  S02_AXIS filter_xy/M_AXIS_y
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
   }
 
 # Create axis_data_fifo
@@ -332,7 +344,7 @@ cell xilinx.com:ip:axis_data_fifo:1.1 fifo_xyf {
 } {
   s_axis  comb_xyf/m_axis
   s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
+  s_axis_aresetn slice_trx_reset/dout
 }
 
 # Create axis_dwidth_converter
@@ -343,7 +355,7 @@ cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_xyf {
 } {
   S_AXIS fifo_xyf/M_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create axi_axis_reader
