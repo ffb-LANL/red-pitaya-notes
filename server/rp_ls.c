@@ -13,7 +13,8 @@
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
 #define READ_DATA 0x40010000
-#define WRITE_DATA 0x40020000
+#define WRITE_DATA 0x40040000
+#define WRITE_SIZE 0x00040000
 
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
@@ -77,17 +78,12 @@ int main(int argc, char *argv[])
   ram = mmap(NULL,length , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
   rx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
-  tx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, WRITE_DATA);
-  // reset writer
- //*((uint32_t *)(cfg + 0)) &= ~2;
- //*((uint32_t *)(cfg + 0)) |= 2;
+  tx_data = mmap(NULL, WRITE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, WRITE_DATA);
 
-  // enter reset mode for packetizer and fifo
-  //*((uint32_t *)(cfg + 0)) &= ~5;
-  //value = 50;
+  //reset logic
+
  *((uint32_t *)(cfg + 0)) &= ~0xf;
-  //*((uint16_t *)(cfg + DESIMATION_OFFSET)) = 100;
-  //*((uint32_t *)(cfg + 0)) |= UPDATE_CIC_FLAG;
+
 
   if((sockServer = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
@@ -127,6 +123,7 @@ int main(int argc, char *argv[])
   fclose(fp);
   temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
   if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
+
   listen(sockServer, 1024);
 
   while(!interrupted) {

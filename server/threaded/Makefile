@@ -18,12 +18,12 @@ VERSION ?= 0.00-0000
 REVISION ?= devbuild
 
 # List of compiled object files (not yet linked to executable)
-OBJS = rp.o
+OBJS = trd_rp.o
 # List of raw source files (all object files, renamed from .o to .c)
 SRCS = $(subst .o,.c, $(OBJS)))
 
 # Executable name
-TARGET=rp
+TARGET=trd_rp
 
 # GCC compiling & linking flags
 CFLAGS=-g -std=gnu99 -Wall -pthread

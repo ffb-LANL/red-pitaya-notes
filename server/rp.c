@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
 #define READ_DATA 0x40010000
@@ -23,6 +25,7 @@
 #define UPDATE_CIC_FLAG 4
 #define TRIGGER_RECORD_FLAG 8
 
+
 #define RECORD_LENGTH_OFFSET 4
 #define FREQ_OFFSET 8
 #define DESIMATION_OFFSET  12
@@ -30,10 +33,12 @@
 #define WRITER_STS_OFFSET 0
 #define VALUE_OFFSET 16
 #define RX_FIFO_CNT_OFFSET 24
-
+void *ctrl_handler(void *arg);
 int interrupted = 0,connected = 0;
 int main(int argc, char *argv[])
 {
+	  pthread_t thread;
+
   void *rx_data,*tx_data;
   int fd,fdio, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
@@ -117,7 +122,11 @@ int main(int argc, char *argv[])
   temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
   if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
   listen(sockServer, 1024);
-
+  if(pthread_create(&thread, NULL, ctrl_handler, NULL) < 0)
+  {
+    perror("pthread_create");
+    return EXIT_FAILURE;
+  }
   while(!interrupted) {
 	  if(verbose)printf("waiting on client\n");
 	  if((sockClient = accept(sockServer, NULL, NULL)) < 0)
@@ -333,4 +342,10 @@ if(verbose)printf("closed connection\n");
   munmap(sts, sysconf(_SC_PAGESIZE));
   munmap(rx_data, sysconf(_SC_PAGESIZE));
   return 0;
+}
+
+void *ctrl_handler(void *arg)
+{
+	printf("Closing thread\n");
+	return NULL;
 }
