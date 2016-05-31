@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	  pthread_t thread;
 
   void *rx_data,*tx_data;
-  int fd,fdio, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, ch,temperature_raw, temperature_offset ;
+  int fd, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
   uint32_t status, trigger_pos, start_offset, end_offset, config;
   unsigned long size = 0, wait;
@@ -60,7 +60,6 @@ int main(int argc, char *argv[])
 	  if (argv[1][0]=='v' ) verbose = 1;
 	  if (argv[1][0]=='V' ) verbose = 2;
   }
-
   if((fd = open(name, O_RDWR)) < 0)
   {
     perror("open");
