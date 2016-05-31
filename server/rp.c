@@ -45,6 +45,7 @@ int main(int argc, char *argv[])
   uint32_t status, trigger_pos, start_offset, end_offset, config;
   unsigned long size = 0, wait;
   uint64_t value;
+  uint16_t mask;
   uint64_t command = 600000;
   void *cfg, *ram, *sts;
   char *name = "/dev/mem";
@@ -121,11 +122,7 @@ int main(int argc, char *argv[])
   temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
   if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
   listen(sockServer, 1024);
-  if(pthread_create(&thread, NULL, ctrl_handler, NULL) < 0)
-  {
-    perror("pthread_create");
-    return EXIT_FAILURE;
-  }
+
   while(!interrupted) {
 	  if(verbose)printf("waiting on client\n");
 	  if((sockClient = accept(sockServer, NULL, NULL)) < 0)
@@ -145,10 +142,16 @@ int main(int argc, char *argv[])
           switch(command >> 60)
           {
             case 0:
-            	if(verbose)printf("Sending phase word %d\n",(int)command);
-                /* set phase increment */
-                *((uint32_t *)(cfg + FREQ_OFFSET)) = (uint32_t)command;
-              	break;
+               	mask = command & 0xFFFF;
+            	if(verbose)printf("Sending reset. Mask %x\n",(uint32_t)mask);
+            	 /* Reset on*/
+            	 *((uint32_t *)(cfg + 0)) &= ~ mask;
+                 usleep(100);
+                 /* Reset off */
+                 *((uint32_t *)(cfg + 0)) |= mask;
+
+
+            	 break;
 
             case 1:
 
