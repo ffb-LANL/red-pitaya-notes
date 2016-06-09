@@ -15,8 +15,10 @@
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
 #define READ_DATA 0x40010000
-#define WRITE_DATA 0x40040000
-#define WRITE_SIZE 0x00040000
+#define WRITE_DATA 0x40020000
+#define WRITE_SIZE 0x0004000
+//#define WRITE_DATA 0x40040000
+//#define WRITE_SIZE 0x00040000
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
@@ -25,7 +27,6 @@
 #define UPDATE_CIC_FLAG 4
 #define TRIGGER_RECORD_FLAG 8
 
-
 #define RECORD_LENGTH_OFFSET 4
 #define FREQ_OFFSET 8
 #define DESIMATION_OFFSET  12
@@ -33,6 +34,11 @@
 #define WRITER_STS_OFFSET 0
 #define VALUE_OFFSET 16
 #define RX_FIFO_CNT_OFFSET 24
+
+#define CMD_CONNECT 5
+#define CMD_STOP 2
+#define CMD_IDN 1
+
 void *ctrl_handler(void *arg);
 int interrupted = 0,connected = 0;
 int main(int argc, char *argv[])
@@ -146,7 +152,7 @@ int main(int argc, char *argv[])
             	if(verbose)printf("Sending reset. Mask %x\n",(uint32_t)mask);
             	 /* Reset on*/
             	 *((uint32_t *)(cfg + 0)) &= ~ mask;
-                 usleep(100);
+                 usleep(1000);
                  /* Reset off */
                  *((uint32_t *)(cfg + 0)) |= mask;
 
@@ -209,13 +215,8 @@ int main(int argc, char *argv[])
             	  if(send(sockClient, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
             	  break;
             case 5: //set decimation rate
-                  value = command & 0xFFFF;
-            	  *((uint32_t *)(cfg + 0)) &= ~ UPDATE_CIC_FLAG;
-                  *((uint32_t *)(cfg + DESIMATION_OFFSET)) = value;
-                  *((uint32_t *)(cfg + 0)) |= UPDATE_CIC_FLAG;
-                  value=*((uint32_t *)(cfg + DESIMATION_OFFSET));
-              	  config=*((uint32_t *)(cfg + 0));
-              	if(verbose)printf("Decimation rate =%u, config = %x\n",(uint32_t)value, config);
+            	value = command & 0x3;
+              	if(verbose)printf("Connect client command, client type = %x\n",(uint32_t)value);
                   break;
             case 6:  // arm
 
@@ -289,11 +290,17 @@ int main(int argc, char *argv[])
    			 	 break;
             case 13: // read RX FIFO
             	samples = command & 0xFFFFFFFF;
-            	if(verbose>1)printf("Read %d samples FIFO. Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+            	if(verbose>1)printf("Read %d bytes. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
             	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
             	memcpy(buffer, rx_data, samples);
-            	//if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+            	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
                 if(send(sockClient, buffer, samples, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+            	if(verbose){
+            		printf("First words in RX buffer=");
+                        		for (int i=0;i<60;i+=4)
+                        			printf("%d, ",*(uint32_t *)(buffer+i) );
+                    printf("\n");
+            	}
                 break;
             case 14: //generate test pattern
 
@@ -326,8 +333,13 @@ int main(int argc, char *argv[])
              	samples = command & 0xFFFFFFFF;
              	if(verbose)printf("Writing %d bytes\n",samples);
              	if(recv(sockClient, buffer, samples, MSG_WAITALL) < 0) break;
-             	if(verbose)printf("1st phase word %d\n",*(uint32_t *)buffer);
              	memcpy( tx_data, buffer,samples);
+            	if(verbose){
+            		printf("First words in TX buffer=");
+                        		for (int i=0;i<60;i+=4)
+                        			printf("%d, ",*(uint32_t *)(buffer+i) );
+                    printf("\n");
+            	}
                 break;
             }
           }
