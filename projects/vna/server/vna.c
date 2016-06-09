@@ -11,10 +11,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-uint16_t *rx_cntr;
-float *rx_data;
+volatile uint16_t *rx_cntr[3];
+volatile float *rx_data[3];
 
 int sock_thread = -1;
+uint32_t rate_thread = 1;
+uint32_t size_thread = 600;
 
 void *sweep_handler(void *arg);
 
@@ -22,13 +24,14 @@ int main(int argc, char *argv[])
 {
   int fd, sock_server, sock_client;
   pthread_t thread;
-  void *cfg, *sts;
+  volatile void *cfg, *sts;
   char *name = "/dev/mem";
-  uint32_t *rx_freq, *tx_freq;
-  uint32_t *rx_size, *tx_size;
-  uint8_t *rst;
+  volatile uint32_t *rx_freq, *tx_freq;
+  volatile uint32_t *rx_size, *tx_size;
+  volatile uint8_t *rst;
   struct sockaddr_in addr;
-  uint32_t command, value;
+  uint32_t command, rate;
+  int32_t value, corr;
   int64_t start, stop, size, freq;
   int i, yes = 1;
 
@@ -40,11 +43,15 @@ int main(int argc, char *argv[])
 
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
-  rx_data = mmap(NULL, 8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40008000);
+  rx_data[0] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000);
+  rx_data[1] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40004000);
+  rx_data[2] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40006000);
   rx_freq = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40010000);
   tx_freq = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40020000);
 
-  rx_cntr = ((uint16_t *)(sts + 12));
+  rx_cntr[0] = ((uint16_t *)(sts + 12));
+  rx_cntr[1] = ((uint16_t *)(sts + 14));
+  rx_cntr[2] = ((uint16_t *)(sts + 16));
 
   rst = ((uint8_t *)(cfg + 0));
   rx_size = ((uint32_t *)(cfg + 4));
@@ -56,6 +63,8 @@ int main(int argc, char *argv[])
   start = 100000;
   stop = 60000000;
   size = 600;
+  rate = 1;
+  corr = 0;
 
   *rst &= ~3;
   *rst |= 4;
@@ -90,14 +99,6 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    sock_thread = sock_client;
-    if(pthread_create(&thread, NULL, sweep_handler, NULL) < 0)
-    {
-      perror("pthread_create");
-      return EXIT_FAILURE;
-    }
-    pthread_detach(thread);
-
     while(1)
     {
       if(recv(sock_client, (char *)&command, 4, MSG_WAITALL) <= 0) break;
@@ -106,12 +107,12 @@ int main(int argc, char *argv[])
       {
         case 0:
           /* set start */
-          if(value < 5000 || value > 62500000) continue;
+          if(value < 0 || value > 62000000) continue;
           start = value;
           break;
         case 1:
           /* set stop */
-          if(value < 5000 || value > 62500000) continue;
+          if(value < 0 || value > 62000000) continue;
           stop = value;
           break;
         case 2:
@@ -120,24 +121,47 @@ int main(int argc, char *argv[])
           size = value;
           break;
         case 3:
+          /* set rate */
+          if(value < 1 || value > 10000) continue;
+          rate = value;
+          *rx_size = 250000 * rate - 1;
+          *tx_size = 250000 * rate - 1;
+          break;
+        case 4:
+          /* set correction */
+          if(value < -100000 || value > 100000) continue;
+          corr = value;
+          break;
+        case 5:
           /* sweep */
           *rst &= ~3;
           *rst |= 4;
           *rst &= ~4;
           *rst |= 2;
+          rate_thread = rate;
+          size_thread = size;
+          sock_thread = sock_client;
+          if(pthread_create(&thread, NULL, sweep_handler, NULL) < 0)
+          {
+            perror("pthread_create");
+            return EXIT_FAILURE;
+          }
+          pthread_detach(thread);
           freq = start;
           for(i = 0; i <= size; ++i)
           {
             if(i > 0) freq = start + (stop - start) * (i - 1) / (size - 1);
-            *rx_freq = (uint32_t)floor((freq - 2500) / 125.0e6 * (1<<30) + 0.5);
+            freq *= (1.0 + 1.0e-9 * corr);
+            *rx_freq = (uint32_t)floor((freq + 2500) / 125.0e6 * (1<<30) + 0.5);
             *tx_freq = (uint32_t)floor(freq / 125.0e6 * (1<<30) + 0.5);
           }
           *rst |= 1;
           break;
-        case 4:
+        case 6:
           /* cancel */
           *rst &= ~3;
           *rst |= 4;
+          sock_thread = -1;
           break;
       }
     }
@@ -155,55 +179,83 @@ int main(int argc, char *argv[])
 
 void *sweep_handler(void *arg)
 {
-  int i, j;
+  int i, j, k, cntr;
+  uint32_t rate = rate_thread;
+  uint32_t size = size_thread;
   float omega, sine, cosine, coeff;
-  float re, r0[4], r1[4], r2[4];
-  float im, i0[4], i1[4], i2[4];
-  float buffer[8];
+  float re[3], r0[3], r1[3], r2[3];
+  float im[3], i0[3], i1[3], i2[3];
+  float *w, buffer0[3][1000], buffer1[6];
 
-  omega = M_PI / 50.0;
+  w = malloc(4 * 500 * rate);
+
+  omega = -M_PI / 50.0;
   sine = sin(omega);
   cosine = cos(omega);
   coeff = 2.0 * cosine;
 
-  while(1)
+  memset(r1, 0, 12);
+  memset(i1, 0, 12);
+  memset(r2, 0, 12);
+  memset(i2, 0, 12);
+
+  k = 0;
+  cntr = 0;
+  while(cntr < (size + 1) * rate)
   {
     if(sock_thread < 0) break;
 
-    if(*rx_cntr < 4000)
+    if(*rx_cntr[0] < 1000)
     {
-      usleep(200);
+      usleep(100);
       continue;
     }
 
-    memset(r1, 0, 16);
-    memset(i1, 0, 16);
-    memset(r2, 0, 16);
-    memset(i2, 0, 16);
+    for(i = 0; i < 1000; ++i)
+    {
+      buffer0[0][i] = *rx_data[0];
+      buffer0[1][i] = *rx_data[1];
+      buffer0[2][i] = *rx_data[2];
+    }
 
     for(i = 0; i < 500; ++i)
     {
-      for(j = 0; j < 4; ++j)
+      if(cntr < rate) w[k] = sin(M_PI * k / (500 * rate - 1));
+      for(j = 0; j < 3; ++j)
       {
-        re = *rx_data;
-        im = *rx_data;
-        r0[j] = coeff * r1[j] - r2[j] + re;
-        i0[j] = coeff * i1[j] - i2[j] + im;
+        re[j] = buffer0[j][2 * i + 0];
+        im[j] = buffer0[j][2 * i + 1];
+        r0[j] = coeff * r1[j] - r2[j] + re[j] * w[k];
+        i0[j] = coeff * i1[j] - i2[j] + im[j] * w[k];
         r2[j] = r1[j];
         i2[j] = i1[j];
         r1[j] = r0[j];
         i1[j] = i0[j];
       }
+      ++k;
     }
 
-    for(j = 0; j < 4; ++j)
+    ++cntr;
+
+    if(cntr % rate) continue;
+
+    for(j = 0; j < 3; ++j)
     {
-      buffer[2 * j + 0] = (r1[j] - r2[j] * cosine) - (i2[j] * sine);
-      buffer[2 * j + 1] = (r2[j] * sine) + (i1[j] - i2[j] * cosine);
+      buffer1[2 * j + 0] = (r1[j] - r2[j] * cosine) - (i2[j] * sine);
+      buffer1[2 * j + 1] = (r2[j] * sine) + (i1[j] - i2[j] * cosine);
     }
 
-    if(send(sock_thread, buffer, 32, MSG_NOSIGNAL) < 0) break;
+    memset(r1, 0, 12);
+    memset(i1, 0, 12);
+    memset(r2, 0, 12);
+    memset(i2, 0, 12);
+
+    k = 0;
+
+    if(send(sock_thread, buffer1, 24, MSG_NOSIGNAL) < 0) break;
   }
+
+  free(w);
 
   return NULL;
 }

@@ -75,7 +75,7 @@ cell xilinx.com:ip:clk_wiz:5.3 pll_0 {
 
 # Create axis_zeroer
 cell pavel-demin:user:axis_zeroer:1.0 zeroer_0 {
-  AXIS_TDATA_WIDTH 16
+  AXIS_TDATA_WIDTH 32
 } {
   aclk adc_0/adc_clk
 }
@@ -104,6 +104,22 @@ cell pavel-demin:user:axi_cfg_register:1.0 cfg_0 {
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_0
+
+# GPIO
+
+# Delete input/output port
+delete_bd_objs [get_bd_ports exp_p_tri_io]
+
+# Create output port
+create_bd_port -dir O -from 7 -to 0 exp_p_tri_io
+
+# Create xlslice
+cell xilinx.com:ip:xlslice:1.0 out_slice_0 {
+  DIN_WIDTH 288 DIN_FROM 23 DIN_TO 16 DOUT_WIDTH 8
+} {
+  Din cfg_0/cfg_data
+  Dout exp_p_tri_io
+}
 
 # RX 0
 
@@ -250,3 +266,12 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
 
 set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
 set_property OFFSET 0x4000B000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
+
+# Create all required interconnections
+apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
+  Master /ps_0/M_AXI_GP0
+  Clk Auto
+} [get_bd_intf_pins tx_0/switch_0/S_AXI_CTRL]
+
+set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_switch_0_Reg1]
+set_property OFFSET 0x4000C000 [get_bd_addr_segs ps_0/Data/SEG_switch_0_Reg1]

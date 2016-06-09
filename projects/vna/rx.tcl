@@ -33,11 +33,10 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_0 {
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 8
   M_TDATA_NUM_BYTES 2
-  NUM_MI 4
+  NUM_MI 3
   M00_TDATA_REMAP {tdata[15:0]}
   M01_TDATA_REMAP {tdata[31:16]}
   M02_TDATA_REMAP {tdata[47:32]}
-  M03_TDATA_REMAP {tdata[47:32]}
 } {
   S_AXIS fifo_0/M_AXIS
   aclk /ps_0/FCLK_CLK0
@@ -71,7 +70,7 @@ cell pavel-demin:user:axis_interpolator:1.0 inter_0 {
   S_AXIS fifo_1/M_AXIS
   cfg_data slice_3/Dout
   aclk /ps_0/FCLK_CLK0
-  aresetn /rst_0/peripheral_aresetn
+  aresetn slice_1/Dout
 }
 
 # Create axis_broadcaster
@@ -80,18 +79,17 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_1 {
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
-  NUM_MI 4
+  NUM_MI 3
   M00_TDATA_REMAP {tdata[31:0]}
   M01_TDATA_REMAP {tdata[31:0]}
   M02_TDATA_REMAP {tdata[31:0]}
-  M03_TDATA_REMAP {tdata[31:0]}
 } {
   S_AXIS inter_0/M_AXIS
   aclk /ps_0/FCLK_CLK0
-  aresetn /rst_0/peripheral_aresetn
+  aresetn slice_1/Dout
 }
 
-for {set i 0} {$i <= 3} {incr i} {
+for {set i 0} {$i <= 2} {incr i} {
 
   # Create dds_compiler
   cell xilinx.com:ip:dds_compiler:6.0 dds_$i {
@@ -150,7 +148,7 @@ for {set i 0} {$i <= 3} {incr i} {
 
 }
 
-for {set i 0} {$i <= 7} {incr i} {
+for {set i 0} {$i <= 5} {incr i} {
 
   # Create cic_compiler
   cell xilinx.com:ip:cic_compiler:4.0 cic_$i {
@@ -179,16 +177,14 @@ for {set i 0} {$i <= 7} {incr i} {
 cell  xilinx.com:ip:axis_combiner:1.1 comb_0 {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 3
-  NUM_SI 8
+  NUM_SI 6
 } {
-  S00_AXIS cic_7/M_AXIS_DATA
-  S01_AXIS cic_6/M_AXIS_DATA
-  S02_AXIS cic_5/M_AXIS_DATA
-  S03_AXIS cic_4/M_AXIS_DATA
-  S04_AXIS cic_3/M_AXIS_DATA
-  S05_AXIS cic_2/M_AXIS_DATA
-  S06_AXIS cic_1/M_AXIS_DATA
-  S07_AXIS cic_0/M_AXIS_DATA
+  S00_AXIS cic_0/M_AXIS_DATA
+  S01_AXIS cic_1/M_AXIS_DATA
+  S02_AXIS cic_2/M_AXIS_DATA
+  S03_AXIS cic_3/M_AXIS_DATA
+  S04_AXIS cic_4/M_AXIS_DATA
+  S05_AXIS cic_5/M_AXIS_DATA
   aclk /ps_0/FCLK_CLK0
   aresetn slice_0/Dout
 }
@@ -196,7 +192,7 @@ cell  xilinx.com:ip:axis_combiner:1.1 comb_0 {
 # Create axis_dwidth_converter
 cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_0 {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 24
+  S_TDATA_NUM_BYTES 18
   M_TDATA_NUM_BYTES 3
 } {
   S_AXIS comb_0/M_AXIS
@@ -214,7 +210,7 @@ cell xilinx.com:ip:fir_compiler:7.2 fir_0 {
   BESTPRECISION true
   FILTER_TYPE Decimation
   DECIMATION_RATE 2
-  NUMBER_CHANNELS 8
+  NUMBER_CHANNELS 6
   NUMBER_PATHS 1
   SAMPLE_FREQUENCY 0.5
   CLOCK_FREQUENCY 125
@@ -262,43 +258,63 @@ cell xilinx.com:ip:floating_point:7.1 fp_0 {
 cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_1 {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 32
+  M_TDATA_NUM_BYTES 24
 } {
   S_AXIS fp_0/M_AXIS_RESULT
   aclk /ps_0/FCLK_CLK0
   aresetn slice_0/Dout
 }
 
-# Create fifo_generator
-cell xilinx.com:ip:fifo_generator:13.1 fifo_generator_0 {
-  PERFORMANCE_OPTIONS First_Word_Fall_Through
-  INPUT_DATA_WIDTH 256
-  INPUT_DEPTH 1024
-  OUTPUT_DATA_WIDTH 32
-  OUTPUT_DEPTH 8192
-  READ_DATA_COUNT true
-  READ_DATA_COUNT_WIDTH 14
-} {
-  clk /ps_0/FCLK_CLK0
-  srst slice_2/Dout
-}
-
-# Create axis_fifo
-cell pavel-demin:user:axis_fifo:1.0 fifo_2 {
-  S_AXIS_TDATA_WIDTH 256
-  M_AXIS_TDATA_WIDTH 32
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster:1.1 bcast_5 {
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  M_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 24
+  M_TDATA_NUM_BYTES 8
+  NUM_MI 3
+  M00_TDATA_REMAP {tdata[31:0],tdata[63:32]}
+  M01_TDATA_REMAP {tdata[95:64],tdata[127:96]}
+  M02_TDATA_REMAP {tdata[159:128],tdata[191:160]}
 } {
   S_AXIS conv_1/M_AXIS
-  FIFO_READ fifo_generator_0/FIFO_READ
-  FIFO_WRITE fifo_generator_0/FIFO_WRITE
   aclk /ps_0/FCLK_CLK0
+  aresetn slice_0/Dout
 }
 
-# Create axi_axis_reader
-cell pavel-demin:user:axi_axis_reader:1.0 reader_0 {
-  AXI_DATA_WIDTH 32
-} {
-  S_AXIS fifo_2/M_AXIS
-  aclk /ps_0/FCLK_CLK0
-  aresetn /rst_0/peripheral_aresetn
+for {set i 0} {$i <= 2} {incr i} {
+
+  # Create fifo_generator
+  cell xilinx.com:ip:fifo_generator:13.1 fifo_generator_$i {
+    PERFORMANCE_OPTIONS First_Word_Fall_Through
+    INPUT_DATA_WIDTH 64
+    INPUT_DEPTH 1024
+    OUTPUT_DATA_WIDTH 32
+    OUTPUT_DEPTH 2048
+    READ_DATA_COUNT true
+    READ_DATA_COUNT_WIDTH 12
+  } {
+    clk /ps_0/FCLK_CLK0
+    srst slice_2/Dout
+  }
+
+  # Create axis_fifo
+  cell pavel-demin:user:axis_fifo:1.0 fifo_[expr $i + 2] {
+    S_AXIS_TDATA_WIDTH 64
+    M_AXIS_TDATA_WIDTH 32
+  } {
+    S_AXIS bcast_5/M0${i}_AXIS
+    FIFO_READ fifo_generator_$i/FIFO_READ
+    FIFO_WRITE fifo_generator_$i/FIFO_WRITE
+    aclk /ps_0/FCLK_CLK0
+  }
+
+  # Create axi_axis_reader
+  cell pavel-demin:user:axi_axis_reader:1.0 reader_$i {
+    AXI_DATA_WIDTH 32
+  } {
+    S_AXIS fifo_[expr $i + 2]/M_AXIS
+    aclk /ps_0/FCLK_CLK0
+    aresetn /rst_0/peripheral_aresetn
+  }
+
 }
