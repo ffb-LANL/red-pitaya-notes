@@ -40,6 +40,7 @@ cell xilinx.com:ip:cic_compiler:4.0 cic_filter_x0 {
   OUTPUT_DATA_WIDTH 32
   HAS_ARESETN true
   USE_XTREME_DSP_SLICE true
+  HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA bcast_two/M00_AXIS
   aclk aclk
@@ -72,6 +73,7 @@ cell xilinx.com:ip:cic_compiler:4.0 cic_filter_y0 {
   OUTPUT_DATA_WIDTH 32
   HAS_ARESETN true
   USE_XTREME_DSP_SLICE true
+  HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA bcast_two/M01_AXIS
   aclk aclk
