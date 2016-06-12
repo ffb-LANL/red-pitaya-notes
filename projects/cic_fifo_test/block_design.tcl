@@ -95,34 +95,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_0 {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_1
 
-# Create axis_clock_converter
-cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
-  S_AXIS adc_0/M_AXIS
-  s_axis_aclk adc_0/adc_clk
-  s_axis_aresetn const_1/dout
-  m_axis_aclk ps_0/FCLK_CLK0
-  m_axis_aresetn rst_0/peripheral_aresetn
-}
 
-
-# Create axi_axis_writer
-cell pavel-demin:user:axi_axis_writer:1.0 writer_f {
-  AXI_DATA_WIDTH 32
-} {
-  aclk /ps_0/FCLK_CLK0
-  aresetn /rst_0/peripheral_aresetn
-}
-
-# Create axis_data_fifo
-cell xilinx.com:ip:axis_data_fifo:1.1 fifo_f {
-  FIFO_DEPTH 16384
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-} {
-  s_axis  writer_f/m_axis
-  s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
-}
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_decimate {
@@ -146,94 +119,32 @@ cell xilinx.com:ip:util_vector_logic:2.0 logic_0 {
  Op1 slice_trx_reset/dout 
 } 
 
-# Create xlconcat
-cell xilinx.com:ip:xlconcat:2.1 concat_interpol {
- IN0_WIDTH 13
- IN1_WIDTH 19
-} {
-
-  In1 slice_decimate/Dout
-
-}
-
-# Create axis_interpolator
-cell pavel-demin:user:axis_interpolator:1.0 inter_f {
-  AXIS_TDATA_WIDTH 32
-  CNTR_WIDTH 32
-} {
-  S_AXIS fifo_f/M_AXIS
-  cfg_data concat_interpol/Dout
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins writer_f/S_AXI]
-
-set_property RANGE 16K [get_bd_addr_segs ps_0/Data/SEG_writer_f_reg0]
-set_property OFFSET 0x40020000 [get_bd_addr_segs ps_0/Data/SEG_writer_f_reg0]
 
 
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   DDS_CLOCK_RATE 125
   parameter_entry Hardware_Parameters
-  OUTPUT_WIDTH 14
+  OUTPUT_WIDTH 16
   PHASE_WIDTH 32 
- PHASE_INCREMENT Streaming
+  PHASE_INCREMENT Fixed
+  PINC1 000001100001001000
   DSP48_USE Maximal
   HAS_TREADY true
   HAS_PHASE_OUT false
 } {
-  S_AXIS_PHASE inter_f/m_axis
+
   aclk ps_0/FCLK_CLK0
 }
 
-# Create clk_wiz
-cell xilinx.com:ip:clk_wiz:5.2 pll_0 {
-  PRIM_IN_FREQ.VALUE_SRC USER
-  PRIM_IN_FREQ 125.0
-  CLKOUT1_USED true
-  CLKOUT1_REQUESTED_OUT_FREQ 250.0
-} {
-  clk_in1 adc_0/adc_clk
-}
 
-# Create dac_clock_converter
-cell xilinx.com:ip:axis_clock_converter:1.1 fifo_dac {
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-} {
-  S_AXIS dds_0/M_AXIS_DATA
-  s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
-  m_axis_aclk adc_0/adc_clk
-  m_axis_aresetn const_1/dout
-}
-
-
-# Create axis_red_pitaya_dac
-cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
-  aclk adc_0/adc_clk
-  ddr_clk pll_0/clk_out1
-  locked pll_0/locked
-  S_AXIS fifo_dac/M_AXIS
-  dac_clk dac_clk_o
-  dac_rst dac_rst_o
-  dac_sel dac_sel_o
-  dac_wrt dac_wrt_o
-  dac_dat dac_dat_o
-}
 
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster:1.1 bcast_ADC {
   S_TDATA_NUM_BYTES 2
   M_TDATA_NUM_BYTES 2
  } {
-  S_AXIS fifo_ADC/M_AXIS
+  S_AXIS dds_0/M_AXIS_DATA
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
@@ -296,7 +207,7 @@ cell xilinx.com:ip:cic_compiler:4.0 cic_filter_x {
   FIXED_OR_INITIAL_RATE 8192
   INPUT_SAMPLE_FREQUENCY 125
   CLOCK_FREQUENCY 125
-  INPUT_DATA_WIDTH 14
+  INPUT_DATA_WIDTH 16
   QUANTIZATION Truncation
   OUTPUT_DATA_WIDTH 32
   HAS_ARESETN true
@@ -388,7 +299,6 @@ cell xilinx.com:ip:xlconcat:2.1 concat_status {
   In1 pktzr_0/trigger_pos
   IN3 const_ID/dout
   In5 fifo_xy/axis_data_count
-  In6 fifo_f/axis_data_count
 }
 
 # Create axi_sts_register
