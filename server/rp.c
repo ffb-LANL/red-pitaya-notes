@@ -11,11 +11,21 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-
+/* cfg register map
+ * 0-3 control
+ * 4-7 RAM record length
+ * 8-11 DDS_0 F
+ * 12-15 Decimation
+ * 20-39 IV module control ~or~
+ * 24-27 DDS_1 F
+ * 28-31 DDS_delay
+ * 40-43 trigger delay
+ *
+ */
 //#define RAM_START 0x0fff0000
 #define RAM_START 0x10000000
 #define READ_DATA 0x40010000
-#define WRITE_DATA 0x40020000
+#define WRITE_DATA 0x40040000
 #define WRITE_SIZE 0x0004000
 //#define WRITE_DATA 0x40040000
 //#define WRITE_SIZE 0x00040000
@@ -45,7 +55,7 @@ int main(int argc, char *argv[])
 {
 	  pthread_t thread;
 
-  void *rx_data,*tx_data;
+  volatile void *rx_data,*tx_data;
   int fd, i, sockServer,sockClient,yes = 1,samples,packet_size=4096, temperature_raw, temperature_offset ;
   double temperature_scale,temperature;
   uint32_t status, trigger_pos, start_offset, end_offset, config;
@@ -53,7 +63,7 @@ int main(int argc, char *argv[])
   uint64_t value;
   uint16_t mask;
   uint64_t command = 600000;
-  void *cfg, *ram, *sts;
+  volatile void *cfg, *ram, *sts;
   char *name = "/dev/mem";
   char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg","cat /root/fd.bit > /dev/xdevcfg"};
   struct sockaddr_in addr;
@@ -62,7 +72,7 @@ int main(int argc, char *argv[])
   samples = 0x10000 * 1024 - 1;
   FILE *fp;
   int verbose=0;
-  char buffer[WRITE_SIZE];
+  uint32_t buffer[WRITE_SIZE/4];
   if (argc >=2 ) {
 	  if (argv[1][0]=='v' ) verbose = 1;
 	  if (argv[1][0]=='V' ) verbose = 2;
@@ -290,15 +300,16 @@ int main(int argc, char *argv[])
    			 	 break;
             case 13: // read RX FIFO
             	samples = command & 0xFFFFFFFF;
-            	if(verbose>1)printf("Read %d bytes. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+            	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
             	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
-            	memcpy(buffer, rx_data, samples);
+            	//memcpy(buffer, rx_data, samples);
+            	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)rx_data);
             	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
-                if(send(sockClient, buffer, samples, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+                if(send(sockClient, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
             	if(verbose){
             		printf("First words in RX buffer=");
-                        		for (int i=0;i<60;i+=4)
-                        			printf("%d, ",*(uint32_t *)(buffer+i) );
+                        		for (int i=0;i<15;++i)
+                        			printf("%d, ",buffer[i] );
                     printf("\n");
             	}
                 break;
@@ -331,13 +342,14 @@ int main(int argc, char *argv[])
            		  break;
             case 15: //Receive a batch of frequencies
              	samples = command & 0xFFFFFFFF;
-             	if(verbose)printf("Writing %d bytes\n",samples);
-             	if(recv(sockClient, buffer, samples, MSG_WAITALL) < 0) break;
-             	memcpy( tx_data, buffer,samples);
+             	if(verbose)printf("Writing %d u32 words\n",samples);
+             	if(recv(sockClient, buffer, samples*4, MSG_WAITALL) < 0) break;
+            	for(i = 0; i < samples; ++i) *((uint32_t *)tx_data)=buffer[i];
+            	//memcpy( tx_data, buffer,samples);
             	if(verbose){
             		printf("First words in TX buffer=");
-                        		for (int i=0;i<60;i+=4)
-                        			printf("%d, ",*(uint32_t *)(buffer+i) );
+                        		for (int i=0;i<15;++i)
+                        			printf("%d, ",buffer[i] );
                     printf("\n");
             	}
                 break;
