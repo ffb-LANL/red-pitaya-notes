@@ -20,7 +20,7 @@
 #define READ_DATA  0x40010000
 #define READ_SIZE  0x00004000
 #define WRITE_DATA 0x40040000
-#define WRITE_SIZE 0x00040000
+#define WRITE_SIZE 0x0004000
 
 //#define RAM_START 0x1E000000
 #define TCP_PORT 1002
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 void *ctrl_handler(void *arg)
 {
 	int sock_client = sock_thread[0];
-	int stop=0,samples;
+	int stop=0,samples,i;
 	uint64_t command;
 	uint32_t selector;
 	ssize_t result;
@@ -196,6 +196,8 @@ void *ctrl_handler(void *arg)
 	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096;
 	FILE *fp;
 	uint32_t IDN=0xdead;
+	uint16_t mask;
+	uint32_t buffer[WRITE_SIZE/4];
 	 // char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg","cat /root/fd.bit > /dev/xdevcfg"};
 
 	if(verbose)printf("CTRL THREAD started: !stop = %d, sock_client = %d\n", !stop,sock_client);
@@ -206,8 +208,16 @@ void *ctrl_handler(void *arg)
 		if(verbose)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
 	    if( result < sizeof(command)) break;
 	    switch(selector)
-	    {
-	       case CMD_IDN:
+	    {  case 0:
+	    	     mask = command & 0xFFFF;
+	    	     if(verbose)printf("Sending reset. Mask %x\n",(uint32_t)mask);
+	    	     /* Reset on*/
+	    	     *((uint32_t *)(cfg + 0)) &= ~ mask;
+	    	     usleep(1000);
+	    	     /* Reset off */
+	    	     *((uint32_t *)(cfg + 0)) |= mask;
+	      break;
+	      case CMD_IDN:
 	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
 	 		   if(send(sock_client, &IDN, sizeof(IDN), 0) < 0){   perror("send");break;}
 	    	   break;
@@ -243,6 +253,11 @@ void *ctrl_handler(void *arg)
            	 *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
            	if(verbose)printf("Armed, status %d\n", *((uint32_t *)(cfg + 0)));
            	break;
+          case 7: //software trigger
+              //trigger
+               *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
+               if(verbose)printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
+          	break;
           case 8: //read from start of buffer
            	samples = command & 0xFFFFFFFF;
            	if(verbose)printf("Sending %d samples from the start of buffer\n",samples);
@@ -285,6 +300,22 @@ void *ctrl_handler(void *arg)
           	if(verbose)printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
           	*((uint32_t *)(cfg + offset)) = status;
  			break;
+          case 13: // read RX FIFO
+          	samples = command & 0xFFFFFFFF;
+          	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+          	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
+          	//memcpy(buffer, rx_data, samples);
+          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)rx_data);
+          	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+              if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+          	if(verbose){
+          		printf("First words in RX buffer=");
+                      		for (int i=0;i<15;++i)
+                      			printf("%d, ",buffer[i] );
+                  printf("\n");
+          	}
+              break;
+
           case 14: //generate test pattern
           	samples = command & 0xFFFFFFFF;
           	// reset writer and packetizer
@@ -308,6 +339,19 @@ void *ctrl_handler(void *arg)
             //  usleep(10);
             //  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
     		break;
+          case 15: //Write TX FIFO
+           	samples = command & 0xFFFFFFFF;
+           	if(verbose)printf("Writing %d u32 words\n",samples);
+           	if(recv(sock_client, buffer, samples*4, MSG_WAITALL) < 0) break;
+          	for(i = 0; i < samples; ++i) *((uint32_t *)tx_data)=buffer[i];
+          	//memcpy( tx_data, buffer,samples);
+          	if(verbose){
+          		printf("First words in TX buffer=");
+                      		for (int i=0;i<15;++i)
+                      			printf("%d, ",buffer[i] );
+                  printf("\n");
+          	}
+              break;
 	    }
 	}
 	printf("Stopping CTRL thread, sock_client=%d, recv result = %d\n",sock_client,result);
