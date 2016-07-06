@@ -6,7 +6,9 @@ root_dir=/tmp/ROOT
 ecosystem_tar=red-pitaya-ecosystem-0.95-20160526.tgz
 ecosystem_url=https://googledrive.com/host/0B-t5klOOymMNfmJ0bFQzTVNXQ3RtWm5SQ2NGTE1hRUlTd3V2emdSNzN6d0pYamNILW83Wmc/red-pitaya-ecosystem/$ecosystem_tar
 
-mirror=http://ftp.heanet.ie/pub/debian
+# Choose mirror automatically, depending the geographic and network location
+mirror=http://httpredir.debian.org/debian
+
 distro=jessie
 arch=armhf
 
@@ -70,6 +72,13 @@ chroot $root_dir <<- EOF_CHROOT
 export LANG=C
 export LC_ALL=C
 
+# Add missing paths
+
+echo :$PATH: | grep -q :/sbin: || export PATH=$PATH:/sbin
+echo :$PATH: | grep -q :/bin: || export PATH=$PATH:/bin
+echo :$PATH: | grep -q :/usr/sbin: || export PATH=$PATH:/usr/sbin
+echo :$PATH: | grep -q :/usr/bin: || export PATH=$PATH:/usr/bin
+
 /debootstrap/debootstrap --second-stage
 
 cat <<- EOF_CAT > /etc/apt/sources.list
@@ -115,11 +124,11 @@ dpkg-reconfigure --frontend=noninteractive tzdata
 
 apt-get -y install openssh-server ca-certificates ntp ntpdate fake-hwclock \
   usbutils psmisc lsof parted curl vim wpasupplicant hostapd isc-dhcp-server \
-  iw firmware-realtek firmware-ralink unzip ifplugd ntfs-3g build-essential \
-  libconfig-dev libpcre3-dev libluajit-5.1-dev libcurl4-openssl-dev libssl-dev \
+  iw firmware-realtek firmware-ralink firmware-atheros unzip ifplugd ntfs-3g \
+  build-essential libconfig-dev libpcre3-dev libluajit-5.1-dev libssl-dev \
   libboost-regex1.55-dev libboost-system1.55-dev libboost-thread1.55-dev \
-  libcrypto++-dev libfftw3-dev zlib1g-dev libasound2-dev alsa-utils lua-cjson \
-  parallel subversion git
+  libcurl4-openssl-dev libcrypto++-dev libfftw3-dev libasound2-dev zlib1g-dev \
+  alsa-utils lua-cjson parallel subversion git
 
 sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
 
@@ -205,7 +214,7 @@ ignore_broadcast_ssid=0
 wpa=2
 wpa_passphrase=RedPitaya
 wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP
+wpa_pairwise=CCMP
 rsn_pairwise=CCMP
 EOF_CAT
 
@@ -312,8 +321,11 @@ apt-get clean
 echo root:$passwd | chpasswd
 
 service ntp stop
+service ssh stop
 
 history -c
+
+sync
 EOF_CHROOT
 
 rm $root_dir/etc/resolv.conf
