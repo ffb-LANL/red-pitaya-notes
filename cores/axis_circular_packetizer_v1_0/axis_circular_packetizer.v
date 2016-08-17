@@ -24,6 +24,7 @@ module axis_circular_packetizer #
   output wire [CNTR_WIDTH-1:0]       trigger_pos,
   input  wire                        trigger,
   output wire                        enabled,
+  output wire                        complete,
 
   // Slave side
   output wire                        s_axis_tready,
@@ -39,7 +40,8 @@ module axis_circular_packetizer #
 
   reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next, int_trigger_pos, int_trigger_pos_next;
   reg int_enbl_reg, int_enbl_next;
-
+  reg int_complete_reg, int_complete_next;
+  
   wire int_comp_wire, int_tvalid_wire, int_tlast_wire;
 
   always @(posedge aclk)
@@ -49,12 +51,14 @@ module axis_circular_packetizer #
       int_cntr_reg <= {(CNTR_WIDTH){1'b0}};
       int_trigger_pos <= {(CNTR_WIDTH){1'b0}};
       int_enbl_reg <= 1'b0;
+      int_complete_reg <= 1'b0;
     end
     else
     begin
       int_cntr_reg <= int_cntr_next;
       int_trigger_pos <= int_trigger_pos_next;
       int_enbl_reg <= int_enbl_next;
+      int_complete_reg <= int_complete_next;
     end
   end
 
@@ -69,6 +73,7 @@ module axis_circular_packetizer #
         begin
           int_cntr_next = int_cntr_reg;
           int_enbl_next = int_enbl_reg;
+          int_complete_next = int_complete_reg;
           int_trigger_pos_next = int_trigger_pos;
 
           if(~int_enbl_reg & int_comp_wire)
@@ -93,7 +98,8 @@ module axis_circular_packetizer #
             int_cntr_next = int_cntr_reg;
             int_trigger_pos_next = int_trigger_pos;
             int_enbl_next = int_enbl_reg;
-
+            int_complete_next = int_complete_reg;
+            
             if(~int_enbl_reg & int_comp_wire)
               begin
                 int_enbl_next = 1'b1;
@@ -110,6 +116,7 @@ module axis_circular_packetizer #
             if(m_axis_tready & int_tvalid_wire & int_tlast_wire)
               begin
                 int_enbl_next = 1'b0;
+                int_complete_next = 1'b1;
               end
          end
        end
@@ -124,5 +131,6 @@ module axis_circular_packetizer #
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
   assign trigger_pos = int_trigger_pos;
   assign enabled = int_enbl_reg;
-
+  assign complete = int_complete_reg;
+  
 endmodule

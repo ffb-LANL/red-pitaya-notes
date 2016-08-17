@@ -306,7 +306,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
-  In3 pktzr_0/enabled 
+  In3 pktzr_0/complete 
   In4 const_sts/dout
 }
 
