@@ -398,7 +398,7 @@ set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
-  CONST_VAL 19539
+  CONST_VAL 102
 }
 
 # Create xlconcat

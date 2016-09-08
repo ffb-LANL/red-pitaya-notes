@@ -31,13 +31,20 @@
 #define TRIGGER_RECORD_FLAG 8
 #define RX_TX_RESET 16
 
+// Configuration offsets
 #define RECORD_LENGTH_OFFSET 4
 #define FREQ_OFFSET 8
 #define DESIMATION_OFFSET  12
+
+// Status offsets
 #define RECORD_START_POS_OFFSET 4
 #define WRITER_STS_OFFSET 0
+#define FLAGS_ID_OFFSET 8
 #define VALUE_OFFSET 16
 #define RX_FIFO_CNT_OFFSET 24
+#define TX_FIFO_CNT_OFFSET 28
+
+// Commands
 #define CMD_CONNECT 5
 #define CMD_STOP 2
 #define CMD_IDN 1
@@ -74,7 +81,7 @@ int main(int argc, char *argv[])
   uint64_t command = 600000;
   pthread_t thread;
   uint32_t IDN=0xb00b;
-
+  uint32_t status;
   void *(*handler[3])(void *) =
   {
     ctrl_handler,
@@ -140,7 +147,10 @@ int main(int argc, char *argv[])
 	     {
 	       case CMD_IDN:
 	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
-	 		   if(send(sock_client, &IDN, sizeof(IDN), 0) < 0){   perror("send");break;}
+	          	status=*((uint32_t *)(sts + 8));
+	          	if(verbose)printf("Status = %u\n", status);
+	          	status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
+	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
 	 		   close(sock_client);
 	    	   break;
 	       case CMD_CONNECT:
@@ -218,8 +228,11 @@ void *ctrl_handler(void *arg)
 	    	     *((uint32_t *)(cfg + 0)) |= mask;
 	      break;
 	      case CMD_IDN:
-	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
-	 		   if(send(sock_client, &IDN, sizeof(IDN), 0) < 0){   perror("send");break;}
+	    	   if(verbose)printf("CTRL: IDN query, socket=%d\n",sock_client);
+	          	status=*((uint32_t *)(sts + 8));
+	          	if(verbose>1)printf("Status = %u\n", status);
+	          	status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
+	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
 	    	   break;
 	      case CMD_STOP:
             stop = 1;
@@ -383,8 +396,10 @@ void *rx_handler(void *arg)
 	    switch(selector)
 	    {
 	         case CMD_IDN:
-	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
-	 		   if(send(sock_client, &IDN, sizeof(IDN), 0) < 0){   perror("send");break;}
+	    	   if(verbose)printf("RX: IDN query, socket=%d\n",sock_client);
+	          	status=*((uint32_t *)(sts + 8));
+	          	if(verbose>1)printf("Status = %u\n", status);
+	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
 	    	   break;
 	      case CMD_STOP:
             stop = 1;
@@ -439,6 +454,12 @@ void *tx_handler(void *arg)
 	    if( result < sizeof(command)) break;
 	    switch(selector)
 	    {
+        case CMD_IDN:
+   	        if(verbose)printf("TX: IDN query, socket=%d\n",sock_client);
+         	status=*((uint32_t *)(sts + 8));
+          	if(verbose>1)printf("Status = %u\n", status);
+		    if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
+   	     break;
 	      case CMD_STOP:
             stop = 1;
             if(verbose)printf("Stopping CTRL thread,!stop = %d, sock_client = %d\n", !stop,sock_client);

@@ -314,7 +314,7 @@ cell xilinx.com:ip:axis_data_fifo:1.1 fifo_delay {
   TDATA_NUM_BYTES 4
 } {
   s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn slice_trx_reset/dout
+  s_axis_aresetn rst_0/peripheral_aresetn
 }
 
 # create delay
@@ -326,7 +326,7 @@ cell pavel-demin:user:axis_delay:1.0 delay_dds {
   axis_data_count fifo_delay/axis_data_count
   cfg_data slice_dds_delay/dout
   aclk ps_0/FCLK_CLK0
-  aresetn slice_trx_reset/dout
+  aresetn rst_0/peripheral_aresetn
 }
 
 # Create cmpy
@@ -403,24 +403,26 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 }
 
 
+
 # Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_sts {
-  CONST_WIDTH 28
-  CONST_VAL 0
+cell xilinx.com:ip:xlconstant:1.1 const_ID {
+  CONST_WIDTH 16
+  CONST_VAL 101
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 9
+  NUM_PORTS 10
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 1
   IN4_WIDTH 1
   IN5_WIDTH 1
-  IN6_WIDTH 28
-  IN7_WIDTH 32
-  IN8_WIDTH 64
+  IN6_WIDTH 12
+  IN7_WIDTH 16
+  IN8_WIDTH 32
+  IN9_WIDTH 64
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
@@ -428,9 +430,9 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In3 pktzr_0/complete
   In4 ps_0/S_AXI_HP0_AWREADY
   In5 ps_0/S_AXI_HP0_WREADY
-  In6 const_sts/dout
-  In7 snap_0/data
-  In8 value_xy/data
+  In7 const_ID/dout
+  In8 snap_0/data
+  In9 value_xy/data
 }
 
 # Create axi_sts_register

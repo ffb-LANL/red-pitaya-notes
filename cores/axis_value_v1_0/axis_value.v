@@ -20,26 +20,29 @@ module axis_value #
 
 );
  
-reg [AXIS_TDATA_WIDTH-1:0] int_data_reg;
+reg [AXIS_TDATA_WIDTH-1:0] int_data_reg,int_data_reg_next;
 
 always @(posedge aclk)
   begin
     if(~aresetn)
       begin
-         int_data_reg <= int_data_reg;
+         int_data_reg <= {(AXIS_TDATA_WIDTH){1'b0}};
       end
     else
     begin
-	 if(s_axis_tvalid)
-	   begin
-		int_data_reg <= s_axis_tdata;
-	   end		
-	 else 
-        begin 
-		int_data_reg <= int_data_reg;
-        end
+         int_data_reg <=  int_data_reg_next;
     end
   end
+
+  always @*
+    begin
+         int_data_reg_next =  int_data_reg;
+	 if(s_axis_tvalid)
+	   begin
+		int_data_reg_next = s_axis_tdata;
+           end		
+     end
+
   assign s_axis_tready = 1'b1; 
   assign data = int_data_reg; 
 endmodule
