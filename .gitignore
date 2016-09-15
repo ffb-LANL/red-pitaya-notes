@@ -23,3 +23,4 @@ webtalk*
 hs_err*
 /server/rp
 *.o
+/Simulation*
