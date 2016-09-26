@@ -14,6 +14,8 @@
 # Metadata
 *.aliases
 *.lvlps
+*.project
+*.cproject
 
 #folders
 Applications/builds
