@@ -367,7 +367,7 @@ void *ctrl_handler(void *arg)
               break;
 	    }
 	}
-	printf("Stopping CTRL thread, sock_client=%d, recv result = %d\n",sock_client,result);
+	if(verbose)printf("Stopping CTRL thread, sock_client=%d, recv result = %d\n",sock_client,result);
 	close(sock_client);
 	sock_thread[0] = -1;
 	return NULL;
@@ -427,7 +427,7 @@ void *rx_handler(void *arg)
             break;
 	    }
 	}
-	printf("Stopping RX thread, sock_client=%d, recv result = %d\n",sock_client,result);
+	if(verbose)printf("Stopping RX thread, sock_client=%d, recv result = %d\n",sock_client,result);
 	close(sock_client);
 	sock_thread[1] = -1;
 	return NULL;
@@ -485,7 +485,7 @@ void *tx_handler(void *arg)
             break;
 	    }
 	}
-	printf("Stopping RX thread, sock_client=%d, recv result = %d\n",sock_client,result);
+	if(verbose)printf("Stopping RX thread, sock_client=%d, recv result = %d\n",sock_client,result);
 	close(sock_client);
 	sock_thread[2] = -1;
 	return NULL;
