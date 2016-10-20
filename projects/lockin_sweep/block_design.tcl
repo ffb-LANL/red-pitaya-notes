@@ -396,9 +396,9 @@ set_property RANGE 16K [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_reader_xyf_reg0]
 
 # Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_ID {
+cell xilinx.com:ip:xlconstant:1.1 const_lockin_sweep_ID {
   CONST_WIDTH 16
-  CONST_VAL 102
+  CONST_VAL 103
 }
 
 # Create xlconcat
@@ -412,7 +412,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_status {
   IN5_WIDTH 32
   IN6_WIDTH 32
 } {
-  IN3 const_ID/dout
+  IN3 const_lockin_sweep_ID/dout
   In5 fifo_xyf/axis_data_count
   In6 fifo_f/axis_data_count
 }
