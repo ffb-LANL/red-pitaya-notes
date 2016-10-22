@@ -109,7 +109,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC {} {
   s_axis_aclk adc_0/adc_clk
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
-  m_axis_aresetn rst_0/peripheral_aresetn
+  m_axis_aresetn slice_trx_reset/dout
 }
 
 
@@ -123,7 +123,7 @@ cell xilinx.com:ip:axis_subset_converter:1.1 subset_ADC_A {
 } {
  s_axis fifo_ADC/M_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 
@@ -132,7 +132,7 @@ cell pavel-demin:user:axi_axis_writer:1.0 writer_f {
   AXI_DATA_WIDTH 32
 } {
   aclk /ps_0/FCLK_CLK0
-  aresetn /rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_data_fifo
@@ -293,7 +293,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_dac {
 } {
   S_AXIS bcast_DDS/M00_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
+  s_axis_aresetn slice_trx_reset/dout
   m_axis_aclk adc_0/adc_clk
   m_axis_aresetn const_1/dout
 }
@@ -383,7 +383,7 @@ cell pavel-demin:user:axi_axis_reader:1.0 reader_xyf {
 } {
   S_AXIS conv_xyf/M_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # Create all required interconnections
