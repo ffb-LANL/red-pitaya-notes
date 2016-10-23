@@ -1,4 +1,4 @@
-#lockin digitizer
+#synchronous lockin
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
@@ -131,6 +131,13 @@ cell xilinx.com:ip:xlslice:1.0 slice_trx_reset {
   Din cfg_0/cfg_data
 }
 
+# Create xlslice
+cell xilinx.com:ip:xlslice:1.0 slice_filter_reset {
+  DIN_WIDTH 256 DIN_FROM 5 DIN_TO 5
+} {
+  Din cfg_0/cfg_data
+}
+
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_1
 
@@ -138,15 +145,15 @@ cell xilinx.com:ip:xlconstant:1.1 const_1
 
 # Create axis_clock_converter
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC { 
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 2
 } {
   S_AXIS adc_0/M_AXIS
   s_axis_aclk adc_0/adc_clk
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
-  m_axis_aresetn rst_0/peripheral_aresetn
+  m_axis_aresetn slice_trx_reset/dout
 }
-
-
 
 # Create gpio_trigger
 cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
@@ -178,7 +185,7 @@ cell pavel-demin:user:axis_constant:1.0 phase_0 {
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   MODE_OF_OPERATION Rasterized
-  MODULYS 15120
+  MODULUS 15120
   DDS_CLOCK_RATE 125
   parameter_entry Hardware_Parameters
   OUTPUT_WIDTH 14
@@ -186,24 +193,13 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   PHASE_INCREMENT Streaming
   DSP48_USE Maximal
   HAS_TREADY true
-  HAS_PHASE_OUT true
+  Has_ARESETn true
+  Has_Phase_Out false
 } {
   S_AXIS_PHASE phase_0/M_AXIS
   aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
 }
-
-# Create axis_combiner
-cell xilinx.com:ip:axis_combiner:1.1 comb_sine_phase {
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
- } {
-  S00_AXIS  dds_0/M_AXIS_DATA
-  S01_AXIS  dds_0/M_AXIS_PHASE
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz:5.3 pll_0 {
@@ -218,55 +214,29 @@ cell xilinx.com:ip:clk_wiz:5.3 pll_0 {
 
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
-  S_TDATA_NUM_BYTES 8
-  M_TDATA_NUM_BYTES 8
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 4
  } {
-  S_AXIS  comb_sine_phase/M_AXIS
+  S_AXIS  dds_0/M_AXIS_DATA
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
+
 
 # Create axis_lfsr
 cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_trx_reset/dout
 }
 
 # create delay line
 module delay_dds {
-  source projects/modules/delay_line.tcl
+  source projects/modules/delay_line_32.tcl
 } {
-  s_axis bcast_DDS/M01_AXIS
+  s_axis bcast_DDS/M00_AXIS
   cfg cfg_0/cfg_data
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-# Create axis_combiner
-cell xilinx.com:ip:axis_combiner:1.1 comb_ADC_DDS {
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 8
- } {
-  S00_AXIS  delay_dds/M_AXIS
-  S01_AXIS  fifo_ADC/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
-#  M02_TDATA_REMAP tdata[95:64]
-
-# Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster:1.1 bcast_ADC_DDS {
-  NUM_MI 3
-  S_TDATA_NUM_BYTES 12
-  M_TDATA_NUM_BYTES 8
-  M00_TDATA_REMAP 48'b0,tdata[79:64]
-  M01_TDATA_REMAP 32'b0,tdata[31:0]
-  M02_TDATA_REMAP tdata[63:32],tdata[95:64]
- } {
-  S_AXIS  comb_ADC_DDS/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_filter_reset/dout
 }
 
 # Create cmpy
@@ -278,71 +248,67 @@ cell xilinx.com:ip:cmpy:6.0 mult_0 {
   BPORTWIDTH 14
   ROUNDMODE Random_Rounding
   OUTPUTWIDTH 28
+  ARESETN true
 } {
-  S_AXIS_A bcast_ADC_DDS/M00_AXIS
-  s_axis_b bcast_ADC_DDS/M01_AXIS
+  S_AXIS_A fifo_ADC/M_AXIS
+  s_axis_b delay_dds/M_AXIS
   S_AXIS_CTRL lfsr_0/M_AXIS
   aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
 }
 
 # create filter
 module filter_xy {
-  source projects/filter_test/filter_xy.tcl
+  source projects/modules/filter_xy_avg_32.tcl
 } {
   s_axis mult_0/M_AXIS_DOUT
   cfg cfg_0/cfg_data
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
+  aresetn slice_filter_reset/dout
 }
 
-# Create axis_combiner
-cell  xilinx.com:ip:axis_combiner:1.1 comb_xy {
-  NUM_SI 2
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster:1.1 bcast_xy {
+  S_TDATA_NUM_BYTES 8
 } {
-  S00_AXIS filter_xy/M_AXIS_x
-  S01_AXIS filter_xy/M_AXIS_y
+  S_AXIS filter_xy/M_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-  }
+  aresetn slice_trx_reset/dout
+}
 
+
+# create filter
+module filter_xy_value {
+  source projects/modules/filter_xy_avg_32_2.tcl
+} {
+  s_axis bcast_xy/M01_AXIS
+  cfg cfg_0/cfg_data
+  aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
+}
 
 #create value
 cell pavel-demin:user:axis_value:1.0 value_xy {
 AXIS_TDATA_WIDTH 64
 } {
-  s_axis comb_xy/M_AXIS
+  s_axis filter_xy_value/M_AXIS
   aclk ps_0/FCLK_CLK0
   aresetn rst_0/peripheral_aresetn
 }
 
-# Create axis_packetizer_phase
-cell pavel-demin:user:axis_packetizer_phase:1.0 pktzr_0 {
-  AXIS_TDATA_WIDTH 32
-  AXIS_TDATA_PHASE_WIDTH 32
-  CNTR_WIDTH 26
+# Create axis_packetizer
+cell pavel-demin:user:axis_circular_packetizer:1.0 pktzr_0 {
+  AXIS_TDATA_WIDTH 64
+  AXIS_TDATA_PHASE_WIDTH 64
+  CNTR_WIDTH 25
   CONTINUOUS FALSE
   NON_BLOCKING TRUE
 } {
-  S_AXIS bcast_ADC_DDS/M02_AXIS
+  S_AXIS bcast_xy/M00_AXIS
   cfg_data slice_record_length/Dout
   trigger trigger_0/trigger
   aclk ps_0/FCLK_CLK0
   aresetn slice_pktzr_reset/Dout
-}
-
-
-
-# Create axis_dwidth_converter
-cell xilinx.com:ip:axis_dwidth_converter:1.1 conv_0 {
-  S_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 8
-} {
-  S_AXIS pktzr_0/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn slice_write_enable/Dout
 }
 
 # Create xlconstant
@@ -355,7 +321,7 @@ cell xilinx.com:ip:xlconstant:1.1 const_2 {
 cell pavel-demin:user:axis_ram_writer:1.0 writer_0 {
   ADDR_WIDTH 25
 } {
-  S_AXIS conv_0/M_AXIS
+  S_AXIS pktzr_0/M_AXIS
   M_AXI ps_0/S_AXI_HP0
   m_axi_awready  ps_0/S_AXI_HP0_AWREADY
   m_axi_wready ps_0/S_AXI_HP0_WREADY
@@ -372,9 +338,9 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  s_axis bcast_DDS/M00_AXIS
+  s_axis bcast_DDS/M01_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
-  s_axis_aresetn rst_0/peripheral_aresetn
+  s_axis_aresetn slice_trx_reset/dout
   m_axis_aclk adc_0/adc_clk
   m_axis_aresetn const_1/dout
 }
@@ -397,7 +363,7 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
-  CONST_VAL 101
+  CONST_VAL 104
 }
 
 # Create xlconcat
@@ -421,7 +387,6 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In4 ps_0/S_AXI_HP0_AWREADY
   In5 ps_0/S_AXI_HP0_WREADY
   In7 const_ID/dout
-  In8 pktzr_0/phase
   In9 value_xy/data
 }
 
