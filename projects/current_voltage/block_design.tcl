@@ -393,26 +393,28 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 
 
 # Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_sts {
-  CONST_WIDTH 30
-  CONST_VAL 0
+cell xilinx.com:ip:xlconstant:1.1 const_ID {
+  CONST_WIDTH 16
+  CONST_VAL 103
 }
+
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 6
+  NUM_PORTS 7
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 1
-  IN4_WIDTH 30
-  IN5_WIDTH 32
+  IN4_WIDTH 14
+  IN5_WIDTH 16
+  IN6_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
   In3 measure_pulse/overload
-  In4 const_sts/dout
+  In5 const_ID/dout
   In5 measure_pulse/sts_data
 }
 
