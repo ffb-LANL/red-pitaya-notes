@@ -56,7 +56,7 @@ cell xilinx.com:ip:c_counter_binary:12.0 cntr_0 {
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_0 {
-  DIN_WIDTH 32 DIN_FROM 25 DIN_TO 25 DOUT_WIDTH 1
+  DIN_WIDTH 32 DIN_FROM 28 DIN_TO 28 DOUT_WIDTH 1
 } {
   Din cntr_0/Q
  }
@@ -415,7 +415,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In2 trigger_0/trigger
   In3 measure_pulse/overload
   In5 const_ID/dout
-  In5 measure_pulse/sts_data
+  In6 measure_pulse/sts_data
 }
 
 # Create axi_sts_register
