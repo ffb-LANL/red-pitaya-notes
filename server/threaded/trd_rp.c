@@ -356,7 +356,7 @@ void *ctrl_handler(void *arg)
            	samples = command & 0xFFFFFFFF;
            	if(verbose)printf("Writing %d u32 words\n",samples);
            	if(recv(sock_client, buffer, samples*4, MSG_WAITALL) < 0) break;
-          	for(i = 0; i < samples; ++i) *((uint32_t *)tx_data)=buffer[i];
+          	for(i = 0; i < samples; ++i) ((uint32_t *)tx_data)[i]=buffer[i];
           	//memcpy( tx_data, buffer,samples);
           	if(verbose){
           		printf("First words in TX buffer=");

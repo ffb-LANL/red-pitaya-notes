@@ -401,21 +401,27 @@ cell xilinx.com:ip:xlconstant:1.1 const_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 7
+  NUM_PORTS 10
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 1
-  IN4_WIDTH 14
-  IN5_WIDTH 16
-  IN6_WIDTH 32
+  IN4_WIDTH 1
+  IN5_WIDTH 3
+  IN6_WIDTH 1
+  IN7_WIDTH 9
+  IN8_WIDTH 16
+  IN9_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
   In3 measure_pulse/overload
-  In5 const_ID/dout
-  In6 measure_pulse/sts_data
+  In4 pktzr_0/enabled 
+  In5 measure_pulse/case_id
+  In6 logic_0/res
+  In8 const_ID/dout
+  In9 measure_pulse/sts_data
 }
 
 # Create axi_sts_register
