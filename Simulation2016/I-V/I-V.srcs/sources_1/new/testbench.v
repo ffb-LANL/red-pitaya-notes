@@ -6,6 +6,7 @@ module testbench_iv;
    reg [159:0]cfg; 
    wire [15:0]m_axis_tdata;
    reg  [15:0]s_axis_tdata,data;
+   reg  [31:0] counter;
    wire m_axis_tvalid;
    reg s_axis_tvalid;
    //wire [31:0]M_AXIS_PHASE_tdata;
@@ -16,9 +17,10 @@ module testbench_iv;
 
    // reset logic
    initial begin
+      counter=0;
       cfg = {32'd1024,32'd7186,32'd300000,16'd0,16'd480,16'd32,16'd255};
       reset = 1'b0;
-
+      
       m_axis_tready = 1'b1;
       s_axis_tvalid = 1'b1;
       data = 50;
@@ -43,7 +45,7 @@ module testbench_iv;
          begin 
           clk = 1'b1; 
           #(2) clk = 1'b0; 
-          #(2); 
+          #(2); counter = counter+1;
          end
     always 
                begin 
