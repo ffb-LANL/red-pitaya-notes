@@ -1,0 +1,6 @@
+lockin digitizer 101
+digitizer 102
+lockin_sweep 103
+#current-voltage 104
+fast digitizer 107
+synchronous lockin 108

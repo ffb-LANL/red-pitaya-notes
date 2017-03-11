@@ -1,4 +1,4 @@
-#synchronous lockin
+#synchronous lockin 108
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
@@ -363,7 +363,7 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
-  CONST_VAL 104
+  CONST_VAL 108
 }
 
 # Create xlconcat

@@ -1,4 +1,4 @@
-#fast digitizer 
+#fast digitizer 107
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
@@ -347,26 +347,28 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 }
 
 
+
 # Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_sts {
-  CONST_WIDTH 31
-  CONST_VAL 0
+cell xilinx.com:ip:xlconstant:1.1 const_ID {
+  CONST_WIDTH 16
+  CONST_VAL 107
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 5
+  NUM_PORTS 6
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
-  IN3_WIDTH 31
-  IN4_WIDTH 32
+  IN3_WIDTH 15
+  IN4_WIDTH 16
+  IN5_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
-  In3 const_sts/dout
-  In4 snap_0/data
+  In4 const_ID/dout
+  In5 snap_0/data
 }
 
 # Create axi_sts_register
