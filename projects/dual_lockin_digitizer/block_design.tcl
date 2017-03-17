@@ -1,4 +1,4 @@
-#dual lockin digitizer 104
+#dual lockin digitizer 109
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
@@ -174,20 +174,29 @@ cell pavel-demin:user:axis_constant:1.0 phase_0 {
   aclk ps_0/FCLK_CLK0
 }
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant:1.1 const_modulus {
+  CONST_WIDTH 32
+  CONST_VAL 15120
+}
 
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
+  MODE_OF_OPERATION Rasterized
+  MODULUS 15120
   DDS_CLOCK_RATE 125
   parameter_entry Hardware_Parameters
   OUTPUT_WIDTH 14
-  PHASE_WIDTH 32 
- PHASE_INCREMENT Streaming
+  PHASE_WIDTH 14
+  PHASE_INCREMENT Streaming
   DSP48_USE Maximal
   HAS_TREADY true
-  HAS_PHASE_OUT true
+  Has_ARESETn true
+  Has_Phase_Out false
 } {
   S_AXIS_PHASE phase_0/M_AXIS
   aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_combiner
@@ -454,12 +463,12 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
-  CONST_VAL 104
+  CONST_VAL 109
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {
-  NUM_PORTS 10
+  NUM_PORTS 11
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
@@ -470,6 +479,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   IN7_WIDTH 16
   IN8_WIDTH 32
   IN9_WIDTH 128
+  IN10_WIDTH 32 
 } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
@@ -480,11 +490,12 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In7 const_ID/dout
   In8 pktzr_0/phase
   In9 value_xy/data
+  In11 const_ID/modulus
 }
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register:1.0 sts_0 {
-  STS_DATA_WIDTH 256
+  STS_DATA_WIDTH 288
   AXI_ADDR_WIDTH 32
   AXI_DATA_WIDTH 32
 } {
