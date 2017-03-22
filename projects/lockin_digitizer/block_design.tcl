@@ -1,4 +1,4 @@
-#lockin digitizer
+#lockin digitizer 101
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {

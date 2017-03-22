@@ -191,12 +191,11 @@ cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
   PHASE_INCREMENT Streaming
   DSP48_USE Maximal
   HAS_TREADY true
-  Has_ARESETn true
-  Has_Phase_Out false
+  Has_ARESETn false
+  Has_Phase_Out true
 } {
   S_AXIS_PHASE phase_0/M_AXIS
   aclk ps_0/FCLK_CLK0
-  aresetn slice_trx_reset/dout
 }
 
 # Create axis_combiner
@@ -350,7 +349,7 @@ module filter_xy_0 {
 
 # create filter
 module filter_xy_1 {
-  source projects/filter_test/filter_xy.tcl
+  source projects/filter_test/filter_xy_reversed.tcl
 } {
   s_axis mult_1/M_AXIS_DOUT
   cfg cfg_0/cfg_data
@@ -490,7 +489,7 @@ cell xilinx.com:ip:xlconcat:2.1 concat_sts {
   In7 const_ID/dout
   In8 pktzr_0/phase
   In9 value_xy/data
-  In11 const_ID/modulus
+  In10 const_modulus/dout
 }
 
 # Create axi_sts_register
