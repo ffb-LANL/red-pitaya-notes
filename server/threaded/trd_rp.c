@@ -73,6 +73,27 @@ void *ctrl_handler(void *arg);
 
 int sock_thread[3] = {-1, -1, -1};
 
+/**
+ * Calibration parameters, stored in the EEPROM device
+ */
+typedef struct {
+    uint32_t fe_ch1_fs_g_hi; //!< High gain front end full scale voltage, channel A
+    uint32_t fe_ch2_fs_g_hi; //!< High gain front end full scale voltage, channel B
+    uint32_t fe_ch1_fs_g_lo; //!< Low gain front end full scale voltage, channel A
+    uint32_t fe_ch2_fs_g_lo; //!< Low gain front end full scale voltage, channel B
+    int32_t  fe_ch1_lo_offs; //!< Front end DC offset, channel A
+    int32_t  fe_ch2_lo_offs; //!< Front end DC offset, channel B
+    uint32_t be_ch1_fs;      //!< Back end full scale voltage, channel A
+    uint32_t be_ch2_fs;      //!< Back end full scale voltage, channel B
+    int32_t  be_ch1_dc_offs; //!< Back end DC offset, channel A
+    int32_t  be_ch2_dc_offs; //!< Back end DC offset, on channel B
+	uint32_t magic;			 //!
+    int32_t  fe_ch1_hi_offs; //!< Front end DC offset, channel A
+    int32_t  fe_ch2_hi_offs; //!< Front end DC offset, channel B
+} rp_calib_params_t;
+
+rp_calib_params_t calibration;
+int read_calibration(rp_calib_params_t *context);
 
 int main(int argc, char *argv[])
 {
@@ -130,6 +151,8 @@ int main(int argc, char *argv[])
 
   listen(sockServer, 1024);
   signal(SIGINT, signal_handler);
+
+  read_calibration(&calibration);
 
   while(!interrupted) {
 	  int result, selector;
@@ -329,29 +352,9 @@ void *ctrl_handler(void *arg)
           	}
               break;
 
-          case 14: //generate test pattern
-          	samples = command & 0xFFFFFFFF;
-          	// reset writer and packetizer
-        	*((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG ) ;
-       		// reset trigger
-            *((uint32_t *)(cfg + 0)) &= ~ TRIGGER_RECORD_FLAG;
-             // set number of samples
-            *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
-            if(verbose)printf("Setting up test pattern. Samples = %d\n", samples);
-            // enter normal mode
-            *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
-           	if(verbose)printf("Armed for pattern, status %d\n", *((uint32_t *)(cfg + 0)));
-            //trigger
-            *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
-           	usleep(20);
-            *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
-            usleep(10);
-            *((uint32_t *)(cfg + 8)) = (uint32_t)34703340;
-            usleep(10);
-            *((uint32_t *)(cfg + 8)) = (uint32_t)347033400;
-            //  usleep(10);
-            //  *((uint32_t *)(cfg + 8)) = (uint32_t)3470334;
-    		break;
+          case 14: //read calibration
+        	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
+              		break;
           case 15: //Write TX FIFO
            	samples = command & 0xFFFFFFFF;
            	if(verbose)printf("Writing %d u32 words\n",samples);
@@ -425,6 +428,9 @@ void *rx_handler(void *arg)
           	//if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
             if(send(sock_client, buffer, samples, MSG_NOSIGNAL) < 0){   perror("send RX");break;}
             break;
+          case 14: //read calibration
+        	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
+              		break;
 	    }
 	}
 	if(verbose)printf("Stopping RX thread, sock_client=%d, recv result = %d\n",sock_client,result);
@@ -476,6 +482,9 @@ void *tx_handler(void *arg)
           	if(verbose)printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
           	*((uint32_t *)(cfg + offset)) = status;
  			break;
+          case 14: //read calibration
+        	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
+              		break;
           case 15: //Transmit a block
           	samples = command & 0xFFFFFFFF;
           	if(verbose)printf("Transmitting %d bytes\n",samples);
@@ -548,5 +557,41 @@ int clean_up()
 	  munmap(sts, sysconf(_SC_PAGESIZE));
 	  munmap(rx_data, sysconf(_SC_PAGESIZE));
 	  munmap(tx_data, sysconf(_SC_PAGESIZE));
+	  return 0;
+}
+int read_calibration(rp_calib_params_t * calib_params)
+{
+    int    fp;
+    size_t size;
+
+
+    /* open EEPROM device */
+    fp = open("/sys/bus/i2c/devices/0-0050/eeprom", O_RDONLY); if (!fp) {
+        return 1;
+    }
+    /* ...and seek to the appropriate storage offset */
+    if (lseek(fp,0x0008, SEEK_SET) < 0) {
+        close(fp);
+        return 1;
+    }
+    /* read data from EEPROM component and store it to the specified buffer */
+    size = read(fp,  calib_params, sizeof(rp_calib_params_t));
+    if (size != sizeof(rp_calib_params_t)) {
+        close(fp);
+        return 1;
+    }
+    close(fp);
+    if(verbose) {
+       	printf("Read calibration\nmagic %x\nfe_ch1_fs_g_hi %d\nfe_ch2_fs_g_hi %d\nfe_ch1_fs_g_lo %d\nfe_ch2_fs_g_lo %d\nfe_ch1_lo_offs %d\nfe_ch2_lo_offs %d\nfe_ch1_hi_offs %d\nfe_ch2_hi_offs %d\nbe_ch1_fs %d\nbe_ch2_fs %d\nbe_ch1_dc_offs %d\nbe_ch2_dc_offs %d\n",
+       			calib_params->magic, calib_params->fe_ch1_fs_g_hi,calib_params->fe_ch2_fs_g_hi,calib_params->fe_ch1_fs_g_lo,calib_params->fe_ch2_fs_g_lo,
+			    calib_params->fe_ch1_lo_offs ,
+			    calib_params->fe_ch2_lo_offs,
+			    calib_params->fe_ch1_hi_offs,
+			    calib_params->fe_ch2_hi_offs,
+			    calib_params->be_ch1_fs,
+			    calib_params->be_ch2_fs ,
+			    calib_params->be_ch1_dc_offs ,
+			    calib_params->be_ch2_dc_offs
+       	); }
 	  return 0;
 }
