@@ -127,25 +127,9 @@ module axis_measure_pulse #
        end
 
       case(int_case_reg)
-       // count till offset start
-        0:
-         begin
-          if(s_axis_tvalid)
-           begin
-            if(int_cntr_reg < offset_start )
-             begin
-              int_cntr_next = int_cntr_reg + 1'b1;
-             end
-           else
-             begin
-              int_cntr_next = {(CNTR_WIDTH){1'b0}};
-              int_case_next = int_case_reg + 3'd1;
-             end
-          end
-       end
-       
+    
        // measure signal offset
-        1:
+        0:
          begin
           if(s_axis_tvalid)
             begin
@@ -163,7 +147,7 @@ module axis_measure_pulse #
          end
 
        // skip ramp up
-        2:
+        1:
          begin
           if(s_axis_tvalid)
             begin
@@ -180,7 +164,7 @@ module axis_measure_pulse #
          end
 
        // measure pulse
-        3:
+        2:
          begin
           if(s_axis_tvalid)
             begin
@@ -198,7 +182,7 @@ module axis_measure_pulse #
          end
 
        // skip ramp down
-        4:
+        3:
          begin
           if(s_axis_tvalid)
             begin
@@ -215,7 +199,7 @@ module axis_measure_pulse #
          end
 
        // post offset
-        5:
+        4:
          begin
           if(s_axis_tvalid)
             begin
@@ -236,7 +220,7 @@ module axis_measure_pulse #
 
                if(($signed(result_next) < threshold) & int_comp_wire )
                   begin
-                     wfrm_start_next = wfrm_start + pulse_length;
+                     wfrm_start_next = wfrm_start + pulse_length + 1;
                   end
                 else 
                   begin
