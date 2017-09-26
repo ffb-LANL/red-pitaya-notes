@@ -18,7 +18,15 @@ module testbench_iv;
    // reset logic
    initial begin
       counter=0;
-      cfg = {32'd1024,32'd7186,32'd300000,16'd0,16'd480,16'd32,16'd255};
+      //  assign offset_start = cfg_data[PULSE_WIDTH-1:0]; [15:0]
+     // assign ramp = cfg_data[PULSE_WIDTH*2-1:PULSE_WIDTH]; 31:16
+      // assign width = cfg_data[PULSE_WIDTH*3-1:PULSE_WIDTH*2]; 47:32
+      // assign offset_width = width[PULSE_WIDTH-2:1]; 46:33?
+    // assign  threshold = $signed(cfg_data[PULSE_WIDTH*4+31:PULSE_WIDTH*4]); 95:64
+      // assign waveform_length = cfg_data[PULSE_WIDTH*4+BRAM_ADDR_WIDTH+31:PULSE_WIDTH*4+32]; 111:96
+      // pulse_length = cfg_data[PULSE_WIDTH*4+BRAM_ADDR_WIDTH+63:PULSE_WIDTH*4+64];  143:128
+      //pulse_length=1024, waveform_length=7186;threshold=300000,width=480,ramp=16,offset_start=255;
+      cfg = {32'd1023,32'd7185,32'd300000,16'd0,16'd479,16'd31,16'd255};
       reset = 1'b0;
       
       m_axis_tready = 1'b1;
@@ -55,7 +63,7 @@ module testbench_iv;
     end
   //DUT test
    initial begin
-       repeat(20000) @(negedge clk);
+       repeat(100000) @(negedge clk);
        $finish;
    end     
    

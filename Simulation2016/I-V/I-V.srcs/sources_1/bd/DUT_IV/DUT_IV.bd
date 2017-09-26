@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<bd:repository xmlns:bd="http://www.xilinx.com/bd" bd:isValidated="true" bd:synthFlowMode="None" bd:tool_version="2016.2" bd:top="DUT_IV" bd:version="1.00.a">
+<bd:repository xmlns:bd="http://www.xilinx.com/bd" bd:isValidated="true" bd:synthFlowMode="Hierarchical" bd:tool_version="2016.2" bd:top="DUT_IV" bd:version="1.00.a">
 
   <spirit:component xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009">
     <spirit:vendor>xilinx.com</spirit:vendor>
@@ -372,12 +372,6 @@
           </spirit:wire>
         </spirit:port>
         <spirit:port>
-          <spirit:name>overload</spirit:name>
-          <spirit:wire>
-            <spirit:direction>out</spirit:direction>
-          </spirit:wire>
-        </spirit:port>
-        <spirit:port>
           <spirit:name>sts_data</spirit:name>
           <spirit:wire>
             <spirit:direction>out</spirit:direction>
@@ -385,6 +379,12 @@
               <spirit:left>31</spirit:left>
               <spirit:right>0</spirit:right>
             </spirit:vector>
+          </spirit:wire>
+        </spirit:port>
+        <spirit:port>
+          <spirit:name>overload</spirit:name>
+          <spirit:wire>
+            <spirit:direction>out</spirit:direction>
           </spirit:wire>
         </spirit:port>
       </spirit:ports>
@@ -397,14 +397,6 @@
     <spirit:name>DUT_IV_imp</spirit:name>
     <spirit:version>1.00.a</spirit:version>
     <spirit:componentInstances>
-      <spirit:componentInstance>
-        <spirit:instanceName>axis_measure_pulse_0</spirit:instanceName>
-        <spirit:componentRef spirit:library="user" spirit:name="axis_measure_pulse" spirit:vendor="pavel-demin" spirit:version="1.0"/>
-        <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">DUT_IV_axis_measure_pulse_0_0</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="BRAM_ADDR_WIDTH">16</spirit:configurableElementValue>
-        </spirit:configurableElementValues>
-      </spirit:componentInstance>
       <spirit:componentInstance>
         <spirit:instanceName>blk_mem_gen_0</spirit:instanceName>
         <spirit:componentRef spirit:library="ip" spirit:name="blk_mem_gen" spirit:vendor="xilinx.com" spirit:version="8.3"/>
@@ -428,6 +420,14 @@
           <spirit:configurableElementValue spirit:referenceId="Port_B_Write_Rate">50</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="Port_B_Enable_Rate">100</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="use_bram_block">Stand_Alone</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>axis_measure_pulse_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axis_measure_pulse" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">DUT_IV_axis_measure_pulse_0_1</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="BRAM_ADDR_WIDTH">16</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
     </spirit:componentInstances>
@@ -455,14 +455,14 @@
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="cfg_data"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
-        <spirit:name>axis_measure_pulse_0_overload</spirit:name>
-        <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="overload"/>
-        <spirit:externalPortReference spirit:portRef="overload"/>
-      </spirit:adHocConnection>
-      <spirit:adHocConnection>
         <spirit:name>axis_measure_pulse_0_sts_data</spirit:name>
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="sts_data"/>
         <spirit:externalPortReference spirit:portRef="sts_data"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>axis_measure_pulse_0_overload</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="overload"/>
+        <spirit:externalPortReference spirit:portRef="overload"/>
       </spirit:adHocConnection>
     </spirit:adHocConnections>
     <spirit:hierConnections>

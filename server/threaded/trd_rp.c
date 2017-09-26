@@ -35,6 +35,7 @@
 #define RECORD_LENGTH_OFFSET 4
 #define FREQ_OFFSET 8
 #define DESIMATION_OFFSET  12
+#define DDS_DELAY  28
 
 // Status offsets
 #define RECORD_START_POS_OFFSET 4

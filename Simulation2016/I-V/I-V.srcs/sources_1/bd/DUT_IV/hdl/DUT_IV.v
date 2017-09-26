@@ -1,7 +1,7 @@
 //Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2016.2 (win64) Build 1577090 Thu Jun  2 16:32:40 MDT 2016
-//Date        : Tue Jan 10 19:02:27 2017
+//Date        : Wed Aug 16 12:51:08 2017
 //Host        : ffboff running 64-bit Service Pack 1  (build 7601)
 //Command     : generate_target DUT_IV.bd
 //Design      : DUT_IV
@@ -9,7 +9,7 @@
 //--------------------------------------------------------------------------------
 `timescale 1 ps / 1 ps
 
-(* CORE_GENERATION_INFO = "DUT_IV,IP_Integrator,{x_ipVendor=xilinx.com,x_ipLibrary=BlockDiagram,x_ipName=DUT_IV,x_ipVersion=1.00.a,x_ipLanguage=VERILOG,numBlks=2,numReposBlks=2,numNonXlnxBlks=1,numHierBlks=0,maxHierDepth=0,numSysgenBlks=0,numHlsBlks=0,numHdlrefBlks=0,numPkgbdBlks=0,bdsource=USER,synth_mode=Global}" *) (* HW_HANDOFF = "DUT_IV.hwdef" *) 
+(* CORE_GENERATION_INFO = "DUT_IV,IP_Integrator,{x_ipVendor=xilinx.com,x_ipLibrary=BlockDiagram,x_ipName=DUT_IV,x_ipVersion=1.00.a,x_ipLanguage=VERILOG,numBlks=2,numReposBlks=2,numNonXlnxBlks=1,numHierBlks=0,maxHierDepth=0,numSysgenBlks=0,numHlsBlks=0,numHdlrefBlks=0,numPkgbdBlks=0,bdsource=USER,synth_mode=OOC_per_IP}" *) (* HW_HANDOFF = "DUT_IV.hwdef" *) 
 module DUT_IV
    (M_AXIS_tdata,
     M_AXIS_tlast,
@@ -64,7 +64,7 @@ module DUT_IV
   assign cfg_data_1 = cfg_data[159:0];
   assign overload = axis_measure_pulse_0_overload;
   assign sts_data[31:0] = axis_measure_pulse_0_sts_data;
-  DUT_IV_axis_measure_pulse_0_0 axis_measure_pulse_0
+  DUT_IV_axis_measure_pulse_0_1 axis_measure_pulse_0
        (.aclk(aclk_1),
         .aresetn(aresetn_1),
         .bram_porta_addr(axis_measure_pulse_0_BRAM_PORTA_ADDR),

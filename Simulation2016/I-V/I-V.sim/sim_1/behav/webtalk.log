@@ -2,12 +2,12 @@
 # Webtalk v2016.2 (64-bit)
 # SW Build 1577090 on Thu Jun  2 16:32:40 MDT 2016
 # IP Build 1577682 on Fri Jun  3 12:00:54 MDT 2016
-# Start of session at: Tue Jan 17 13:12:45 2017
-# Process ID: 3704
-# Current directory: D:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav
-# Command line: wbtcv.exe -mode batch -source D:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/xsim.dir/testbench_iv_behav/webtalk/xsim_webtalk.tcl -notrace
-# Log file: D:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/webtalk.log
-# Journal file: D:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav\webtalk.jou
+# Start of session at: Wed Aug 16 12:55:46 2017
+# Process ID: 8964
+# Current directory: C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav
+# Command line: wbtcv.exe -mode batch -source C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/xsim.dir/testbench_iv_behav/webtalk/xsim_webtalk.tcl -notrace
+# Log file: C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/webtalk.log
+# Journal file: C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav\webtalk.jou
 #-----------------------------------------------------------
-source D:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/xsim.dir/testbench_iv_behav/webtalk/xsim_webtalk.tcl -notrace
-INFO: [Common 17-206] Exiting Webtalk at Tue Jan 17 13:12:46 2017...
+source C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/xsim.dir/testbench_iv_behav/webtalk/xsim_webtalk.tcl -notrace
+INFO: [Common 17-206] Exiting Webtalk at Wed Aug 16 12:55:46 2017...

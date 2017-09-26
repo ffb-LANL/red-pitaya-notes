@@ -230,16 +230,16 @@ preplace port aresetn -pg 1 -y -130 -defaultsOSRD
 preplace portBus sts_data -pg 1 -y -100 -defaultsOSRD
 preplace portBus cfg_data -pg 1 -y -110 -defaultsOSRD
 preplace inst blk_mem_gen_0 -pg 1 -lvl 2 -y -130 -defaultsOSRD
-preplace inst axis_measure_pulse_0 -pg 1 -lvl 1 -y -100 -defaultsOSRD
-preplace netloc axis_measure_pulse_0_M_AXIS 1 1 2 NJ -190 NJ
-preplace netloc axis_measure_pulse_0_overload 1 1 2 NJ -200 NJ
+preplace inst axis_measure_pulse_0 -pg 1 -lvl 1 -y -120 -defaultsOSRD
+preplace netloc axis_measure_pulse_0_M_AXIS 1 1 2 280 -190 NJ
+preplace netloc axis_measure_pulse_0_overload 1 1 2 280 -70 NJ
 preplace netloc cfg_data_1 1 0 1 -30
 preplace netloc S_AXIS_1 1 0 1 0
 preplace netloc aresetn_1 1 0 1 -20
-preplace netloc axis_measure_pulse_0_BRAM_PORTA 1 1 1 310
-preplace netloc axis_measure_pulse_0_sts_data 1 1 2 NJ -210 NJ
+preplace netloc axis_measure_pulse_0_BRAM_PORTA 1 1 1 N
+preplace netloc axis_measure_pulse_0_sts_data 1 1 2 270 -60 NJ
 preplace netloc aclk_1 1 0 1 -10
-levelinfo -pg 1 -50 140 410 550 -top -220 -bot 30
+levelinfo -pg 1 -50 140 410 550 -top -310 -bot 30
 ",
 }
 
