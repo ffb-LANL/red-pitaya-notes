@@ -225,57 +225,27 @@ cell pavel-demin:user:axis_unblock:1.0 unblock {
   aresetn logic_0/res
 }
 
-
-
-# Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_decimate {
-  DIN_WIDTH 256 DIN_FROM 127 DIN_TO 96
-} {
-  Din cfg_0/cfg_data
-}
-
-# Create axis_variable
-cell pavel-demin:user:axis_variable:1.0 rate_0 {
-  AXIS_TDATA_WIDTH 16
-} {
-  cfg_data slice_decimate/Dout
-  aclk ps_0/FCLK_CLK0
-  aresetn logic_0/res
-}
-
-# Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster:1.1 bcast_rate {
-  S_TDATA_NUM_BYTES 2
-  M_TDATA_NUM_BYTES 2
- } {
-  S_AXIS rate_0/M_AXIS
-  aclk ps_0/FCLK_CLK0
-  aresetn rst_0/peripheral_aresetn
-}
-
 # Create cic_compiler
 cell xilinx.com:ip:cic_compiler:4.0 cic_0 {
   INPUT_DATA_WIDTH.VALUE_SRC USER
   FILTER_TYPE Decimation
-  NUMBER_OF_STAGES 3
-  SAMPLE_RATE_CHANGES Programmable
-  MINIMUM_RATE 8
-  MAXIMUM_RATE 6250
+  NUMBER_OF_STAGES 6
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 64
+  MAXIMUM_RATE 64
   FIXED_OR_INITIAL_RATE 64
   INPUT_SAMPLE_FREQUENCY 125
   CLOCK_FREQUENCY 125
-  INPUT_DATA_WIDTH 16
+  INPUT_DATA_WIDTH 14
   QUANTIZATION Truncation
   OUTPUT_DATA_WIDTH 16
   HAS_ARESETN true
   USE_XTREME_DSP_SLICE true
 } {
   S_AXIS_DATA unblock/m_axis
-  S_AXIS_CONFIG bcast_rate/m01_axis
   aclk ps_0/FCLK_CLK0
   aresetn logic_0/res
 }
-
 
 # Create axis_measure_pulse
 cell pavel-demin:user:axis_measure_pulse:1.0 measure_pulse {
@@ -298,25 +268,13 @@ cell xilinx.com:ip:xlconstant:1.1 const_interpol {
   CONST_VAL 64
 }
 
-# Create cic_compiler
-cell xilinx.com:ip:cic_compiler:4.0 interpol  {
-  INPUT_DATA_WIDTH.VALUE_SRC USER
-  FILTER_TYPE Interpolation
-  NUMBER_OF_STAGES 3
-  SAMPLE_RATE_CHANGES Programmable
-  MINIMUM_RATE 8
-  MAXIMUM_RATE 6250
-  FIXED_OR_INITIAL_RATE 64
-  INPUT_SAMPLE_FREQUENCY 15.625
-  CLOCK_FREQUENCY 125
-  INPUT_DATA_WIDTH 16
-  QUANTIZATION Truncation
-  OUTPUT_DATA_WIDTH 16
-  HAS_ARESETN true
-  USE_XTREME_DSP_SLICE true
+# Create axis_interpolator
+cell pavel-demin:user:axis_interpolator:1.0 interpol {
+  AXIS_TDATA_WIDTH 16
+  CNTR_WIDTH 16
 } {
-  S_AXIS_DATA measure_pulse/M_AXIS
-  S_AXIS_CONFIG bcast_rate/m00_axis
+  S_AXIS measure_pulse/M_AXIS
+  cfg_data const_interpol/Dout
   aclk ps_0/FCLK_CLK0
   aresetn logic_0/res
 }
@@ -405,7 +363,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS interpol/m_axis_data
+  S_AXIS interpol/M_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk adc_0/adc_clk
@@ -439,7 +397,6 @@ cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
   CONST_VAL 104
 }
-
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat:2.1 concat_sts {

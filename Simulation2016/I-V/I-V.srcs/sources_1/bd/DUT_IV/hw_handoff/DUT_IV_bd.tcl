@@ -154,6 +154,7 @@ proc create_root_design { parentCell } {
 
   # Create interface ports
   set M_AXIS [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS ]
+  set M_AXIS_DATA [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_DATA ]
   set S_AXIS [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS ]
   set_property -dict [ list \
 CONFIG.HAS_TKEEP {0} \
@@ -166,11 +167,24 @@ CONFIG.TDEST_WIDTH {0} \
 CONFIG.TID_WIDTH {0} \
 CONFIG.TUSER_WIDTH {0} \
  ] $S_AXIS
+  set S_AXIS_DATA [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS_DATA ]
+  set_property -dict [ list \
+CONFIG.HAS_TKEEP {0} \
+CONFIG.HAS_TLAST {0} \
+CONFIG.HAS_TREADY {1} \
+CONFIG.HAS_TSTRB {0} \
+CONFIG.LAYERED_METADATA {undef} \
+CONFIG.TDATA_NUM_BYTES {2} \
+CONFIG.TDEST_WIDTH {0} \
+CONFIG.TID_WIDTH {0} \
+CONFIG.TUSER_WIDTH {0} \
+ ] $S_AXIS_DATA
 
   # Create ports
   set aclk [ create_bd_port -dir I -type clk aclk ]
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
   set cfg_data [ create_bd_port -dir I -from 159 -to 0 cfg_data ]
+  set cfg_data_1 [ create_bd_port -dir I -from 31 -to 0 cfg_data_1 ]
   set overload [ create_bd_port -dir O overload ]
   set sts_data [ create_bd_port -dir O -from 31 -to 0 sts_data ]
 
@@ -179,6 +193,9 @@ CONFIG.TUSER_WIDTH {0} \
   set_property -dict [ list \
 CONFIG.BRAM_ADDR_WIDTH {16} \
  ] $axis_measure_pulse_0
+
+  # Create instance: axis_variable_0, and set properties
+  set axis_variable_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_0 ]
 
   # Create instance: blk_mem_gen_0, and set properties
   set blk_mem_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.3 blk_mem_gen_0 ]
@@ -204,17 +221,38 @@ CONFIG.Write_Width_B {32} \
 CONFIG.use_bram_block {Stand_Alone} \
  ] $blk_mem_gen_0
 
+  # Create instance: cic_compiler_0, and set properties
+  set cic_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_0 ]
+  set_property -dict [ list \
+CONFIG.Clock_Frequency {125} \
+CONFIG.Fixed_Or_Initial_Rate {16} \
+CONFIG.HAS_ARESETN {true} \
+CONFIG.HAS_DOUT_TREADY {true} \
+CONFIG.Input_Data_Width {16} \
+CONFIG.Input_Sample_Frequency {0.001} \
+CONFIG.Maximum_Rate {16} \
+CONFIG.Minimum_Rate {16} \
+CONFIG.Output_Data_Width {16} \
+CONFIG.Quantization {Truncation} \
+CONFIG.RateSpecification {Sample_Period} \
+CONFIG.SamplePeriod {16} \
+CONFIG.Sample_Rate_Changes {Fixed} \
+ ] $cic_compiler_0
+
   # Create interface connections
   connect_bd_intf_net -intf_net S_AXIS_1 [get_bd_intf_ports S_AXIS] [get_bd_intf_pins axis_measure_pulse_0/S_AXIS]
+  connect_bd_intf_net -intf_net S_AXIS_DATA_1 [get_bd_intf_ports S_AXIS_DATA] [get_bd_intf_pins cic_compiler_0/S_AXIS_DATA]
   connect_bd_intf_net -intf_net axis_measure_pulse_0_BRAM_PORTA [get_bd_intf_pins axis_measure_pulse_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net axis_measure_pulse_0_M_AXIS [get_bd_intf_ports M_AXIS] [get_bd_intf_pins axis_measure_pulse_0/M_AXIS]
+  connect_bd_intf_net -intf_net cic_compiler_0_M_AXIS_DATA [get_bd_intf_ports M_AXIS_DATA] [get_bd_intf_pins cic_compiler_0/M_AXIS_DATA]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_measure_pulse_0/aclk]
-  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_measure_pulse_0/aresetn]
+  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_measure_pulse_0/aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins cic_compiler_0/aclk]
+  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_measure_pulse_0/aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins cic_compiler_0/aresetn]
   connect_bd_net -net axis_measure_pulse_0_overload [get_bd_ports overload] [get_bd_pins axis_measure_pulse_0/overload]
   connect_bd_net -net axis_measure_pulse_0_sts_data [get_bd_ports sts_data] [get_bd_pins axis_measure_pulse_0/sts_data]
   connect_bd_net -net cfg_data_1 [get_bd_ports cfg_data] [get_bd_pins axis_measure_pulse_0/cfg_data]
+  connect_bd_net -net cfg_data_1_1 [get_bd_ports cfg_data_1] [get_bd_pins axis_variable_0/cfg_data]
 
   # Create address segments
 
@@ -225,21 +263,30 @@ CONFIG.use_bram_block {Stand_Alone} \
 preplace port S_AXIS -pg 1 -y -170 -defaultsOSRD
 preplace port overload -pg 1 -y -140 -defaultsOSRD
 preplace port aclk -pg 1 -y -150 -defaultsOSRD
+preplace port S_AXIS_DATA -pg 1 -y 30 -defaultsOSRD
 preplace port M_AXIS -pg 1 -y -180 -defaultsOSRD
+preplace port M_AXIS_DATA -pg 1 -y 50 -defaultsOSRD
 preplace port aresetn -pg 1 -y -130 -defaultsOSRD
 preplace portBus sts_data -pg 1 -y -100 -defaultsOSRD
+preplace portBus cfg_data_1 -pg 1 -y 170 -defaultsOSRD
 preplace portBus cfg_data -pg 1 -y -110 -defaultsOSRD
-preplace inst blk_mem_gen_0 -pg 1 -lvl 2 -y -130 -defaultsOSRD
-preplace inst axis_measure_pulse_0 -pg 1 -lvl 1 -y -120 -defaultsOSRD
-preplace netloc axis_measure_pulse_0_M_AXIS 1 1 2 280 -190 NJ
-preplace netloc axis_measure_pulse_0_overload 1 1 2 280 -70 NJ
-preplace netloc cfg_data_1 1 0 1 -30
-preplace netloc S_AXIS_1 1 0 1 0
-preplace netloc aresetn_1 1 0 1 -20
-preplace netloc axis_measure_pulse_0_BRAM_PORTA 1 1 1 N
-preplace netloc axis_measure_pulse_0_sts_data 1 1 2 270 -60 NJ
-preplace netloc aclk_1 1 0 1 -10
-levelinfo -pg 1 -50 140 410 550 -top -310 -bot 30
+preplace inst cic_compiler_0 -pg 1 -lvl 2 -y 60 -defaultsOSRD
+preplace inst axis_variable_0 -pg 1 -lvl 1 -y 150 -defaultsOSRD
+preplace inst blk_mem_gen_0 -pg 1 -lvl 3 -y -130 -defaultsOSRD
+preplace inst axis_measure_pulse_0 -pg 1 -lvl 2 -y -120 -defaultsOSRD
+preplace netloc S_AXIS_DATA_1 1 0 2 N 30 N
+preplace netloc axis_measure_pulse_0_M_AXIS 1 2 2 510 -190 NJ
+preplace netloc cfg_data_1_1 1 0 1 N
+preplace netloc cic_compiler_0_M_AXIS_DATA 1 2 2 NJ 50 NJ
+preplace netloc axis_measure_pulse_0_overload 1 2 2 510 -70 NJ
+preplace netloc cfg_data_1 1 0 2 -50 -90 N
+preplace netloc axis_variable_0_M_AXIS 1 1 1 200
+preplace netloc S_AXIS_1 1 0 2 N -170 210
+preplace netloc aresetn_1 1 0 2 -40 -110 190
+preplace netloc axis_measure_pulse_0_BRAM_PORTA 1 2 1 N
+preplace netloc axis_measure_pulse_0_sts_data 1 2 2 500 -60 NJ
+preplace netloc aclk_1 1 0 2 -30 -130 210
+levelinfo -pg 1 -70 80 360 620 760 -top -310 -bot 220
 ",
 }
 

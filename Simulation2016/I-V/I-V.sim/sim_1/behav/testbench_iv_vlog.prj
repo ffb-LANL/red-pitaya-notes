@@ -10,7 +10,10 @@ verilog blk_mem_gen_v8_3_3  "../../../I-V.ip_user_files/ipstatic/blk_mem_gen_v8_
 verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_blk_mem_gen_0_0/sim/DUT_IV_blk_mem_gen_0_0.v"
 verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ipshared/pavel-demin/axis_measure_pulse_v1_0/src/axis_measure_pulse.v"
 verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_measure_pulse_0_1/sim/DUT_IV_axis_measure_pulse_0_1.v"
+verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ipshared/pavel-demin/axis_variable_v1_0/src/axis_variable.v"
+verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_variable_0_0/sim/DUT_IV_axis_variable_0_0.v"
 verilog xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/hdl/DUT_IV.v"
+verilog xil_defaultlib  "../../../I-V.srcs/sources_1/bd/DUT_IV/hdl/DUT_IV_wrapper.v"
 verilog xil_defaultlib  "../../../I-V.srcs/sources_1/new/testbench.v"
 
 # compile glbl module

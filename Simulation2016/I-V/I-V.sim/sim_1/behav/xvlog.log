@@ -33,8 +33,14 @@ INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V
 INFO: [VRFC 10-311] analyzing module axis_measure_pulse
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_measure_pulse_0_1/sim/DUT_IV_axis_measure_pulse_0_1.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module DUT_IV_axis_measure_pulse_0_1
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ipshared/pavel-demin/axis_variable_v1_0/src/axis_variable.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module axis_variable
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_variable_0_0/sim/DUT_IV_axis_variable_0_0.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module DUT_IV_axis_variable_0_0
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/hdl/DUT_IV.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module DUT_IV
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.srcs/sources_1/bd/DUT_IV/hdl/DUT_IV_wrapper.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module DUT_IV_wrapper
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.srcs/sources_1/new/testbench.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module testbench_iv
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/glbl.v" into library xil_defaultlib
