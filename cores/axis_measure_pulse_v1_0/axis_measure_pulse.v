@@ -238,7 +238,8 @@ module axis_measure_pulse #
   assign m_axis_tdata = bram_porta_rddata;
   assign m_axis_tvalid = int_enbl_reg;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
-  assign sts_data = result ;
+//  assign sts_data = result ;
+  assign sts_data = {result[31:8],5'b0,int_case_reg};
   assign bram_porta_clk = aclk;
   assign bram_porta_rst = ~aresetn;
   assign bram_porta_addr = m_axis_tready & int_enbl_reg ? int_addr_next : int_addr;
