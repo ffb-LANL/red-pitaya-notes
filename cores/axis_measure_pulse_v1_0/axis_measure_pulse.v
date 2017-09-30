@@ -51,6 +51,7 @@ module axis_measure_pulse #
   reg int_conf_reg, int_conf_next;
 
   wire int_comp_wire, int_tlast_wire, wfrm_point_comp;
+  wire int_transaction_incr;
   
   assign offset_start = cfg_data[PULSE_WIDTH-1:0];
   assign ramp = cfg_data[PULSE_WIDTH*2-1:PULSE_WIDTH];
@@ -95,7 +96,8 @@ module axis_measure_pulse #
   assign int_comp_wire = wfrm_start < waveform_length;
   assign int_tlast_wire = ~int_comp_wire;
   assign wfrm_point_comp = wfrm_point < pulse_length;
-          
+  assign int_transaction_incr = s_axis_tvalid;
+        
   always @*
      begin
       int_cntr_next = int_cntr_reg;
@@ -114,13 +116,13 @@ module axis_measure_pulse #
          int_enbl_next = 1'b1;
         end
 
-       if(m_axis_tready & int_enbl_reg & wfrm_point_comp)
+       if(int_transaction_incr & int_enbl_reg & wfrm_point_comp)
         begin
           wfrm_point_next = wfrm_point + 1'b1;
           int_addr_next = wfrm_start + wfrm_point;
        end
 
-       if(m_axis_tready & int_enbl_reg & ~wfrm_point_comp)
+       if(int_transaction_incr& int_enbl_reg & ~wfrm_point_comp)
        begin
          wfrm_point_next = 32'b0;
          int_addr_next = wfrm_start + wfrm_point;
@@ -131,7 +133,7 @@ module axis_measure_pulse #
        // measure signal offset
         0:
          begin
-          if(s_axis_tvalid)
+          if(int_transaction_incr)
             begin
              if(int_cntr_reg < offset_width )
                begin
@@ -149,7 +151,7 @@ module axis_measure_pulse #
        // skip ramp up
         1:
          begin
-          if(s_axis_tvalid)
+          if(int_transaction_incr)
             begin
              if(int_cntr_reg < ramp )
                begin
@@ -166,7 +168,7 @@ module axis_measure_pulse #
        // measure pulse
         2:
          begin
-          if(s_axis_tvalid)
+          if(int_transaction_incr)
             begin
              if(int_cntr_reg < width )
                begin
@@ -184,7 +186,7 @@ module axis_measure_pulse #
        // skip ramp down
         3:
          begin
-          if(s_axis_tvalid)
+          if(int_transaction_incr)
             begin
              if(int_cntr_reg < ramp )
                begin
@@ -201,7 +203,7 @@ module axis_measure_pulse #
        // post offset
         4:
          begin
-          if(s_axis_tvalid)
+          if(int_transaction_incr)
             begin
              if(int_cntr_reg < offset_width )
                begin
@@ -233,16 +235,17 @@ module axis_measure_pulse #
      end
 
   assign overload = result < threshold;
-  assign s_axis_tready = 1'b1;
+  assign s_axis_tready = int_enbl_reg;
   
   assign m_axis_tdata = bram_porta_rddata;
   assign m_axis_tvalid = int_enbl_reg;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
-//  assign sts_data = result ;
-  assign sts_data = {result[31:8],5'b0,int_case_reg};
+// original assign sts_data = result ;
+// output test  assign sts_data = {result[31:8],5'b0,int_case_reg};
   assign bram_porta_clk = aclk;
   assign bram_porta_rst = ~aresetn;
   assign bram_porta_addr = m_axis_tready & int_enbl_reg ? int_addr_next : int_addr;
+  assign sts_data = {8'b0,bram_porta_addr,1'b0,s_axis_tready,s_axis_tvalid,m_axis_tready,m_axis_tvalid,int_case_reg};
   assign case_id = int_case_reg;
  // assign bram_porta_addr = int_addr;
 
