@@ -1,4 +1,4 @@
-#current-voltage 104
+#current-voltage 110
 
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
@@ -314,6 +314,16 @@ cell xilinx.com:ip:cic_compiler:4.0 interpol  {
   aresetn logic_0/res
 }
 
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster:1.1 bcast_interpol {
+  S_TDATA_NUM_BYTES 2
+  M_TDATA_NUM_BYTES 2
+ } {
+  S_AXIS interpol/M_AXIS_DATA
+  aclk ps_0/FCLK_CLK0
+  aresetn rst_0/peripheral_aresetn
+}
+
 # Create axis_constant
 cell pavel-demin:user:axis_constant:1.0 measure_result_0 {
   AXIS_TDATA_WIDTH 32
@@ -322,13 +332,26 @@ cell pavel-demin:user:axis_constant:1.0 measure_result_0 {
   aclk ps_0/FCLK_CLK0
 }
 
+
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner:1.1 comb_ADC0_DAC {
+  NUM_SI 2
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 2
+} {
+  S00_AXIS bcast_ADC/m00_axis
+  S01_AXIS bcast_interpol/m00_axis
+  aclk ps_0/FCLK_CLK0
+  aresetn  slice_pktzr_reset/Dout
+  }
+
 # Create axis_combiner
 cell  xilinx.com:ip:axis_combiner:1.1 comb_adc_result {
   NUM_SI 2
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S00_AXIS bcast_ADC/m00_axis
+  S00_AXIS comb_ADC0_DAC/m_axis
   S01_AXIS measure_result_0/m_axis
   aclk ps_0/FCLK_CLK0
   aresetn  slice_pktzr_reset/Dout
@@ -398,7 +421,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS interpol/m_axis_data
+  S_AXIS bcast_interpol/m01_axis
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk adc_0/adc_clk
@@ -430,7 +453,7 @@ cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant:1.1 const_ID {
   CONST_WIDTH 16
-  CONST_VAL 104
+  CONST_VAL 110
 }
 
 

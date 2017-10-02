@@ -241,11 +241,11 @@ module axis_measure_pulse #
   assign m_axis_tvalid = int_enbl_reg;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
 // original assign sts_data = result ;
-// output test  assign sts_data = {result[31:8],5'b0,int_case_reg};
+  assign sts_data = {result[31:3],int_case_reg};
   assign bram_porta_clk = aclk;
   assign bram_porta_rst = ~aresetn;
   assign bram_porta_addr = m_axis_tready & int_enbl_reg ? int_addr_next : int_addr;
-  assign sts_data = {8'b0,bram_porta_addr,1'b0,s_axis_tready,s_axis_tvalid,m_axis_tready,m_axis_tvalid,int_case_reg};
+// I-V test  assign sts_data = {8'b0,bram_porta_addr,1'b0,s_axis_tready,s_axis_tvalid,m_axis_tready,m_axis_tvalid,int_case_reg};
   assign case_id = int_case_reg;
  // assign bram_porta_addr = int_addr;
 
