@@ -5,3 +5,4 @@ lockin_sweep 103
 fast digitizer 107
 synchronous lockin 108
 dual channel lockin 109
+#current-voltage test pattern 110

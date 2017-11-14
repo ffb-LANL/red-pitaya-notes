@@ -16,10 +16,7 @@ module testbench_iv;
    reg m_axis_tready,m_axis_1_tready;
       // Clock gen
    //CIC connections
-   wire [15:0]m_axis_CIC_tdata;
-   reg [15:0]CIC_cfg; 
-   reg  [15:0]s_axis_CIC_tdata;
-   reg s_axis_CIC_tvalid;
+
    // reset logic
    initial begin
       counter=0;
@@ -33,24 +30,43 @@ module testbench_iv;
       //pulse_length=1024, waveform_length=7186;threshold=300000,width=480,ramp=16,total_patterns=2;
       cfg = {32'd1023,32'd7185,32'd10000,16'd0,16'd479,16'd31,16'd0};
       reset = 1'b0;
+<<<<<<< HEAD
       CIC_cfg = 64;
       m_axis_1_tready = 1'b0;
       s_axis_1_tvalid = 1'b0;
+=======
+
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
       m_axis_tready = 1'b1;
-      s_axis_tvalid = 1'b1;
+      s_axis_tvalid = 1'b0;
       data = 50;
+<<<<<<< HEAD
       s_axis_1_tdata=100;
       s_axis_CIC_tdata = 1000;
+=======
+
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
          //   M_AXIS_PHASE_tready =  1'b0;
 
       #50 reset = 1'b1;
-      #10 s_axis_tvalid = 1'b1;
+      #500 s_axis_tvalid = 1'b0;
+      #500 s_axis_tvalid = 1'b1;
+      #500 s_axis_tvalid = 1'b0;
+      #500 s_axis_tvalid = 1'b1;
+      #500 s_axis_tvalid = 1'b0;
+      #500 s_axis_tvalid = 1'b1;
+      #500 s_axis_tvalid = 1'b0;
+      #500 s_axis_tvalid = 1'b1;
       #5000 data = 100;
+<<<<<<< HEAD
       s_axis_1_tvalid = 1'b1;
       s_axis_CIC_tdata = 2000;
       #100    s_axis_1_tvalid = 1'b0;
       #20 m_axis_1_tready = 1'b1;
       #300 m_axis_1_tready = 1'b0;
+=======
+
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     //  #300 m_axis_tready = 1'b0;
 
  //     #250 m_axis_tready = 1'b1;
@@ -70,6 +86,7 @@ module testbench_iv;
 
           
          end
+<<<<<<< HEAD
          
   //          always 
   //             begin
@@ -77,6 +94,9 @@ module testbench_iv;
   //              #(60) s_axis_CIC_tvalid =  1'b1; 
   //              #(4);
   //            end
+=======
+
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     always 
                begin 
                 s_axis_tdata = 16'b0; 
@@ -98,6 +118,7 @@ module testbench_iv;
        .M_AXIS_tready(m_axis_tready),
        .S_AXIS_tdata(s_axis_tdata),
        .S_AXIS_tvalid(s_axis_tvalid),
+<<<<<<< HEAD
        .cfg_data(cfg),
        .S_AXIS_DATA_tvalid(s_axis_CIC_tvalid),
        .S_AXIS_DATA_tdata(s_axis_CIC_tdata),
@@ -107,5 +128,8 @@ module testbench_iv;
        .S_AXIS_1_tdata(s_axis_1_tdata),
        .S_AXIS_1_tvalid(s_axis_1_tvalid),
        .M_AXIS_1_tready(m_axis_1_tready)
+=======
+       .cfg_data(cfg)
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
    );
   endmodule // testbench

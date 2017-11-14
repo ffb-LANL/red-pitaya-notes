@@ -37,10 +37,17 @@ INFO: [VRFC 10-311] analyzing module blk_mem_gen_v8_3_3_mem_module
 INFO: [VRFC 10-311] analyzing module blk_mem_gen_v8_3_3
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_blk_mem_gen_0_0/sim/DUT_IV_blk_mem_gen_0_0.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module DUT_IV_blk_mem_gen_0_0
+<<<<<<< HEAD
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ipshared/pavel-demin/axis_variable_v1_0/src/axis_variable.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module axis_variable
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_variable_0_0/sim/DUT_IV_axis_variable_0_0.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module DUT_IV_axis_variable_0_0
+=======
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ipshared/pavel-demin/axis_measure_pulse_v1_0/src/axis_measure_pulse.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module axis_measure_pulse
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_axis_measure_pulse_0_0/sim/DUT_IV_axis_measure_pulse_0_0.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module DUT_IV_axis_measure_pulse_0_0
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/bd/DUT_IV/hdl/DUT_IV.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module DUT_IV
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/axis_infrastructure_v1_1/hdl/verilog/axis_infrastructure_v1_1_mux_enc.v" into library axis_infrastructure_v1_1_0
@@ -111,6 +118,7 @@ INFO: [VRFC 10-311] analyzing module testbench_iv
 INFO: [VRFC 10-2263] Analyzing Verilog file "C:/github/fp/Simulation2016/I-V/I-V.sim/sim_1/behav/glbl.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module glbl
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/Xilinx/Vivado/2016.2/data/ip/xpm/xpm_VCOMP.vhd" into library xpm
+<<<<<<< HEAD
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/xbip_utils_v3_0/hdl/xbip_utils_v3_0_vh_rfs.vhd" into library xbip_utils_v3_0_6
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/axi_utils_v2_0/hdl/axi_utils_v2_0_vh_rfs.vhd" into library axi_utils_v2_0_2
 INFO: [VRFC 10-307] analyzing entity glb_srl_fifo
@@ -173,3 +181,5 @@ INFO: [VRFC 10-307] analyzing entity reset_blk_ramfifo
 INFO: [VRFC 10-307] analyzing entity axi_reg_slice
 INFO: [VRFC 10-307] analyzing entity fifo_generator_top
 INFO: [VRFC 10-307] analyzing entity fifo_generator_v13_1_1_synth
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde

@@ -2,9 +2,15 @@
 <Root MajorVersion="0" MinorVersion="33">
   <CompositeFile CompositeFileTopName="DUT_IV" CanBeSetAsTop="false" CanDisplayChildGraph="true">
     <Description>Composite Fileset</Description>
+<<<<<<< HEAD
     <Generation Name="SYNTHESIS" State="STALE" Timestamp="1510185786"/>
     <Generation Name="IMPLEMENTATION" State="STALE" Timestamp="1510185782"/>
     <Generation Name="SIMULATION" State="GENERATED" Timestamp="1510185786"/>
+=======
+    <Generation Name="SYNTHESIS" State="GENERATED" Timestamp="1506723721"/>
+    <Generation Name="IMPLEMENTATION" State="GENERATED" Timestamp="1506723721"/>
+    <Generation Name="SIMULATION" State="GENERATED" Timestamp="1506723721"/>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     <FileCollection Name="SOURCES" Type="SOURCES">
       <File Name="ip\DUT_IV_blk_mem_gen_0_0\DUT_IV_blk_mem_gen_0_0.xci" Type="IP">
         <Instance HierarchyPath="blk_mem_gen_0"/>
@@ -14,6 +20,7 @@
         <UsedIn Val="IMPLEMENTATION"/>
         <UsedIn Val="SIMULATION"/>
       </File>
+<<<<<<< HEAD
       <File Name="ip\DUT_IV_cic_compiler_0_0\DUT_IV_cic_compiler_0_0.xci" Type="IP">
         <Instance HierarchyPath="cic_compiler_0"/>
         <Properties IsEditable="false" IsVisible="true" Timestamp="0" IsTrackable="true" IsStatusTracked="true"/>
@@ -24,6 +31,10 @@
       </File>
       <File Name="ip\DUT_IV_axis_variable_0_0\DUT_IV_axis_variable_0_0.xci" Type="IP">
         <Instance HierarchyPath="axis_variable_0"/>
+=======
+      <File Name="ip\DUT_IV_axis_measure_pulse_0_0\DUT_IV_axis_measure_pulse_0_0.xci" Type="IP">
+        <Instance HierarchyPath="axis_measure_pulse_0"/>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         <Properties IsEditable="false" IsVisible="true" Timestamp="0" IsTrackable="true" IsStatusTracked="true"/>
         <Library Name="xil_defaultlib"/>
         <UsedIn Val="SYNTHESIS"/>

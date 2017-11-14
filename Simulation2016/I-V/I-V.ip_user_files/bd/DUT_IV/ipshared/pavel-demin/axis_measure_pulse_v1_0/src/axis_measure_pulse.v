@@ -51,8 +51,14 @@ module axis_measure_pulse #
   reg int_last_pulse_reg, int_last_pulse_next;
 
   wire int_comp_wire, int_tlast_wire, wfrm_point_comp;
+<<<<<<< HEAD
   // default cfg_data: total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32]
   assign total_sweeps = cfg_data[PULSE_WIDTH-1:0];
+=======
+  wire int_transaction_incr;
+  
+  assign offset_start = cfg_data[PULSE_WIDTH-1:0];
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
   assign ramp = cfg_data[PULSE_WIDTH*2-1:PULSE_WIDTH];
   assign width = cfg_data[PULSE_WIDTH*3-1:PULSE_WIDTH*2];
   assign offset_width = width[PULSE_WIDTH-2:1];
@@ -98,8 +104,10 @@ module axis_measure_pulse #
   assign int_comp_wire = wfrm_start < waveform_length;
   assign int_tlast_wire = ~int_comp_wire;
   assign wfrm_point_comp = wfrm_point < pulse_length;
-          
+  assign int_transaction_incr = s_axis_tvalid & m_axis_tready;
+        
   always @*
+<<<<<<< HEAD
     begin
         int_cntr_next = int_cntr_reg;
         int_cntr_sweeps_next = int_cntr_sweeps_reg;
@@ -114,12 +122,50 @@ module axis_measure_pulse #
         int_last_pulse_next = int_last_pulse_reg;
  
         if(int_case_reg < 3'd5)
+=======
+     begin
+      int_cntr_next = int_cntr_reg;
+      int_case_next = int_case_reg;
+      offset_next=offset;
+      result_next=result;
+      int_addr_next = int_addr;
+      pulse_next = pulse;
+      wfrm_start_next = wfrm_start;
+      wfrm_point_next = wfrm_point;
+
+      int_enbl_next = int_enbl_reg;
+
+       if(~int_enbl_reg & int_comp_wire)
+        begin
+         int_enbl_next = 1'b1;
+        end
+
+       if(int_transaction_incr & int_enbl_reg & wfrm_point_comp)
+        begin
+          wfrm_point_next = wfrm_point + 1'b1;
+          int_addr_next = wfrm_start + wfrm_point;
+       end
+
+       if(int_transaction_incr& int_enbl_reg & ~wfrm_point_comp)
+       begin
+         wfrm_point_next = 32'b0;
+         int_addr_next = wfrm_start + wfrm_point;
+       end
+
+      case(int_case_reg)
+    
+       // measure signal offset
+        0:
+         begin
+          if(int_transaction_incr)
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
             begin
                 if(wfrm_start < ( waveform_length - pulse_length) )
                     int_last_pulse_next = 1'b0;
                 else
                     int_last_pulse_next = 1'b1;
 
+<<<<<<< HEAD
                 if(~int_enbl_reg & int_comp_wire)
                     int_enbl_next = 1'b1;
                     
@@ -213,6 +259,93 @@ module axis_measure_pulse #
                                             pulse_next = 32'd0;
                                             wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
                                             int_addr_next = wfrm_start + wfrm_point;
+=======
+       // skip ramp up
+        1:
+         begin
+          if(int_transaction_incr)
+            begin
+             if(int_cntr_reg < ramp )
+               begin
+                int_cntr_next = int_cntr_reg + 1'b1;
+               end
+             else
+               begin
+                int_cntr_next = {(CNTR_WIDTH){1'b0}};  
+                int_case_next = int_case_reg + 3'd1;
+               end
+            end
+         end
+
+       // measure pulse
+        2:
+         begin
+          if(int_transaction_incr)
+            begin
+             if(int_cntr_reg < width )
+               begin
+                pulse_next = $signed(pulse) + $signed(s_axis_tdata);
+                int_cntr_next = int_cntr_reg + 1'b1;
+               end
+             else
+               begin
+                int_cntr_next = {(CNTR_WIDTH){1'b0}};
+                int_case_next = int_case_reg + 3'd1;
+               end
+            end
+         end
+
+       // skip ramp down
+        3:
+         begin
+          if(int_transaction_incr)
+            begin
+             if(int_cntr_reg < ramp )
+               begin
+                int_cntr_next = int_cntr_reg + 1'b1;
+               end
+             else
+               begin
+                int_cntr_next = {(CNTR_WIDTH){1'b0}};  
+                int_case_next = int_case_reg + 3'd1;
+               end
+            end
+         end
+
+       // post offset
+        4:
+         begin
+          if(int_transaction_incr)
+            begin
+             if(int_cntr_reg < offset_width )
+               begin
+                offset_next = $signed(offset) + $signed(s_axis_tdata);
+                int_cntr_next = int_cntr_reg + 1'b1;
+               end
+             else
+               begin
+                int_cntr_next = {(CNTR_WIDTH){1'b0}};
+                int_case_next = 3'd0;
+                result_next = $signed(pulse) - $signed(offset); // assume 50% duty cycle
+                offset_next = 32'd0;
+                pulse_next = 32'd0;
+                wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                int_addr_next = wfrm_start + wfrm_point;
+
+               if(($signed(result_next) < threshold) & int_comp_wire )
+                  begin
+                     wfrm_start_next = wfrm_start + pulse_length + 1;
+                  end
+                else 
+                  begin
+                     wfrm_start_next = {(BRAM_ADDR_WIDTH){1'b0}};;
+                  end 
+               end
+            end
+         end
+       endcase
+     end
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
 
                                             if((magnitude < threshold) & ~int_last_pulse_reg )
                                                 begin
@@ -250,11 +383,17 @@ module axis_measure_pulse #
   assign m_axis_tdata = bram_porta_rddata;
   assign m_axis_tvalid = int_enbl_reg;
   assign m_axis_tlast = int_enbl_reg & int_tlast_wire;
+<<<<<<< HEAD
 //  assign sts_data = result ;
   assign sts_data = {result[31:8],5'b0,int_case_reg};
+=======
+// original assign sts_data = result ;
+// output test  assign sts_data = {result[31:8],5'b0,int_case_reg};
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
   assign bram_porta_clk = aclk;
   assign bram_porta_rst = ~aresetn;
   assign bram_porta_addr = m_axis_tready & int_enbl_reg ? int_addr_next : int_addr;
+  assign sts_data = {8'b0,bram_porta_addr,5'b0,int_case_reg};
   assign case_id = int_case_reg;
  // assign bram_porta_addr = int_addr;
 

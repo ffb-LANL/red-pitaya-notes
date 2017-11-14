@@ -27,20 +27,24 @@
     <Option Name="IPUserFilesDir" Val="$PPRDIR/I-V.ip_user_files"/>
     <Option Name="IPStaticSourceDir" Val="$PPRDIR/I-V.ip_user_files/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
+<<<<<<< HEAD
     <Option Name="WTXSimLaunchSim" Val="71"/>
+=======
+    <Option Name="WTXSimLaunchSim" Val="63"/>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="7"/>
-    <Option Name="WTModelSimExportSim" Val="7"/>
-    <Option Name="WTQuestaExportSim" Val="7"/>
-    <Option Name="WTIesExportSim" Val="7"/>
-    <Option Name="WTVcsExportSim" Val="7"/>
-    <Option Name="WTRivieraExportSim" Val="7"/>
-    <Option Name="WTActivehdlExportSim" Val="7"/>
+    <Option Name="WTXSimExportSim" Val="8"/>
+    <Option Name="WTModelSimExportSim" Val="8"/>
+    <Option Name="WTQuestaExportSim" Val="8"/>
+    <Option Name="WTIesExportSim" Val="8"/>
+    <Option Name="WTVcsExportSim" Val="8"/>
+    <Option Name="WTRivieraExportSim" Val="8"/>
+    <Option Name="WTActivehdlExportSim" Val="8"/>
   </Configuration>
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
@@ -51,15 +55,21 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
+<<<<<<< HEAD
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_variable_0_0/DUT_IV_axis_variable_0_0.xci">
           <Proxy FileSetName="DUT_IV_axis_variable_0_0"/>
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_cic_compiler_0_0/DUT_IV_cic_compiler_0_0.xci">
           <Proxy FileSetName="DUT_IV_cic_compiler_0_0"/>
+=======
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_measure_pulse_0_0/DUT_IV_axis_measure_pulse_0_0.xci">
+          <Proxy FileSetName="DUT_IV_axis_measure_pulse_0_0"/>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_blk_mem_gen_0_0/DUT_IV_blk_mem_gen_0_0.xci">
           <Proxy FileSetName="DUT_IV_blk_mem_gen_0_0"/>
         </CompFileExtendedInfo>
+<<<<<<< HEAD
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_dwidth_converter_0_0/DUT_IV_axis_dwidth_converter_0_0.xci">
           <Proxy FileSetName="DUT_IV_axis_dwidth_converter_0_0"/>
         </CompFileExtendedInfo>
@@ -69,6 +79,10 @@
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hdl/DUT_IV.v"/>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="DUT_IV_ooc.xdc"/>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_measure_pulse_0_1/DUT_IV_axis_measure_pulse_0_1.xci"/>
+=======
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="DUT_IV_ooc.xdc"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hdl/DUT_IV.v"/>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hdl/DUT_IV.hwdef"/>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hw_handoff/DUT_IV_bd.tcl"/>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hw_handoff/DUT_IV.hwh"/>
@@ -129,6 +143,7 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
+<<<<<<< HEAD
     <FileSet Name="DUT_IV_cic_compiler_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_cic_compiler_0_0">
       <Config>
         <Option Name="TopModule" Val="DUT_IV_cic_compiler_0_0"/>
@@ -136,8 +151,11 @@
       </Config>
     </FileSet>
     <FileSet Name="DUT_IV_axis_variable_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_variable_0_0">
+=======
+    <FileSet Name="DUT_IV_axis_measure_pulse_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_measure_pulse_0_0">
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
       <Config>
-        <Option Name="TopModule" Val="DUT_IV_axis_variable_0_0"/>
+        <Option Name="TopModule" Val="DUT_IV_axis_measure_pulse_0_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -192,6 +210,7 @@
         <Step Id="synth_design"/>
       </Strategy>
     </Run>
+<<<<<<< HEAD
     <Run Id="DUT_IV_cic_compiler_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_cic_compiler_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_cic_compiler_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
@@ -205,6 +224,9 @@
       </Strategy>
     </Run>
     <Run Id="DUT_IV_axis_dwidth_converter_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_dwidth_converter_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_dwidth_converter_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
+=======
+    <Run Id="DUT_IV_axis_measure_pulse_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_measure_pulse_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_measure_pulse_0_0" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/DUT_IV_axis_measure_pulse_0_0_synth_1" IncludeInArchive="true">
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
@@ -244,6 +266,7 @@
         <Step Id="write_bitstream"/>
       </Strategy>
     </Run>
+<<<<<<< HEAD
     <Run Id="DUT_IV_cic_compiler_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_cic_compiler_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_cic_compiler_0_0_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
@@ -273,6 +296,9 @@
       </Strategy>
     </Run>
     <Run Id="DUT_IV_axis_dwidth_converter_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_dwidth_converter_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_dwidth_converter_0_0_synth_1" IncludeInArchive="false">
+=======
+    <Run Id="DUT_IV_axis_measure_pulse_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_measure_pulse_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_measure_pulse_0_0_synth_1" IncludeInArchive="false">
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>

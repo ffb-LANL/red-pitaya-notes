@@ -1,4 +1,5 @@
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/Xilinx/Vivado/2016.2/data/ip/xpm/xpm_VCOMP.vhd" into library xpm
+<<<<<<< HEAD
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/xbip_utils_v3_0/hdl/xbip_utils_v3_0_vh_rfs.vhd" into library xbip_utils_v3_0_6
 INFO: [VRFC 10-163] Analyzing VHDL file "C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/axi_utils_v2_0/hdl/axi_utils_v2_0_vh_rfs.vhd" into library axi_utils_v2_0_2
 INFO: [VRFC 10-307] analyzing entity glb_srl_fifo
@@ -61,3 +62,5 @@ INFO: [VRFC 10-307] analyzing entity reset_blk_ramfifo
 INFO: [VRFC 10-307] analyzing entity axi_reg_slice
 INFO: [VRFC 10-307] analyzing entity fifo_generator_top
 INFO: [VRFC 10-307] analyzing entity fifo_generator_v13_1_1_synth
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde

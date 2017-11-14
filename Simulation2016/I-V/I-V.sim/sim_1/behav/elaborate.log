@@ -1,5 +1,6 @@
 Vivado Simulator 2016.2
 Copyright 1986-1999, 2001-2016 Xilinx, Inc. All Rights Reserved.
+<<<<<<< HEAD
 Running: C:/Xilinx/Vivado/2016.2/bin/unwrapped/win64.o/xelab.exe -wto cfa84ca63fc54fd180d347ee81a35e64 --debug typical --relax --mt 2 -L xil_defaultlib -L xpm -L blk_mem_gen_v8_3_3 -L xbip_utils_v3_0_6 -L axi_utils_v2_0_2 -L cic_compiler_v4_0_10 -L axis_infrastructure_v1_1_0 -L fifo_generator_v13_1_1 -L axis_data_fifo_v1_1_10 -L axis_register_slice_v1_1_9 -L axis_dwidth_converter_v1_1_8 -L unisims_ver -L unimacro_ver -L secureip --snapshot testbench_iv_behav xil_defaultlib.testbench_iv xil_defaultlib.glbl -log elaborate.log 
 Using 2 slave threads.
 Starting static elaboration
@@ -7,12 +8,18 @@ WARNING: [VRFC 10-278] actual bit length 16 differs from formal bit length 32 fo
 WARNING: [VRFC 10-597] element index -1 into diff_count is out of bounds [C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/fifo_generator_v13_1/simulation/fifo_generator_vlog_beh.v:7724]
 WARNING: [VRFC 10-597] element index -1 into num_read_words_dc is out of bounds [C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/fifo_generator_v13_1/simulation/fifo_generator_vlog_beh.v:8054]
 WARNING: [VRFC 10-597] element index -1 into num_write_words_dc is out of bounds [C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/fifo_generator_v13_1/simulation/fifo_generator_vlog_beh.v:8104]
+=======
+Running: C:/Xilinx/Vivado/2016.2/bin/unwrapped/win64.o/xelab.exe -wto cfa84ca63fc54fd180d347ee81a35e64 --debug typical --relax --mt 2 -L xil_defaultlib -L xpm -L blk_mem_gen_v8_3_3 -L unisims_ver -L unimacro_ver -L secureip --snapshot testbench_iv_behav xil_defaultlib.testbench_iv xil_defaultlib.glbl -log elaborate.log 
+Using 2 slave threads.
+Starting static elaboration
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
 WARNING: [VRFC 10-1783] select index 30 into current_contents is out of bounds [C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/blk_mem_gen_v8_3/simulation/blk_mem_gen_v8_3.v:2414]
 WARNING: [VRFC 10-1783] select index 62 into current_contents is out of bounds [C:/github/fp/Simulation2016/I-V/I-V.ip_user_files/ipstatic/blk_mem_gen_v8_3/simulation/blk_mem_gen_v8_3.v:2415]
 Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
+<<<<<<< HEAD
 Compiling package std.standard
 Compiling package ieee.std_logic_1164
 Compiling package ieee.numeric_std
@@ -58,6 +65,10 @@ Compiling module xil_defaultlib.axis_measure_pulse
 Compiling module xil_defaultlib.DUT_IV_axis_measure_pulse_0_1
 Compiling module xil_defaultlib.axis_variable
 Compiling module xil_defaultlib.DUT_IV_axis_variable_0_0
+=======
+Compiling module xil_defaultlib.axis_measure_pulse(BRAM_ADDR_WID...
+Compiling module xil_defaultlib.DUT_IV_axis_measure_pulse_0_0
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
 Compiling module blk_mem_gen_v8_3_3.blk_mem_gen_v8_3_3_output_stage(...
 Compiling module blk_mem_gen_v8_3_3.blk_mem_gen_v8_3_3_output_stage(...
 Compiling module blk_mem_gen_v8_3_3.blk_mem_gen_v8_3_3_softecc_outpu...
@@ -65,34 +76,6 @@ Compiling module blk_mem_gen_v8_3_3.blk_mem_gen_v8_3_3_mem_module(C_...
 Compiling module blk_mem_gen_v8_3_3.blk_mem_axi_regs_fwd_v8_3(C_DATA...
 Compiling module blk_mem_gen_v8_3_3.blk_mem_gen_v8_3_3(C_FAMILY="zyn...
 Compiling module xil_defaultlib.DUT_IV_blk_mem_gen_0_0
-Compiling architecture xilinx of entity axi_utils_v2_0_2.axi_slave_2to1 [\axi_slave_2to1(c_a_tdata_width=...]
-Compiling architecture xilinx of entity axi_utils_v2_0_2.glb_srl_fifo [\glb_srl_fifo(width=16,has_uvpro...]
-Compiling architecture xilinx of entity axi_utils_v2_0_2.glb_ifx_master [\glb_ifx_master(width=16,afull_t...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=2,family=(p_dsp...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay_bit [\delay_bit(delay_len=0,family=(p...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay_bit [\delay_bit(delay_len=2,family=(p...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=1,family=(p_dsp...]
-Compiling architecture dsp48e1_v of entity unisim.DSP48E1 [\DSP48E1(adreg=0,dreg=0,inmodere...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=0,family=(p_dsp...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.emb_calc [\emb_calc(param=((p_dsp48e1,fals...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=0,family=(p_dsp...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay_bit [\delay_bit(delay_len=5,family=(p...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_stage_folded [\int_comb_stage_folded(c_int_or_...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_section [\int_comb_section(c_int_or_comb=...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.emb_calc [\emb_calc(param=((p_dsp48e1,fals...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_stage_unfolded [\int_comb_stage_unfolded(c_int_o...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.emb_calc [\emb_calc(param=((p_dsp48e1,fals...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=0,family=(p_dsp...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_stage_unfolded [\int_comb_stage_unfolded(c_int_o...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.emb_calc [\emb_calc(param=((p_dsp48e1,fals...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay [\delay(delay_len=0,family=(p_dsp...]
-Compiling architecture struct_all of entity cic_compiler_v4_0_10.delay_bit [\delay_bit(delay_len=3,family=(p...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_stage_unfolded [\int_comb_stage_unfolded(c_int_o...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.int_comb_section [\int_comb_section(c_int_or_comb=...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.interpolate [\interpolate(c_num_stages=3,c_ra...]
-Compiling architecture synth of entity cic_compiler_v4_0_10.cic_compiler_v4_0_10_viv [\cic_compiler_v4_0_10_viv(c_comp...]
-Compiling architecture xilinx of entity cic_compiler_v4_0_10.cic_compiler_v4_0_10 [\cic_compiler_v4_0_10(c_componen...]
-Compiling architecture dut_iv_cic_compiler_0_0_arch of entity xil_defaultlib.DUT_IV_cic_compiler_0_0 [dut_iv_cic_compiler_0_0_default]
 Compiling module xil_defaultlib.DUT_IV
 Compiling module xil_defaultlib.DUT_IV_wrapper
 Compiling module xil_defaultlib.testbench_iv

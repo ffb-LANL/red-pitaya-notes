@@ -246,6 +246,7 @@
         </spirit:parameters>
       </spirit:busInterface>
       <spirit:busInterface>
+<<<<<<< HEAD
         <spirit:name>S_AXIS_DATA</spirit:name>
         <spirit:slave/>
         <spirit:busType spirit:library="interface" spirit:name="axis" spirit:vendor="xilinx.com" spirit:version="1.0"/>
@@ -710,6 +711,8 @@
         </spirit:parameters>
       </spirit:busInterface>
       <spirit:busInterface>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         <spirit:name>CLK.ACLK</spirit:name>
         <spirit:displayName>Clk</spirit:displayName>
         <spirit:description>Clock</spirit:description>
@@ -859,10 +862,13 @@
           <spirit:name>overload</spirit:name>
           <spirit:wire>
             <spirit:direction>out</spirit:direction>
+<<<<<<< HEAD
             <spirit:vector>
               <spirit:left>2</spirit:left>
               <spirit:right>0</spirit:right>
             </spirit:vector>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
           </spirit:wire>
         </spirit:port>
       </spirit:ports>
@@ -901,6 +907,7 @@
         </spirit:configurableElementValues>
       </spirit:componentInstance>
       <spirit:componentInstance>
+<<<<<<< HEAD
         <spirit:instanceName>cic_compiler_0</spirit:instanceName>
         <spirit:componentRef spirit:library="ip" spirit:name="cic_compiler" spirit:vendor="xilinx.com" spirit:version="4.0"/>
         <spirit:configurableElementValues>
@@ -950,6 +957,13 @@
         <spirit:componentRef spirit:library="user" spirit:name="axis_measure_pulse" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
           <spirit:configurableElementValue spirit:referenceId="bd:xciName">DUT_IV_axis_measure_pulse_0_1</spirit:configurableElementValue>
+=======
+        <spirit:instanceName>axis_measure_pulse_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axis_measure_pulse" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">DUT_IV_axis_measure_pulse_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="BRAM_ADDR_WIDTH">16</spirit:configurableElementValue>
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         </spirit:configurableElementValues>
       </spirit:componentInstance>
     </spirit:componentInstances>
@@ -969,19 +983,25 @@
       <spirit:adHocConnection>
         <spirit:name>aclk_1</spirit:name>
         <spirit:externalPortReference spirit:portRef="aclk"/>
+<<<<<<< HEAD
         <spirit:internalPortReference spirit:componentRef="cic_compiler_0" spirit:portRef="aclk"/>
         <spirit:internalPortReference spirit:componentRef="axis_variable_0" spirit:portRef="aclk"/>
         <spirit:internalPortReference spirit:componentRef="axis_data_fifo_0" spirit:portRef="s_axis_aclk"/>
         <spirit:internalPortReference spirit:componentRef="axis_dwidth_converter_0" spirit:portRef="aclk"/>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="aclk"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
         <spirit:name>aresetn_1</spirit:name>
         <spirit:externalPortReference spirit:portRef="aresetn"/>
+<<<<<<< HEAD
         <spirit:internalPortReference spirit:componentRef="cic_compiler_0" spirit:portRef="aresetn"/>
         <spirit:internalPortReference spirit:componentRef="axis_variable_0" spirit:portRef="aresetn"/>
         <spirit:internalPortReference spirit:componentRef="axis_data_fifo_0" spirit:portRef="s_axis_aresetn"/>
         <spirit:internalPortReference spirit:componentRef="axis_dwidth_converter_0" spirit:portRef="aresetn"/>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="aresetn"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
@@ -999,11 +1019,14 @@
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="case_id"/>
         <spirit:externalPortReference spirit:portRef="overload"/>
       </spirit:adHocConnection>
+<<<<<<< HEAD
       <spirit:adHocConnection>
         <spirit:name>axis_measure_pulse_0_sts_data</spirit:name>
         <spirit:internalPortReference spirit:componentRef="axis_measure_pulse_0" spirit:portRef="sts_data"/>
         <spirit:externalPortReference spirit:portRef="sts_data"/>
       </spirit:adHocConnection>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     </spirit:adHocConnections>
     <spirit:hierConnections>
       <spirit:hierConnection spirit:interfaceRef="S_AXIS/S_AXIS_2">
@@ -1012,6 +1035,7 @@
       <spirit:hierConnection spirit:interfaceRef="M_AXIS/axis_measure_pulse_0_M_AXIS">
         <spirit:activeInterface spirit:busRef="M_AXIS" spirit:componentRef="axis_measure_pulse_0"/>
       </spirit:hierConnection>
+<<<<<<< HEAD
       <spirit:hierConnection spirit:interfaceRef="S_AXIS_DATA/S_AXIS_DATA_1">
         <spirit:activeInterface spirit:busRef="S_AXIS_DATA" spirit:componentRef="cic_compiler_0"/>
       </spirit:hierConnection>
@@ -1024,6 +1048,8 @@
       <spirit:hierConnection spirit:interfaceRef="M_AXIS_1/axis_dwidth_converter_0_M_AXIS">
         <spirit:activeInterface spirit:busRef="M_AXIS" spirit:componentRef="axis_dwidth_converter_0"/>
       </spirit:hierConnection>
+=======
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
     </spirit:hierConnections>
   </spirit:design>
 

@@ -5,4 +5,8 @@
     ** Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
 
 source C:/github/fp/Simulation2016/I-V/I-V.hw/webtalk/labtool_webtalk.tcl -notrace
+<<<<<<< HEAD
 INFO: [Common 17-206] Exiting Webtalk at Wed Nov 08 14:29:32 2017...
+=======
+INFO: [Common 17-206] Exiting Webtalk at Fri Sep 29 13:25:58 2017...
+>>>>>>> 05678811a445870379df2794c239b93fde78afde
