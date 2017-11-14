@@ -5,6 +5,7 @@ vhdl axi_utils_v2_0_2  "../../../I-V.ip_user_files/ipstatic/axi_utils_v2_0/hdl/a
 vhdl cic_compiler_v4_0_10  "../../../I-V.ip_user_files/ipstatic/cic_compiler_v4_0/hdl/cic_compiler_v4_0_vh_rfs.vhd"
 vhdl cic_compiler_v4_0_10  "../../../I-V.ip_user_files/ipstatic/cic_compiler_v4_0/hdl/cic_compiler_v4_0.vhd"
 vhdl xil_defaultlib  "../../../I-V.ip_user_files/bd/DUT_IV/ip/DUT_IV_cic_compiler_0_0/sim/DUT_IV_cic_compiler_0_0.vhd"
+vhdl fifo_generator_v13_1_1  "../../../I-V.ip_user_files/ipstatic/fifo_generator_v13_1/hdl/fifo_generator_v13_1_rfs.vhd"
 
 # Do not sort compile order
 nosort

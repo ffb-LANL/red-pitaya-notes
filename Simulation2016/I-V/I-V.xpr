@@ -21,12 +21,13 @@
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../../tmp"/>
     <Option Name="EnableCoreContainer" Val="FALSE"/>
+    <Option Name="XPMLibraries" Val="XPM_CDC"/>
     <Option Name="XPMLibraries" Val="XPM_MEMORY"/>
     <Option Name="CreateRefXciForCoreContainers" Val="FALSE"/>
     <Option Name="IPUserFilesDir" Val="$PPRDIR/I-V.ip_user_files"/>
     <Option Name="IPStaticSourceDir" Val="$PPRDIR/I-V.ip_user_files/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
-    <Option Name="WTXSimLaunchSim" Val="55"/>
+    <Option Name="WTXSimLaunchSim" Val="71"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
@@ -56,13 +57,21 @@
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_cic_compiler_0_0/DUT_IV_cic_compiler_0_0.xci">
           <Proxy FileSetName="DUT_IV_cic_compiler_0_0"/>
         </CompFileExtendedInfo>
-        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_measure_pulse_0_1/DUT_IV_axis_measure_pulse_0_1.xci">
-          <Proxy FileSetName="DUT_IV_axis_measure_pulse_0_1"/>
-        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_blk_mem_gen_0_0/DUT_IV_blk_mem_gen_0_0.xci">
           <Proxy FileSetName="DUT_IV_blk_mem_gen_0_0"/>
         </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_dwidth_converter_0_0/DUT_IV_axis_dwidth_converter_0_0.xci">
+          <Proxy FileSetName="DUT_IV_axis_dwidth_converter_0_0"/>
+        </CompFileExtendedInfo>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_data_fifo_0_0/DUT_IV_axis_data_fifo_0_0.xci">
+          <Proxy FileSetName="DUT_IV_axis_data_fifo_0_0"/>
+        </CompFileExtendedInfo>
         <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hdl/DUT_IV.v"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="DUT_IV_ooc.xdc"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="ip/DUT_IV_axis_measure_pulse_0_1/DUT_IV_axis_measure_pulse_0_1.xci"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hdl/DUT_IV.hwdef"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hw_handoff/DUT_IV_bd.tcl"/>
+        <CompFileExtendedInfo CompFileName="DUT_IV.bd" FileRelPathName="hw_handoff/DUT_IV.hwh"/>
       </File>
       <File Path="$PSRCDIR/sources_1/bd/DUT_IV/hdl/DUT_IV_wrapper.v">
         <FileInfo>
@@ -120,12 +129,6 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="DUT_IV_axis_measure_pulse_0_1" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_measure_pulse_0_1">
-      <Config>
-        <Option Name="TopModule" Val="DUT_IV_axis_measure_pulse_0_1"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
     <FileSet Name="DUT_IV_cic_compiler_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_cic_compiler_0_0">
       <Config>
         <Option Name="TopModule" Val="DUT_IV_cic_compiler_0_0"/>
@@ -135,6 +138,18 @@
     <FileSet Name="DUT_IV_axis_variable_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_variable_0_0">
       <Config>
         <Option Name="TopModule" Val="DUT_IV_axis_variable_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="DUT_IV_axis_dwidth_converter_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_dwidth_converter_0_0">
+      <Config>
+        <Option Name="TopModule" Val="DUT_IV_axis_dwidth_converter_0_0"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="DUT_IV_axis_data_fifo_0_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/DUT_IV_axis_data_fifo_0_0">
+      <Config>
+        <Option Name="TopModule" Val="DUT_IV_axis_data_fifo_0_0"/>
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
@@ -164,47 +179,42 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="10">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7z010clg400-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" State="current" IncludeInArchive="true">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7z010clg400-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+    </Run>
+    <Run Id="DUT_IV_blk_mem_gen_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_blk_mem_gen_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_blk_mem_gen_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
       </Strategy>
     </Run>
-    <Run Id="DUT_IV_blk_mem_gen_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_blk_mem_gen_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_blk_mem_gen_0_0" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/DUT_IV_blk_mem_gen_0_0_synth_1" IncludeInArchive="true">
+    <Run Id="DUT_IV_cic_compiler_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_cic_compiler_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_cic_compiler_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
-    <Run Id="DUT_IV_axis_measure_pulse_0_1_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_measure_pulse_0_1" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_measure_pulse_0_1" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/DUT_IV_axis_measure_pulse_0_1_synth_1" IncludeInArchive="true">
+    <Run Id="DUT_IV_axis_variable_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_variable_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_variable_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
-    <Run Id="DUT_IV_cic_compiler_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_cic_compiler_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_cic_compiler_0_0" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/DUT_IV_cic_compiler_0_0_synth_1" IncludeInArchive="true">
+    <Run Id="DUT_IV_axis_dwidth_converter_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_dwidth_converter_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_dwidth_converter_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
-    <Run Id="DUT_IV_axis_variable_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_variable_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_variable_0_0" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/DUT_IV_axis_variable_0_0_synth_1" IncludeInArchive="true">
+    <Run Id="DUT_IV_axis_data_fifo_0_0_synth_1" Type="Ft3:Synth" SrcSet="DUT_IV_axis_data_fifo_0_0" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_data_fifo_0_0" Description="Vivado Synthesis Defaults" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
     <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." State="current" SynthRun="synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
@@ -222,25 +232,7 @@
     </Run>
     <Run Id="DUT_IV_blk_mem_gen_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_blk_mem_gen_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_blk_mem_gen_0_0_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-    </Run>
-    <Run Id="DUT_IV_axis_measure_pulse_0_1_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_measure_pulse_0_1" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_measure_pulse_0_1_synth_1" IncludeInArchive="false">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -254,9 +246,7 @@
     </Run>
     <Run Id="DUT_IV_cic_compiler_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_cic_compiler_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_cic_compiler_0_0_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
@@ -270,9 +260,35 @@
     </Run>
     <Run Id="DUT_IV_axis_variable_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_variable_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_variable_0_0_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+    </Run>
+    <Run Id="DUT_IV_axis_dwidth_converter_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_dwidth_converter_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_dwidth_converter_0_0_synth_1" IncludeInArchive="false">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+    </Run>
+    <Run Id="DUT_IV_axis_data_fifo_0_0_impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-2" ConstrsSet="DUT_IV_axis_data_fifo_0_0" Description="Default settings for Implementation." SynthRun="DUT_IV_axis_data_fifo_0_0_synth_1" IncludeInArchive="false">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>
