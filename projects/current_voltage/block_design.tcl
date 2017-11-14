@@ -264,7 +264,7 @@ cell xilinx.com:ip:cic_compiler:4.0 cic_0 {
   FIXED_OR_INITIAL_RATE 64
   INPUT_SAMPLE_FREQUENCY 125
   CLOCK_FREQUENCY 125
-  INPUT_DATA_WIDTH 16
+  INPUT_DATA_WIDTH 14
   QUANTIZATION Truncation
   OUTPUT_DATA_WIDTH 16
   HAS_ARESETN true
@@ -314,6 +314,7 @@ cell xilinx.com:ip:cic_compiler:4.0 interpol  {
   OUTPUT_DATA_WIDTH 16
   HAS_ARESETN true
   USE_XTREME_DSP_SLICE true
+  HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA measure_pulse/M_AXIS
   S_AXIS_CONFIG bcast_rate/m00_axis

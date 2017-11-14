@@ -7,7 +7,7 @@ module axis_measure_pulse #
   parameter integer CNTR_WIDTH = 16,
   parameter integer PULSE_WIDTH = 16,
   parameter integer BRAM_DATA_WIDTH = 16,
-  parameter integer BRAM_ADDR_WIDTH = 10
+  parameter integer BRAM_ADDR_WIDTH = 16
 )
 (
   // System signals
@@ -38,21 +38,21 @@ module axis_measure_pulse #
 
 );
 
-  wire [PULSE_WIDTH-1:0] offset_start,ramp,width,offset_width;
+  wire [PULSE_WIDTH-1:0] total_sweeps,ramp,width,offset_width;
   wire [BRAM_ADDR_WIDTH-1:0] waveform_length, pulse_length;
-  wire signed [31:0] threshold;
-  reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next;
+  wire signed [31:0] threshold, magnitude;
+  reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next, int_cntr_sweeps_reg, int_cntr_sweeps_next;
   reg [2:0] int_case_reg, int_case_next;
   reg signed [31:0] pulse,pulse_next,offset,offset_next,result,result_next;
   reg [BRAM_ADDR_WIDTH-1:0] wfrm_start,wfrm_start_next,wfrm_point,wfrm_point_next;
-
+ 
   reg [BRAM_ADDR_WIDTH-1:0] int_addr, int_addr_next;
   reg int_enbl_reg, int_enbl_next;
-  reg int_conf_reg, int_conf_next;
+  reg int_last_pulse_reg, int_last_pulse_next;
 
   wire int_comp_wire, int_tlast_wire, wfrm_point_comp;
-  
-  assign offset_start = cfg_data[PULSE_WIDTH-1:0];
+  // default cfg_data: total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32]
+  assign total_sweeps = cfg_data[PULSE_WIDTH-1:0];
   assign ramp = cfg_data[PULSE_WIDTH*2-1:PULSE_WIDTH];
   assign width = cfg_data[PULSE_WIDTH*3-1:PULSE_WIDTH*2];
   assign offset_width = width[PULSE_WIDTH-2:1];
@@ -61,12 +61,14 @@ module axis_measure_pulse #
   assign threshold = $signed(cfg_data[PULSE_WIDTH*4+31:PULSE_WIDTH*4]);
   assign waveform_length = cfg_data[PULSE_WIDTH*4+BRAM_ADDR_WIDTH+31:PULSE_WIDTH*4+32];
   assign pulse_length = cfg_data[PULSE_WIDTH*4+BRAM_ADDR_WIDTH+63:PULSE_WIDTH*4+64];
+  assign magnitude = $signed(pulse) - $signed(offset);
   
   always @(posedge aclk)
   begin
     if(~aresetn)
     begin
       int_cntr_reg <= {(CNTR_WIDTH){1'b0}};
+      int_cntr_sweeps_reg <= {(CNTR_WIDTH){1'b0}};
       int_case_reg <= 3'd0;
       pulse <= 32'd0; 
       offset <= 32'd0;              
@@ -75,11 +77,12 @@ module axis_measure_pulse #
       wfrm_point <= {(BRAM_ADDR_WIDTH){1'b0}};
       int_addr <= {(BRAM_ADDR_WIDTH){1'b0}};
       int_enbl_reg <= 1'b0;
-      int_conf_reg <= 1'b0;                           
+      int_last_pulse_reg <= 1'b0;                           
     end
     else
     begin
       int_cntr_reg <= int_cntr_next;
+      int_cntr_sweeps_reg <= int_cntr_sweeps_next;
       int_case_reg <= int_case_next;
       pulse <= pulse_next;
       offset <= offset_next;
@@ -88,7 +91,7 @@ module axis_measure_pulse #
       wfrm_point <= wfrm_point_next;
       int_addr <= int_addr_next;
       int_enbl_reg <= int_enbl_next;
-      int_conf_reg <= int_conf_next;
+      int_last_pulse_reg <= int_last_pulse_next;
     end
   end
   
@@ -97,141 +100,150 @@ module axis_measure_pulse #
   assign wfrm_point_comp = wfrm_point < pulse_length;
           
   always @*
-     begin
-      int_cntr_next = int_cntr_reg;
-      int_case_next = int_case_reg;
-      offset_next=offset;
-      result_next=result;
-      int_addr_next = int_addr;
-      pulse_next = pulse;
-      wfrm_start_next = wfrm_start;
-      wfrm_point_next = wfrm_point;
+    begin
+        int_cntr_next = int_cntr_reg;
+        int_cntr_sweeps_next = int_cntr_sweeps_reg;
+        int_case_next = int_case_reg;
+        offset_next=offset;
+        result_next=result;
+        int_addr_next = int_addr;
+        pulse_next = pulse;
+        wfrm_start_next = wfrm_start;
+        wfrm_point_next = wfrm_point;
+        int_enbl_next = int_enbl_reg;
+        int_last_pulse_next = int_last_pulse_reg;
+ 
+        if(int_case_reg < 3'd5)
+            begin
+                if(wfrm_start < ( waveform_length - pulse_length) )
+                    int_last_pulse_next = 1'b0;
+                else
+                    int_last_pulse_next = 1'b1;
 
-      int_enbl_next = int_enbl_reg;
+                if(~int_enbl_reg & int_comp_wire)
+                    int_enbl_next = 1'b1;
+                    
+                if(m_axis_tready & int_enbl_reg & wfrm_point_comp)
+                    begin
+                        wfrm_point_next = wfrm_point + 1'b1;
+                        int_addr_next = wfrm_start + wfrm_point;
+                    end
 
-       if(~int_enbl_reg & int_comp_wire)
-        begin
-         int_enbl_next = 1'b1;
-        end
-
-       if(m_axis_tready & int_enbl_reg & wfrm_point_comp)
-        begin
-          wfrm_point_next = wfrm_point + 1'b1;
-          int_addr_next = wfrm_start + wfrm_point;
-       end
-
-       if(m_axis_tready & int_enbl_reg & ~wfrm_point_comp)
-       begin
-         wfrm_point_next = 32'b0;
-         int_addr_next = wfrm_start + wfrm_point;
-       end
-
-      case(int_case_reg)
+                if(m_axis_tready & int_enbl_reg & ~wfrm_point_comp)
+                    begin
+                        wfrm_point_next = 32'b0;
+                        int_addr_next = wfrm_start + wfrm_point;
+                    end
+                if(s_axis_tvalid)
+                    begin
+                        case(int_case_reg)
     
-       // measure signal offset
-        0:
-         begin
-          if(s_axis_tvalid)
-            begin
-             if(int_cntr_reg < offset_width )
-               begin
-                offset_next = $signed(offset) + $signed(s_axis_tdata);
-                int_cntr_next = int_cntr_reg + 1'b1;
-               end
-             else
-               begin
-                int_cntr_next = {(CNTR_WIDTH){1'b0}};
-                int_case_next = int_case_reg + 3'd1;
-               end
+                            // measure signal offset front
+                            0:
+                                begin
+                                    if(int_cntr_reg < offset_width )
+                                        begin
+                                            offset_next = $signed(offset) + $signed(s_axis_tdata);
+                                            int_cntr_next = int_cntr_reg + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            int_cntr_next = {(CNTR_WIDTH){1'b0}};
+                                            int_case_next = int_case_reg + 3'd1;
+                                        end
+                                end
+
+                            // skip ramp up
+                            1:
+                                begin
+                                    if(int_cntr_reg < ramp )
+                                        begin
+                                            int_cntr_next = int_cntr_reg + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            int_cntr_next = {(CNTR_WIDTH){1'b0}};  
+                                            int_case_next = int_case_reg + 3'd1;
+                                        end
+                                end
+
+                            // measure pulse
+                            2:
+                                begin
+                                    if(int_cntr_reg < width )
+                                        begin
+                                            pulse_next = $signed(pulse) + $signed(s_axis_tdata);
+                                            int_cntr_next = int_cntr_reg + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            int_cntr_next = {(CNTR_WIDTH){1'b0}};
+                                            int_case_next = int_case_reg + 3'd1;
+                                    end
+                                end
+
+                            // skip ramp down
+                            3:
+                                begin
+                                    if(int_cntr_reg < ramp )
+                                        begin
+                                            int_cntr_next = int_cntr_reg + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            int_cntr_next = {(CNTR_WIDTH){1'b0}};  
+                                            int_case_next = int_case_reg + 3'd1;
+                                        end
+                                    end
+
+                            // post offset
+                            4:
+                                begin
+                                    if(int_cntr_reg < offset_width )
+                                        begin
+                                            offset_next = $signed(offset) + $signed(s_axis_tdata);
+                                            int_cntr_next = int_cntr_reg + 1'b1;
+                                        end
+                                    else
+                                        begin
+                                            int_cntr_next = {(CNTR_WIDTH){1'b0}};
+                                            int_case_next = 3'd0;
+                                            result_next = magnitude; // assume 50% duty cycle
+                                            offset_next = 32'd0;
+                                            pulse_next = 32'd0;
+                                            wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                                            int_addr_next = wfrm_start + wfrm_point;
+
+                                            if((magnitude < threshold) & ~int_last_pulse_reg )
+                                                begin
+                                                    wfrm_start_next = wfrm_start + pulse_length + 1;
+                                                end    
+                                            else
+                                                begin 
+                                                    wfrm_start_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                                                    if(int_cntr_sweeps_reg < total_sweeps )
+                                                        begin
+                                                            int_cntr_sweeps_next = int_cntr_sweeps_reg + 1'b1;
+                                                        end   
+                                                    else
+                                                        begin
+                                                            int_enbl_next = 1'b0;
+                                                            wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                                                            int_case_next = 3'd5;
+                                                        end
+                                                end
+                                        end 
+                                end
+                            5:
+                                begin
+                                    int_enbl_next = 1'b0;
+                                    wfrm_start_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                                    wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
+                                end
+                        endcase
+                    end
             end
-         end
-
-       // skip ramp up
-        1:
-         begin
-          if(s_axis_tvalid)
-            begin
-             if(int_cntr_reg < ramp )
-               begin
-                int_cntr_next = int_cntr_reg + 1'b1;
-               end
-             else
-               begin
-                int_cntr_next = {(CNTR_WIDTH){1'b0}};  
-                int_case_next = int_case_reg + 3'd1;
-               end
-            end
-         end
-
-       // measure pulse
-        2:
-         begin
-          if(s_axis_tvalid)
-            begin
-             if(int_cntr_reg < width )
-               begin
-                pulse_next = $signed(pulse) + $signed(s_axis_tdata);
-                int_cntr_next = int_cntr_reg + 1'b1;
-               end
-             else
-               begin
-                int_cntr_next = {(CNTR_WIDTH){1'b0}};
-                int_case_next = int_case_reg + 3'd1;
-               end
-            end
-         end
-
-       // skip ramp down
-        3:
-         begin
-          if(s_axis_tvalid)
-            begin
-             if(int_cntr_reg < ramp )
-               begin
-                int_cntr_next = int_cntr_reg + 1'b1;
-               end
-             else
-               begin
-                int_cntr_next = {(CNTR_WIDTH){1'b0}};  
-                int_case_next = int_case_reg + 3'd1;
-               end
-            end
-         end
-
-       // post offset
-        4:
-         begin
-          if(s_axis_tvalid)
-            begin
-             if(int_cntr_reg < offset_width )
-               begin
-                offset_next = $signed(offset) + $signed(s_axis_tdata);
-                int_cntr_next = int_cntr_reg + 1'b1;
-               end
-             else
-               begin
-                int_cntr_next = {(CNTR_WIDTH){1'b0}};
-                int_case_next = 3'd0;
-                result_next = $signed(pulse) - $signed(offset); // assume 50% duty cycle
-                offset_next = 32'd0;
-                pulse_next = 32'd0;
-                wfrm_point_next = {(BRAM_ADDR_WIDTH){1'b0}};
-                int_addr_next = wfrm_start + wfrm_point;
-
-               if(($signed(result_next) < threshold) & int_comp_wire )
-                  begin
-                     wfrm_start_next = wfrm_start + pulse_length + 1;
-                  end
-                else 
-                  begin
-                     wfrm_start_next = {(BRAM_ADDR_WIDTH){1'b0}};;
-                  end 
-               end
-            end
-         end
-       endcase
-     end
-
+    end
   assign overload = result < threshold;
   assign s_axis_tready = 1'b1;
   
