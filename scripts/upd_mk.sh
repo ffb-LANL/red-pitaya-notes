@@ -6,6 +6,9 @@ cd /github/fp
 git pull
 source /opt/Xilinx/Vivado/2016.2/settings64.sh
 source /opt/Xilinx/SDK/2016.2/settings64.sh
+make NAME=lockin_sweep bit
+make NAME=digitizer bit
+make NAME=current_voltage bit
 make NAME=red_pitaya_0_92 all
-sh scripts/image.sh scripts/debian-ecosystem.sh red-pitaya-ecosystem-0.95-debian-8.5-armhf.img 1024
+sh scripts/image.sh scripts/debian-ls.sh red-pitaya-ecosystem-0.95-debian-8.5-armhf.img 1024
 cp red-pitaya-ecosystem-0.95-debian-8.5-armhf.img /media/sf_Install
