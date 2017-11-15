@@ -66,6 +66,8 @@ chmod +x $root_dir/usr/local/sbin/hostapd
 mkdir $root_dir/opt
 mkdir $root_dir/opt/bin
 cp tmp/lockin_sweep.bit $root_dir/opt/
+cp tmp/digitizer.bit $root_dir/opt/
+cp tmp/current_voltage.bit $root_dir/opt/
 cp server/threaded/trd_rp $root_dir/opt/bin/
 chmod 777 $root_dir/opt/bin/trd_rp
 
