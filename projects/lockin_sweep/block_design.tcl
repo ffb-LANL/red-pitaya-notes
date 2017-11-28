@@ -286,12 +286,31 @@ cell xilinx.com:ip:clk_wiz:5.3 pll_0 {
   clk_in1 adc_0/adc_clk
 }
 
+
+# Create xlslice
+cell xilinx.com:ip:xlslice:1.0 scale_factor {
+  DIN_WIDTH 256 DIN_FROM 159 DIN_TO 144
+} {
+  Din cfg_0/cfg_data
+}
+
+
+# Create axis_scaler
+cell pavel-demin:user:axis_scaler:1.0 scaler {
+  AXIS_TDATA_WIDTH 14
+} {
+  S_AXIS bcast_DDS/M00_AXIS
+  cfg_data scale_factor/Dout
+  aclk ps_0/FCLK_CLK0
+  aresetn slice_trx_reset/dout
+}
+
 # Create dac_clock_converter
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_dac {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS bcast_DDS/M00_AXIS
+  S_AXIS scaler/M_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn slice_trx_reset/dout
   m_axis_aclk adc_0/adc_clk

@@ -6,3 +6,19 @@ fast digitizer 107
 synchronous lockin 108
 dual channel lockin 109
 #current-voltage test pattern 110
+
+
+
+CFG map:
+0-0     PKTZR RESET
+1-1     WRITE ENABLE
+3-3     SOFT TRIGGER
+4-4     TRX RESET
+32-63   RECORD_LENGTH
+64-95   FREQUENCY WORD
+96-127  DECIMATION
+128-134 LED
+144-159 OUTPUT SCALER
+160-319 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
+224-255 DDS DELAY
+320-351 TRIGGER DELAY 
