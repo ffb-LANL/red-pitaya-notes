@@ -74,7 +74,8 @@
 +	xlnx,phy-reset-gpio = <&gpio0 48 0>;
  };
  &clkc {
- 	fclk-enable = <0x1>;
+-	fclk-enable = <0xf>;
++	fclk-enable = <0x0>;
  	ps-clk-frequency = <33333333>;
  };
 +&adc {

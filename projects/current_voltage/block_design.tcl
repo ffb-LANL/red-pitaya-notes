@@ -264,7 +264,7 @@ cell xilinx.com:ip:cic_compiler:4.0 cic_0 {
   FIXED_OR_INITIAL_RATE 64
   INPUT_SAMPLE_FREQUENCY 125
   CLOCK_FREQUENCY 125
-  INPUT_DATA_WIDTH 16
+  INPUT_DATA_WIDTH 14
   QUANTIZATION Truncation
   OUTPUT_DATA_WIDTH 16
   HAS_ARESETN true
@@ -291,6 +291,13 @@ cell pavel-demin:user:axis_measure_pulse:1.0 measure_pulse {
 }
 
 
+
+# Create xlconstant
+cell xilinx.com:ip:xlconstant:1.1 const_interpol {
+  CONST_WIDTH 16
+  CONST_VAL 64
+}
+
 # Create cic_compiler
 cell xilinx.com:ip:cic_compiler:4.0 interpol  {
   INPUT_DATA_WIDTH.VALUE_SRC USER
@@ -307,6 +314,7 @@ cell xilinx.com:ip:cic_compiler:4.0 interpol  {
   OUTPUT_DATA_WIDTH 16
   HAS_ARESETN true
   USE_XTREME_DSP_SLICE true
+  HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA measure_pulse/M_AXIS
   S_AXIS_CONFIG bcast_rate/m00_axis
@@ -321,7 +329,6 @@ cell pavel-demin:user:axis_constant:1.0 measure_result_0 {
   cfg_data measure_pulse/sts_data
   aclk ps_0/FCLK_CLK0
 }
-
 
 # Create axis_combiner
 cell  xilinx.com:ip:axis_combiner:1.1 comb_adc_result {
@@ -399,7 +406,7 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
 } {
-  S_AXIS interpol/M_AXIS_DATA
+  S_AXIS interpol/m_axis_data
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
   m_axis_aclk adc_0/adc_clk
@@ -479,4 +486,3 @@ apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
 
 set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
 set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
-

@@ -1,1 +1,1 @@
-pscp -pw changeme tmp/%1.bit root@192.168.1.100:/tmp/%2.bit
+pscp -pw changeme tmp/%1.bit root@192.168.1.100:/opt/%1.bit
