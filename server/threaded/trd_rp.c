@@ -23,6 +23,7 @@
 #define WRITE_SIZE 0x0040000
 
 //#define RAM_START 0x1E000000
+#define VISA_PORT 5000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
 #define PKTZR_RESET_FLAG 1
@@ -66,6 +67,7 @@ int tx_thread_asc = 0;
 double temperature_scale,temperature;
 int temperature_raw, temperature_offset;
 int init_temperature_scale();
+int start_VISA();
 int verbose=0;
 
 void *rx_handler(void *arg);
@@ -152,7 +154,7 @@ int main(int argc, char *argv[])
 
   listen(sockServer, 1024);
   signal(SIGINT, signal_handler);
-
+  start_VISA();
   read_calibration(&calibration);
 
   while(!interrupted) {
@@ -595,4 +597,72 @@ int read_calibration(rp_calib_params_t * calib_params)
 			    calib_params->be_ch2_dc_offs
        	); }
 	  return 0;
+}
+
+void *VISA_hndlr(void *arg)
+{}
+void *VISA_server(void *arg)
+{
+	char *VISA_IDN="*IDN?";
+	char VISA_BUFF[128];
+	struct sockaddr_in addr;
+	  int sockServer,sock_client,yes = 1;
+	  if((sockServer = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	  {
+	    perror("socket");
+	    return EXIT_FAILURE;
+	  }
+	  setsockopt(sockServer, SOL_SOCKET, SO_REUSEADDR, (void *)&yes , sizeof(yes));
+	  /* setup listening address */
+	  memset(&addr, 0, sizeof(addr));
+	  addr.sin_family = AF_INET;
+	  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	  addr.sin_port = htons(VISA_PORT);
+	  if(bind(sockServer, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	  {
+	    perror("bind");
+	    return EXIT_FAILURE;
+	  }
+	  listen(sockServer, 1024);
+	  while(!interrupted) {
+	 	  int result, idn_size=strlen(VISA_IDN),ignore=0;
+	 	  if(verbose)printf("waiting for VISA client\n");
+	 	  memset(VISA_BUFF,0,127);
+	 	  if((sock_client = accept(sockServer, NULL, NULL)) < 0)
+	       {
+	           perror("accept");
+	           return 1;
+	       }
+	 	  if(verbose)printf("new VISA connection, waiting for command\n");
+	 	  result = recv(sock_client, VISA_BUFF, idn_size, MSG_WAITALL);
+	 	  if(result >= idn_size )
+	 	  {
+	 		  ignore=0;
+	 		  for(int i=0;i<idn_size;i++)
+	 			  if(VISA_BUFF[i]!=VISA_IDN[i])ignore=1;
+	 		  if(!ignore) {
+	 			  uint32_t status;
+	 			 status=*((uint32_t *)(sts + 8));
+	 		 	  memset(VISA_BUFF,0,127);
+                  sprintf(VISA_BUFF,"MagLab,Red Pitaya,%d,1.1\n",status);
+        	 	  if(verbose)printf("IDN request. Sending responce: %s\n",VISA_BUFF);
+
+	 			 if(send(sock_client,VISA_BUFF, strlen(VISA_BUFF), 0) < 0);
+	 		  }
+	 		   close(sock_client);
+
+	 		  }
+	 	  }
+}
+void *(*VISA_handler_ptr)(void *);
+int start_VISA(){
+	  pthread_t thread;
+	  VISA_handler_ptr = VISA_handler;
+	   if(pthread_create(&thread, NULL, VISA_handler, NULL) < 0)
+	   {
+		    perror("pthread_create");
+		    return EXIT_FAILURE;
+	   }
+	   pthread_detach(thread);
+	   return 0;
 }
