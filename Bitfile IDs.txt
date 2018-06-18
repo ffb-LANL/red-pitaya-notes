@@ -6,7 +6,7 @@ fast digitizer 107
 synchronous lockin 108
 dual channel lockin 109
 #current-voltage test pattern 110
-
+fast digitizer delayed 111
 
 
 CFG map:
@@ -14,6 +14,7 @@ CFG map:
 1-1     WRITE ENABLE
 3-3     SOFT TRIGGER
 4-4     TRX RESET
+7-7     OUTPUT SWITCH FWD/REV
 32-63   RECORD_LENGTH
 64-95   FREQUENCY WORD
 96-127  DECIMATION
