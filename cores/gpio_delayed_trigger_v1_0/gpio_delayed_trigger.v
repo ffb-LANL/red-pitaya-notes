@@ -3,7 +3,9 @@
 
 module gpio_delayed_trigger #
 (
-  parameter integer GPIO_DATA_WIDTH = 16
+  parameter integer GPIO_DATA_WIDTH = 8,
+  parameter integer GPIO_INPUT_WIDTH = 4,
+  parameter integer GPIO_OUTPUT_WIDTH = 4
 )
 (
   // System signals
@@ -11,6 +13,8 @@ module gpio_delayed_trigger #
   input  wire                        aresetn,
 
   inout  wire [GPIO_DATA_WIDTH-1:0]  gpio_data,
+  input  wire [GPIO_OUTPUT_WIDTH-1:0]  out_data,
+
 
   input  wire                        soft_trig,
   input  wire [31:0]                 delay,
@@ -26,9 +30,16 @@ module gpio_delayed_trigger #
   genvar j;
 
   generate
-    for(j = 0; j < GPIO_DATA_WIDTH; j = j + 1)
+    for(j = 0; j < GPIO_INPUT_WIDTH; j = j + 1)
       begin : GPIO
-        IOBUF gpio_iobuf (.O(int_data_wire[j]), .IO(gpio_data[j]), .I({(GPIO_DATA_WIDTH){1'b0}}), .T(1'b1));
+        IOBUF gpio_iobuf (.O(int_data_wire[j]), .IO(gpio_data[j]), .I({(GPIO_INPUT_WIDTH){1'b0}}), .T(1'b1)); 
+      end
+  endgenerate
+
+  generate
+    for(j = GPIO_INPUT_WIDTH; j < GPIO_DATA_WIDTH; j = j + 1)
+      begin : GPIO_OUT
+        IOBUF gpio_iobuf (.O(int_data_wire[j]), .IO(gpio_data[j]), .I(out_data[j-GPIO_INPUT_WIDTH]), .T(1'b0)); 
       end
   endgenerate
  

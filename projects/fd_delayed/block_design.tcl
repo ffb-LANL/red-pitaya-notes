@@ -157,6 +157,7 @@ cell xilinx.com:ip:xlslice:1.0 slice_delay {
 # Create gpio_trigger
 cell pavel-demin:user:gpio_delayed_trigger:1.0 trigger_0 {
 	GPIO_DATA_WIDTH 8
+        GPIO_INPUT_WIDTH 2	
 } {
   gpio_data exp_p_tri_io
   soft_trig slice_trig_record/Dout
@@ -164,7 +165,8 @@ cell pavel-demin:user:gpio_delayed_trigger:1.0 trigger_0 {
   aclk ps_0/FCLK_CLK0
   aresetn slice_pktzr_reset/Dout
 }
-
+#connect_bd_intf_net [get_bd_pins trigger_0/out_data] [get_bd_pins trigger_0/soft_trig]
+connect_bd_net [get_bd_pins trigger_0/out_data] [get_bd_pins trigger_0/trigger]
 
 # Create xlslice
 cell xilinx.com:ip:xlslice:1.0 slice_frequency {
