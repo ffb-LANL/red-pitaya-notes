@@ -7,6 +7,7 @@ synchronous lockin 108
 dual channel lockin 109
 #current-voltage test pattern 110
 fast digitizer delayed 111
+level_trigger 112
 
 
 CFG map:
@@ -23,3 +24,4 @@ CFG map:
 160-319 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
 224-255 DDS DELAY
 320-351 TRIGGER DELAY 
+352-367 TRIGGER LEVEL 

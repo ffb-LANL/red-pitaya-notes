@@ -4,7 +4,7 @@
 module gpio_level_trigger #
 (
   parameter integer GPIO_DATA_WIDTH = 16
-  parameter integer AXIS_TDATA_WIDTH = 32,
+  parameter integer AXIS_TDATA_WIDTH = 32  
 )
 (
   // System signals
@@ -77,7 +77,7 @@ module gpio_level_trigger #
     
 
   assign trigger  = out_trig;
-  assign s_axis_tready = m_axis_tready;
+  assign s_axis_tready = ?m_axis_tready;
   assign m_axis_tvalid = s_axis_tvalid;
   assign m_axis_tdata = s_axis_tdata;
   
