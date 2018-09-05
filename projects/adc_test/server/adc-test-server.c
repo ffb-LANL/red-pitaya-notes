@@ -31,22 +31,29 @@ int main ()
   pid_t pid;
   int pipefd[2], mmapfd, sockServer, sockClient;
   int position, limit, offset;
-  void *cfg, *sts, *ram, *buf;
-  char *name;
+  volatile uint32_t *slcr, *axi_hp0;
+  volatile void *cfg, *sts, *ram, *buf;
   struct sockaddr_in addr;
   int yes = 1, buffer = 0;
 
-  name = "/dev/mem";
-  if((mmapfd = open(name, O_RDWR)) < 0)
+  if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return 1;
   }
 
+  slcr = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8000000);
+  axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
   ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
   buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+
+  /* set HP0 bus width to 64 bits */
+  slcr[2] = 0xDF0D;
+  slcr[144] = 0;
+  axi_hp0[0] &= ~1;
+  axi_hp0[5] &= ~1;
 
   limit = 512*1024;
 
@@ -110,9 +117,9 @@ int main ()
     while(!interrupted)
     {
       /* enter reset mode */
-      *((uint32_t *)(cfg + 0)) &= ~15;
+      *((uint16_t *)(cfg + 0)) &= ~1;
       /* set default sample rate */
-      *((uint32_t *)(cfg + 4)) = 4;
+      *((uint16_t *)(cfg + 2)) = 4;
 
       if((sockClient = accept(sockServer, NULL, NULL)) < 0)
       {
@@ -125,7 +132,7 @@ int main ()
       printf("new connection\n");
 
       /* enter normal operating mode */
-      *((uint32_t *)(cfg + 0)) |= 15;
+      *((uint16_t *)(cfg + 0)) |= 1;
 
       while(!interrupted)
       {
@@ -141,7 +148,7 @@ int main ()
     }
 
     /* enter reset mode */
-    *((uint32_t *)(cfg + 0)) &= ~15;
+    *((uint16_t *)(cfg + 0)) &= ~1;
 
     close(sockServer);
 

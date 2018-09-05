@@ -11,6 +11,8 @@ create_project -part $part_name $project_name tmp
 
 set_property IP_REPO_PATHS tmp/cores [current_project]
 
+update_ip_catalog
+
 set bd_path tmp/$project_name.srcs/sources_1/bd/system
 
 create_bd_design system
@@ -70,6 +72,10 @@ source projects/$project_name/block_design.tcl
 rename cell {}
 rename module {}
 
+if {[version -short] >= 2016.3} {
+  set_property synth_checkpoint_mode None [get_files $bd_path/system.bd]
+}
+
 generate_target all [get_files $bd_path/system.bd]
 make_wrapper -files [get_files $bd_path/system.bd] -top
 
@@ -80,14 +86,14 @@ if {[llength $files] > 0} {
   add_files -norecurse $files
 }
 
-set files [glob -nocomplain cfg/*.xdc]
+set files [glob -nocomplain cfg/*.xdc projects/$project_name/*.xdc]
 if {[llength $files] > 0} {
   add_files -norecurse -fileset constrs_1 $files
 }
 
 set_property VERILOG_DEFINE {TOOL_VIVADO} [current_fileset]
 
-set_property STRATEGY Flow_PerfOptimized_High [get_runs synth_1]
+set_property STRATEGY Flow_PerfOptimized_high [get_runs synth_1]
 set_property STRATEGY Performance_NetDelay_high [get_runs impl_1]
 
 close_project

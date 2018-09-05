@@ -17,14 +17,12 @@ int main()
   int i, j, counter, yes = 1;
   uint32_t command, code, data, period, pulses, shdelay, shtime;
   uint64_t buffer[1024], tmp;
-  volatile void *cfg;
-  volatile void *sts;
+  volatile void *cfg, *sts;
   volatile uint8_t *rst;
   volatile uint32_t *dac;
   volatile uint64_t *adc;
-  char *name = "/dev/mem";
 
-  if((fd = open(name, O_RDWR)) < 0)
+  if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return EXIT_FAILURE;

@@ -24,13 +24,13 @@ int main(int argc, char *argv[])
 {
   FILE *fileIn;
   int mmapfd;
-  void *cfg, *sts, *dac;
-  char *end, *name = "/dev/mem";
+  volatile void *cfg, *sts, *dac;
+  char *end;
   char buffer[65536];
   long number;
   size_t size;
 
-  if((mmapfd = open(name, O_RDWR)) < 0)
+  if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return 1;

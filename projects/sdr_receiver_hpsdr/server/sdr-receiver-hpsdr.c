@@ -15,10 +15,10 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 
-volatile uint32_t *rx_freq[6], *rx_rate;
-volatile uint16_t *rx_cntr[6];
+volatile uint32_t *rx_freq[8];
+volatile uint16_t *rx_rate, *rx_cntr[8];
 volatile uint8_t *rx_rst;
-volatile uint64_t *rx_data[6];
+volatile uint64_t *rx_data[8];
 
 const uint32_t freq_min = 0;
 const uint32_t freq_max = 61440000;
@@ -39,30 +39,32 @@ int main(int argc, char *argv[])
   int fd, i;
   ssize_t size;
   pthread_t thread;
-  volatile void *cfg, *sts, *mux, *ptr;
-  char *end, *name = "/dev/mem";
+  volatile void *cfg, *sts;
+  volatile uint8_t *rx_sel;
+  char *end;
   uint8_t buffer[1032];
-  uint8_t reply[20] = {0xef, 0xfe, 2, 0, 0, 0, 0, 0, 0, 25, 1, 'R', '_', 'P', 'I', 'T', 'A', 'Y', 'A', 6};
+  uint8_t reply[20] = {0xef, 0xfe, 2, 0, 0, 0, 0, 0, 0, 25, 1, 'R', '_', 'P', 'I', 'T', 'A', 'Y', 'A', 8};
+  uint32_t code;
   struct ifreq hwaddr;
   struct sockaddr_in addr_ep2, addr_from;
   socklen_t size_from;
   int yes = 1;
-  int val, chan[6] = {1, 1, 1, 1, 1, 1};
+  uint8_t chan = 0;
   long number;
 
-  for(i = 0; i < 6; ++i)
+  for(i = 0; i < 8; ++i)
   {
     errno = 0;
-    number = (argc == 7) ? strtol(argv[i + 1], &end, 10) : -1;
+    number = (argc == 9) ? strtol(argv[i + 1], &end, 10) : -1;
     if(errno != 0 || end == argv[i + 1] || number < 1 || number > 2)
     {
-      printf("Usage: sdr-transceiver-hpsdr 1|2 1|2 1|2 1|2 1|2 1|2\n");
+      printf("Usage: sdr-receiver-hpsdr 1|2 1|2 1|2 1|2 1|2 1|2 1|2 1|2\n");
       return EXIT_FAILURE;
     }
-    chan[i] = number;
+    chan |= (number - 1) << i;
   }
 
-  if((fd = open(name, O_RDWR)) < 0)
+  if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return EXIT_FAILURE;
@@ -70,11 +72,10 @@ int main(int argc, char *argv[])
 
   sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
-  mux = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000);
 
-  for(i = 0; i < 6; ++i)
+  for(i = 0; i < 8; ++i)
   {
-    rx_data[i] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40004000 + i * 0x2000);
+    rx_data[i] = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40002000 + i * 0x1000);
     rx_freq[i] = ((uint32_t *)(cfg + 8 + i * 4));
     rx_cntr[i] = ((uint16_t *)(sts + 12 + i * 2));
 
@@ -82,21 +83,16 @@ int main(int argc, char *argv[])
     *rx_freq[i] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
   }
 
-  for(i = 0; i < 6; ++i)
-  {
-    ptr = mux + 64 + i * 4;
-    val = i * 2 + chan[i] - 1;
-    *(uint32_t *)ptr = val;
-  }
-
-  *(uint32_t *)mux = 2;
-
   rx_rst = ((uint8_t *)(cfg + 0));
 
-  rx_rate = ((uint32_t *)(cfg + 4));
+  rx_rate = ((uint16_t *)(cfg + 4));
+
+  rx_sel = ((uint8_t *)(cfg + 6));
 
   /* set default rx sample rate */
   *rx_rate = 1000;
+
+  *rx_sel = chan;
 
   if((sock_ep2 = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
   {
@@ -131,7 +127,8 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    switch(*(uint32_t *)buffer)
+    memcpy(&code, buffer, 4);
+    switch(code)
     {
       case 0x0201feef:
         process_ep2(buffer + 11);
@@ -195,9 +192,6 @@ void process_ep2(uint8_t *frame)
         case 2:
           *rx_rate = 250;
           break;
-        case 3:
-          *rx_rate = 125;
-          break;
       }
       break;
     case 4:
@@ -242,23 +236,40 @@ void process_ep2(uint8_t *frame)
       if(freq < freq_min || freq > freq_max) break;
       *rx_freq[5] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
       break;
+    case 16:
+    case 17:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[6] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
+      break;
+    case 36:
+    case 37:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[7] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
+      break;
   }
 }
 
 void *handler_ep6(void *arg)
 {
   int i, j, n, m, size;
-  int data_offset, header_offset, buffer_offset;
+  int data_offset, header_offset;
   uint32_t counter;
-  uint8_t data0[4096];
-  uint8_t data1[4096];
-  uint8_t data2[4096];
-  uint8_t data3[4096];
-  uint8_t data4[4096];
-  uint8_t data5[4096];
-  uint8_t buffer[25][1032];
-  struct iovec iovec[25][1];
-  struct mmsghdr datagram[25];
+  uint8_t data0[2048];
+  uint8_t data1[2048];
+  uint8_t data2[2048];
+  uint8_t data3[2048];
+  uint8_t data4[2048];
+  uint8_t data5[2048];
+  uint8_t data6[2048];
+  uint8_t data7[2048];
+  uint8_t buffer[12 * 1032];
+  uint8_t *pointer;
+  struct iovec iovec[12][1];
+  struct mmsghdr datagram[12];
   uint8_t header[40] =
   {
     127, 127, 127, 0, 0, 33, 17, 25,
@@ -271,10 +282,10 @@ void *handler_ep6(void *arg)
   memset(iovec, 0, sizeof(iovec));
   memset(datagram, 0, sizeof(datagram));
 
-  for(i = 0; i < 25; ++i)
+  for(i = 0; i < 12; ++i)
   {
-    *(uint32_t *)(buffer[i] + 0) = 0x0601feef;
-    iovec[i][0].iov_base = buffer[i];
+    *(uint32_t *)(buffer + i * 1032 + 0) = 0x0601feef;
+    iovec[i][0].iov_base = buffer + i * 1032;
     iovec[i][0].iov_len = 1032;
     datagram[i].msg_hdr.msg_iov = iovec[i];
     datagram[i].msg_hdr.msg_iovlen = 1;
@@ -294,9 +305,9 @@ void *handler_ep6(void *arg)
 
     size = receivers * 6 + 2;
     n = 504 / size;
-    m = 256 / n;
+    m = 128 / n;
 
-    if(*rx_cntr[0] >= 2048)
+    if(*rx_cntr[0] >= 1024)
     {
       *rx_rst |= 1;
       *rx_rst &= ~1;
@@ -312,78 +323,60 @@ void *handler_ep6(void *arg)
       *(uint64_t *)(data3 + i) = *rx_data[3];
       *(uint64_t *)(data4 + i) = *rx_data[4];
       *(uint64_t *)(data5 + i) = *rx_data[5];
+      *(uint64_t *)(data6 + i) = *rx_data[6];
+      *(uint64_t *)(data7 + i) = *rx_data[7];
     }
 
     data_offset = 0;
     for(i = 0; i < m; ++i)
     {
-      *(uint32_t *)(buffer[i] + 4) = htonl(counter);
-
-      memcpy(buffer[i] + 8, header + header_offset, 8);
-      header_offset = header_offset >= 32 ? 0 : header_offset + 8;
-      memset(buffer[i] + 16, 0, 504);
-
-      buffer_offset = 16;
-      for(j = 0; j < n; ++j)
-      {
-        memcpy(buffer[i] + buffer_offset, data0 + data_offset, 6);
-        if(size > 8)
-        {
-          memcpy(buffer[i] + buffer_offset + 6, data1 + data_offset, 6);
-        }
-        if(size > 14)
-        {
-          memcpy(buffer[i] + buffer_offset + 12, data2 + data_offset, 6);
-        }
-        if(size > 20)
-        {
-          memcpy(buffer[i] + buffer_offset + 18, data3 + data_offset, 6);
-        }
-        if(size > 26)
-        {
-          memcpy(buffer[i] + buffer_offset + 24, data4 + data_offset, 6);
-        }
-        if(size > 32)
-        {
-          memcpy(buffer[i] + buffer_offset + 30, data5 + data_offset, 6);
-        }
-        data_offset += 8;
-        buffer_offset += size;
-      }
-
-      memcpy(buffer[i] + 520, header + header_offset, 8);
-      header_offset = header_offset >= 32 ? 0 : header_offset + 8;
-      memset(buffer[i] + 528, 0, 504);
-
-      buffer_offset = 528;
-      for(j = 0; j < n; ++j)
-      {
-        memcpy(buffer[i] + buffer_offset, data0 + data_offset, 6);
-        if(size > 8)
-        {
-          memcpy(buffer[i] + buffer_offset + 6, data1 + data_offset, 6);
-        }
-        if(size > 14)
-        {
-          memcpy(buffer[i] + buffer_offset + 12, data2 + data_offset, 6);
-        }
-        if(size > 20)
-        {
-          memcpy(buffer[i] + buffer_offset + 18, data3 + data_offset, 6);
-        }
-        if(size > 26)
-        {
-          memcpy(buffer[i] + buffer_offset + 24, data4 + data_offset, 6);
-        }
-        if(size > 32)
-        {
-          memcpy(buffer[i] + buffer_offset + 30, data5 + data_offset, 6);
-        }
-        data_offset += 8;
-        buffer_offset += size;
-      }
-
+      *(uint32_t *)(buffer + i * 1032 + 4) = htonl(counter);
       ++counter;
+    }
+
+    for(i = 0; i < m * 2; ++i)
+    {
+      pointer = buffer + i * 516 - i % 2 * 4 + 8;
+      memcpy(pointer, header + header_offset, 8);
+      header_offset = header_offset >= 32 ? 0 : header_offset + 8;
+
+      pointer += 8;
+      memset(pointer, 0, 504);
+      for(j = 0; j < n; ++j)
+      {
+        memcpy(pointer, data0 + data_offset, 6);
+        if(size > 8)
+        {
+          memcpy(pointer + 6, data1 + data_offset, 6);
+        }
+        if(size > 14)
+        {
+          memcpy(pointer + 12, data2 + data_offset, 6);
+        }
+        if(size > 20)
+        {
+          memcpy(pointer + 18, data3 + data_offset, 6);
+        }
+        if(size > 26)
+        {
+          memcpy(pointer + 24, data4 + data_offset, 6);
+        }
+        if(size > 32)
+        {
+          memcpy(pointer + 30, data5 + data_offset, 6);
+        }
+        if(size > 38)
+        {
+          memcpy(pointer + 36, data6 + data_offset, 6);
+        }
+        if(size > 44)
+        {
+          memcpy(pointer + 42, data7 + data_offset, 6);
+        }
+
+        data_offset += 8;
+        pointer += size;
+      }
     }
 
     sendmmsg(sock_ep2, datagram, m, 0);

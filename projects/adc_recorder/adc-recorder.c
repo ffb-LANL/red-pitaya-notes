@@ -8,37 +8,50 @@ int main()
 {
   int fd, i;
   int16_t value[2];
-  void *cfg, *ram;
-  char *name = "/dev/mem";
+  volatile uint8_t *rst;
+  volatile uint32_t *size, *slcr, *axi_hp0;
+  volatile void *cfg;
+  volatile int16_t *ram;
 
-  if((fd = open(name, O_RDWR)) < 0)
+  if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return 1;
   }
 
+  slcr = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0xF8000000);
+  axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0xF8008000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
   ram = mmap(NULL, 1024*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x1E000000);
 
+  // set HP0 bus width to 64 bits
+  slcr[2] = 0xDF0D;
+  slcr[144] = 0;
+  axi_hp0[0] &= ~1;
+  axi_hp0[5] &= ~1;
+
+  rst = ((uint8_t *)(cfg + 0));
+  size = ((uint32_t *)(cfg + 4));
+
   // reset writer
-  *((uint32_t *)(cfg + 0)) &= ~4;
-  *((uint32_t *)(cfg + 0)) |= 4;
+  *rst &= ~4;
+  *rst |= 4;
 
   // reset fifo and filters
-  *((uint32_t *)(cfg + 0)) &= ~1;
-  *((uint32_t *)(cfg + 0)) |= 1;
+  *rst &= ~1;
+  *rst |= 1;
 
   // wait 1 second
   sleep(1);
 
   // enter reset mode for packetizer
-  *((uint32_t *)(cfg + 0)) &= ~2;
+  *rst &= ~2;
 
   // set number of samples
-  *((uint32_t *)(cfg + 4)) = 1024 * 1024 - 1;
+  *size = 1024 * 1024 - 1;
 
   // enter normal mode
-  *((uint32_t *)(cfg + 0)) |= 2;
+  *rst |= 2;
 
   // wait 1 second
   sleep(1);
@@ -46,13 +59,10 @@ int main()
   // print IN1 and IN2 samples
   for(i = 0; i < 1024 * 1024; ++i)
   {
-    value[0] = *((int16_t *)(ram + 4*i + 0));
-    value[1] = *((int16_t *)(ram + 4*i + 2));
+    value[0] = ram[2 * i + 0];
+    value[1] = ram[2 * i + 1];
     printf("%5d %5d\n", value[0], value[1]);
   }
-
-  munmap(cfg, sysconf(_SC_PAGESIZE));
-  munmap(ram, sysconf(_SC_PAGESIZE));
 
   return 0;
 }

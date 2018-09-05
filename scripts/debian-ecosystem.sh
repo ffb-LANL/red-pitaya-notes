@@ -1,18 +1,19 @@
 device=$1
 
-boot_dir=/tmp/BOOT
-root_dir=/tmp/ROOT
+boot_dir=`mktemp -d /tmp/BOOT.XXXXXXXXXX`
+root_dir=`mktemp -d /tmp/ROOT.XXXXXXXXXX`
+
+linux_dir=tmp/linux-4.14
+linux_ver=4.14.42-xilinx
 
 ecosystem_tar=red-pitaya-ecosystem-0.95-20160526.tgz
-ecosystem_url=https://googledrive.com/host/0B-t5klOOymMNfmJ0bFQzTVNXQ3RtWm5SQ2NGTE1hRUlTd3V2emdSNzN6d0pYamNILW83Wmc/red-pitaya-ecosystem/$ecosystem_tar
+ecosystem_url=https://www.dropbox.com/sh/5fy49wae6xwxa8a/AADrueq0P1OJFy9z6AaJ72nWa/red-pitaya-ecosystem/red-pitaya-ecosystem-0.95-20160526.tgz?dl=1
 
 # Choose mirror automatically, depending the geographic and network location
-mirror=http://httpredir.debian.org/debian
+mirror=http://deb.debian.org/debian
 
 distro=jessie
 arch=armhf
-
-hostapd_url=https://googledrive.com/host/0B-t5klOOymMNfmJ0bFQzTVNXQ3RtWm5SQ2NGTE1hRUlTd3V2emdSNzN6d0pYamNILW83Wmc/rtl8192cu/hostapd-$arch
 
 passwd=changeme
 timezone=Europe/Brussels
@@ -20,11 +21,11 @@ timezone=Europe/Brussels
 # Create partitions
 
 parted -s $device mklabel msdos
-parted -s $device mkpart primary fat16 4MB 16MB
-parted -s $device mkpart primary ext4 16MB 100%
+parted -s $device mkpart primary fat16 4MiB 16MiB
+parted -s $device mkpart primary ext4 16MiB 100%
 
-boot_dev=/dev/`lsblk -lno NAME $device | sed '2!d'`
-root_dev=/dev/`lsblk -lno NAME $device | sed '3!d'`
+boot_dev=/dev/`lsblk -ln -o NAME -x NAME $device | sed '2!d'`
+root_dev=/dev/`lsblk -ln -o NAME -x NAME $device | sed '3!d'`
 
 # Create file systems
 
@@ -33,33 +34,34 @@ mkfs.ext4 -F -j $root_dev
 
 # Mount file systems
 
-mkdir -p $boot_dir $root_dir
-
 mount $boot_dev $boot_dir
 mount $root_dev $root_dir
 
 # Copy files to the boot file system
 
-cp boot.bin devicetree.dtb uImage uEnv.txt $boot_dir
+cp boot.bin devicetree.dtb uImage $boot_dir
+cp uEnv-ext4.txt $boot_dir/uEnv.txt
 
 # Install Debian base system to the root file system
 
 debootstrap --foreign --arch $arch $distro $root_dir $mirror
 
+# Install Linux modules
+
+modules_dir=$root_dir/lib/modules/$linux_ver
+
+mkdir -p $modules_dir/kernel
+
+find $linux_dir -name \*.ko -printf '%P\0' | tar --directory=$linux_dir --owner=0 --group=0 --null --files-from=- -zcf - | tar -zxf - --directory=$modules_dir/kernel
+
+cp $linux_dir/modules.order $linux_dir/modules.builtin $modules_dir/
+
+depmod -a -b $root_dir $linux_ver
+
 # Add missing configuration files and packages
 
 cp /etc/resolv.conf $root_dir/etc/
 cp /usr/bin/qemu-arm-static $root_dir/usr/bin/
-
-cp patches/fw_env.config $root_dir/etc/
-
-mkdir -p $root_dir/usr/local/bin
-cp fw_printenv $root_dir/usr/local/bin/fw_printenv
-cp fw_printenv $root_dir/usr/local/bin/fw_setenv
-
-mkdir -p $root_dir/usr/local/sbin
-curl -L $hostapd_url -o $root_dir/usr/local/sbin/hostapd
-chmod +x $root_dir/usr/local/sbin/hostapd
 
 test -f $ecosystem_tar || curl -L $ecosystem_url -o $ecosystem_tar
 
@@ -72,12 +74,7 @@ chroot $root_dir <<- EOF_CHROOT
 export LANG=C
 export LC_ALL=C
 
-# Add missing paths
-
-echo :$PATH: | grep -q :/sbin: || export PATH=$PATH:/sbin
-echo :$PATH: | grep -q :/bin: || export PATH=$PATH:/bin
-echo :$PATH: | grep -q :/usr/sbin: || export PATH=$PATH:/usr/sbin
-echo :$PATH: | grep -q :/usr/bin: || export PATH=$PATH:/usr/bin
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 /debootstrap/debootstrap --second-stage
 
@@ -218,27 +215,6 @@ wpa_pairwise=CCMP
 rsn_pairwise=CCMP
 EOF_CAT
 
-cat <<- EOF_CAT > etc/default/hostapd
-DAEMON_CONF=/etc/hostapd/hostapd.conf
-
-if [ "\\\$1" = "start" ]
-then
-  iw wlan0 info > /dev/null 2>&1
-  if [ \\\$? -eq 0 ]
-  then
-    sed -i '/^driver/s/=.*/=nl80211/' /etc/hostapd/hostapd.conf
-    DAEMON_SBIN=/usr/sbin/hostapd
-  else
-    sed -i '/^driver/s/=.*/=rtl871xdrv/' /etc/hostapd/hostapd.conf
-    DAEMON_SBIN=/usr/local/sbin/hostapd
-  fi
-  echo \\\$DAEMON_SBIN > /run/hostapd.which
-elif [ "\\\$1" = "stop" ]
-then
-  DAEMON_SBIN=\\\$(cat /run/hostapd.which)
-fi
-EOF_CAT
-
 cat <<- EOF_CAT > etc/dhcp/dhcpd.conf
 ddns-update-style none;
 default-lease-time 600;
@@ -336,3 +312,5 @@ rm $root_dir/usr/bin/qemu-arm-static
 umount $boot_dir $root_dir
 
 rmdir $boot_dir $root_dir
+
+zerofree $root_dev

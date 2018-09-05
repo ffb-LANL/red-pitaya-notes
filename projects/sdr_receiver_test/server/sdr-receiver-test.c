@@ -26,8 +26,7 @@ int main(int argc, char *argv[])
   int file, sockServer, sockClient;
   int pos, limit, start;
   pid_t pid;
-  void *cfg, *sts, *ram;
-  char *name = "/dev/mem";
+  volatile void *cfg, *sts, *ram;
   unsigned long size = 0;
   struct sockaddr_in addr;
   uint32_t command = 600000;
@@ -35,7 +34,7 @@ int main(int argc, char *argv[])
   uint32_t freqMax = 50000000;
   int yes = 1;
 
-  if((file = open(name, O_RDWR)) < 0)
+  if((file = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return 1;

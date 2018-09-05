@@ -17,10 +17,9 @@ int main()
   int fd, i;
   int position, limit, offset;
   int16_t value[2];
-  void *cfg, *sts, *ram;
-  char *name = "/dev/mem";
+  volatile void *cfg, *sts, *ram;
 
-  if((fd = open(name, O_RDWR)) < 0)
+  if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return 1;

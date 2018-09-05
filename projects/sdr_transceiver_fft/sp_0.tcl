@@ -8,54 +8,54 @@ module sp_0 {
     CONST_VAL 4095
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_0 {
-    DIN_WIDTH 4 DIN_FROM 0 DIN_TO 0 DOUT_WIDTH 1
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_0 {
+    DIN_WIDTH 4 DIN_FROM 0 DIN_TO 0
   } {
-    Din /rst_slice_2/Dout
+    din /rst_slice_2/dout
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_1 {
-    DIN_WIDTH 4 DIN_FROM 1 DIN_TO 1 DOUT_WIDTH 1
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_1 {
+    DIN_WIDTH 4 DIN_FROM 1 DIN_TO 1
   } {
-    Din /rst_slice_2/Dout
+    din /rst_slice_2/dout
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_2 {
-    DIN_WIDTH 4 DIN_FROM 2 DIN_TO 2 DOUT_WIDTH 1
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_2 {
+    DIN_WIDTH 4 DIN_FROM 2 DIN_TO 2
   } {
-    Din /rst_slice_2/Dout
+    din /rst_slice_2/dout
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_3 {
-    DIN_WIDTH 4 DIN_FROM 3 DIN_TO 3 DOUT_WIDTH 1
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_3 {
+    DIN_WIDTH 4 DIN_FROM 3 DIN_TO 3
   } {
-    Din /rst_slice_2/Dout
+    din /rst_slice_2/dout
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_4 {
-    DIN_WIDTH 64 DIN_FROM 15 DIN_TO 0 DOUT_WIDTH 16
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_4 {
+    DIN_WIDTH 64 DIN_FROM 15 DIN_TO 0
   } {
-    Din /cfg_slice_1/Dout
+    din /cfg_slice_1/dout
   }
 
-  # Create xlslice
-  cell xilinx.com:ip:xlslice:1.0 slice_5 {
-    DIN_WIDTH 64 DIN_FROM 63 DIN_TO 32 DOUT_WIDTH 32
+  # Create port_slicer
+  cell pavel-demin:user:port_slicer:1.0 slice_5 {
+    DIN_WIDTH 64 DIN_FROM 63 DIN_TO 32
   } {
-    Din /cfg_slice_1/Dout
+    din /cfg_slice_1/dout
   }
 
   # Create axis_constant
   cell pavel-demin:user:axis_constant:1.0 phase_0 {
     AXIS_TDATA_WIDTH 32
   } {
-    cfg_data slice_5/Dout
-    aclk /ps_0/FCLK_CLK0
+    cfg_data slice_5/dout
+    aclk /pll_0/clk_out1
   }
 
   # Create dds_compiler
@@ -65,25 +65,23 @@ module sp_0 {
     FREQUENCY_RESOLUTION 0.2
     PHASE_INCREMENT Streaming
     DSP48_USE Maximal
-    HAS_TREADY true
     HAS_PHASE_OUT false
     PHASE_WIDTH 30
     OUTPUT_WIDTH 24
     DSP48_USE Minimal
   } {
     S_AXIS_PHASE phase_0/M_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_lfsr
   cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_0/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_0/dout
   }
 
   # Create cmpy
   cell xilinx.com:ip:cmpy:6.0 mult_0 {
-    FLOWCONTROL Blocking
     APORTWIDTH.VALUE_SRC USER
     BPORTWIDTH.VALUE_SRC USER
     APORTWIDTH 14
@@ -94,7 +92,7 @@ module sp_0 {
     S_AXIS_A /bcast_0/M01_AXIS
     S_AXIS_B dds_0/M_AXIS_DATA
     S_AXIS_CTRL lfsr_0/M_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_broadcaster
@@ -107,7 +105,7 @@ module sp_0 {
     M01_TDATA_REMAP {tdata[23:0]}
   } {
     S_AXIS mult_0/M_AXIS_DOUT
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
     aresetn /rst_0/peripheral_aresetn
   }
 
@@ -115,8 +113,8 @@ module sp_0 {
   cell pavel-demin:user:axis_constant:1.0 rate_0 {
     AXIS_TDATA_WIDTH 16
   } {
-    cfg_data slice_4/Dout
-    aclk /ps_0/FCLK_CLK0
+    cfg_data slice_4/dout
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_packetizer
@@ -127,16 +125,16 @@ module sp_0 {
   } {
     S_AXIS rate_0/M_AXIS
     cfg_data const_0/dout
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_1/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_1/dout
   }
 
   # Create axis_constant
   cell pavel-demin:user:axis_constant:1.0 rate_1 {
     AXIS_TDATA_WIDTH 16
   } {
-    cfg_data slice_4/Dout
-    aclk /ps_0/FCLK_CLK0
+    cfg_data slice_4/dout
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_packetizer
@@ -147,8 +145,8 @@ module sp_0 {
   } {
     S_AXIS rate_1/M_AXIS
     cfg_data const_0/dout
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_1/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_1/dout
   }
 
   # Create cic_compiler
@@ -170,8 +168,8 @@ module sp_0 {
   } {
     S_AXIS_DATA bcast_0/M00_AXIS
     S_AXIS_CONFIG pktzr_0/M_AXIS
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_1/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_1/dout
   }
 
   # Create cic_compiler
@@ -193,8 +191,8 @@ module sp_0 {
   } {
     S_AXIS_DATA bcast_0/M01_AXIS
     S_AXIS_CONFIG pktzr_1/M_AXIS
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_1/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_1/dout
   }
 
   # Create axis_combiner
@@ -204,7 +202,7 @@ module sp_0 {
   } {
     S00_AXIS cic_0/M_AXIS_DATA
     S01_AXIS cic_1/M_AXIS_DATA
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
     aresetn /rst_0/peripheral_aresetn
   }
 
@@ -225,7 +223,7 @@ module sp_0 {
     OUTPUT_WIDTH 24
   } {
     S_AXIS_DATA comb_0/M_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_constant
@@ -233,7 +231,7 @@ module sp_0 {
     AXIS_TDATA_WIDTH 32
   } {
     cfg_data const_0/dout
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_packetizer
@@ -244,8 +242,8 @@ module sp_0 {
   } {
     S_AXIS cfg_0/M_AXIS
     cfg_data const_0/dout
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_2/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_2/dout
   }
 
   # Create axis_packetizer
@@ -256,12 +254,12 @@ module sp_0 {
   } {
     S_AXIS fir_0/M_AXIS_DATA
     cfg_data const_1/dout
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_3/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_3/dout
   }
 
   # Create blk_mem_gen
-  cell xilinx.com:ip:blk_mem_gen:8.3 bram_0 {
+  cell xilinx.com:ip:blk_mem_gen:8.4 bram_0 {
     MEMORY_TYPE True_Dual_Port_RAM
     USE_BRAM_BLOCK Stand_Alone
     USE_BYTE_WRITE_ENABLE true
@@ -284,19 +282,18 @@ module sp_0 {
   } {
     BRAM_PORTA bram_0/BRAM_PORTA
     cfg_data const_1/dout
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_3/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_3/dout
   }
 
   # Create axis_lfsr
   cell pavel-demin:user:axis_lfsr:1.0 lfsr_1 {} {
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_0/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_0/dout
   }
 
   # Create cmpy
   cell xilinx.com:ip:cmpy:6.0 mult_1 {
-    FLOWCONTROL Blocking
     APORTWIDTH.VALUE_SRC USER
     BPORTWIDTH.VALUE_SRC USER
     APORTWIDTH 24
@@ -308,11 +305,11 @@ module sp_0 {
     S_AXIS_A pktzr_3/M_AXIS
     S_AXIS_B reader_0/M_AXIS
     S_AXIS_CTRL lfsr_1/M_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create xfft
-  cell xilinx.com:ip:xfft:9.0 fft_0 {
+  cell xilinx.com:ip:xfft:9.1 fft_0 {
     INPUT_WIDTH.VALUE_SRC USER
     TRANSFORM_LENGTH 4096
     TARGET_CLOCK_FREQUENCY 125
@@ -328,8 +325,8 @@ module sp_0 {
   } {
     S_AXIS_DATA mult_1/M_AXIS_DOUT
     S_AXIS_CONFIG pktzr_2/M_AXIS
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_2/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_2/dout
   }
 
   # Create axis_broadcaster
@@ -342,7 +339,7 @@ module sp_0 {
     M01_TDATA_REMAP {tdata[47:24]}
   } {
     S_AXIS fft_0/M_AXIS_DATA
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
     aresetn /rst_0/peripheral_aresetn
   }
 
@@ -358,7 +355,7 @@ module sp_0 {
     RESULT_PRECISION_TYPE Single
   } {
     S_AXIS_A bcast_1/M00_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create floating_point
@@ -373,7 +370,7 @@ module sp_0 {
     RESULT_PRECISION_TYPE Single
   } {
     S_AXIS_A bcast_1/M01_AXIS
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
   }
 
   # Create axis_combiner
@@ -383,12 +380,12 @@ module sp_0 {
   } {
     S00_AXIS fp_0/M_AXIS_RESULT
     S01_AXIS fp_1/M_AXIS_RESULT
-    aclk /ps_0/FCLK_CLK0
+    aclk /pll_0/clk_out1
     aresetn /rst_0/peripheral_aresetn
   }
 
   # Create blk_mem_gen
-  cell xilinx.com:ip:blk_mem_gen:8.3 bram_1 {
+  cell xilinx.com:ip:blk_mem_gen:8.4 bram_1 {
     MEMORY_TYPE True_Dual_Port_RAM
     USE_BRAM_BLOCK Stand_Alone
     USE_BYTE_WRITE_ENABLE true
@@ -410,7 +407,7 @@ module sp_0 {
   } {
     S_AXIS comb_1/M_AXIS
     BRAM_PORTA bram_1/BRAM_PORTA
-    aclk /ps_0/FCLK_CLK0
-    aresetn slice_0/Dout
+    aclk /pll_0/clk_out1
+    aresetn slice_0/dout
   }
 }

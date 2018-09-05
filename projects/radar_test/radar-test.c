@@ -11,11 +11,10 @@ int main()
   int fd, i;
   int position, limit, offset;
   int16_t value[2];
-  void *cfg, *sts, *gpio_n, *gpio_p, *ram;
-  char *name = "/dev/mem";
+  volatile void *cfg, *sts, *gpio_n, *gpio_p, *ram;
   char buffer[32768];
 
-  if((fd = open(name, O_RDWR)) < 0)
+  if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
     perror("open");
     return EXIT_FAILURE;
