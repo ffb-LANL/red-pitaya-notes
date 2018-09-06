@@ -4,7 +4,7 @@ create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 s_axis
 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_x
 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_y
 create_bd_pin -dir I -type rst aresetn
-create_bd_pin -dir I -type clc aclk
+create_bd_pin -dir I -type clk aclk
 create_bd_pin -dir I -type data -from 255 -to 0 cfg
 
 # Create axis_broadcaster
