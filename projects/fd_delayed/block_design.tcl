@@ -1,5 +1,20 @@
 #fd_delayed 111
 
+# Create clk_wiz
+cell xilinx.com:ip:clk_wiz:6.0 pll_0 {
+  PRIMITIVE PLL
+  PRIM_IN_FREQ.VALUE_SRC USER
+  PRIM_IN_FREQ 125.0
+  PRIM_SOURCE Differential_clock_capable_pin
+  CLKOUT1_USED true
+  CLKOUT1_REQUESTED_OUT_FREQ 125.0
+  USE_RESET false
+} {
+  clk_in1_p adc_clk_p_i
+  clk_in1_n adc_clk_n_i
+}
+
+
 # Create processing_system7
 cell xilinx.com:ip:processing_system7:5.5 ps_0 {
   PCW_IMPORT_BOARD_PRESET cfg/red_pitaya.xml
@@ -16,42 +31,23 @@ apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {
   Slave Disable
 } [get_bd_cells ps_0]
 
-# Create util_ds_buf
-cell xilinx.com:ip:util_ds_buf:2.1 buf_0 {
-  C_SIZE 2
-  C_BUF_TYPE IBUFDS
-} {
-  IBUF_DS_P daisy_p_i
-  IBUF_DS_N daisy_n_i
-}
-
-# Create util_ds_buf
-cell xilinx.com:ip:util_ds_buf:2.1 buf_1 {
-  C_SIZE 2
-  C_BUF_TYPE OBUFDS
-} {
-  OBUF_DS_P daisy_p_o
-  OBUF_DS_N daisy_n_o
-}
-
 # Create proc_sys_reset
 cell xilinx.com:ip:proc_sys_reset:5.0 rst_0
 
-
 # Create axis_red_pitaya_adc
-cell pavel-demin:user:axis_red_pitaya_adc:1.0 adc_0 {} {
-  adc_clk_p adc_clk_p_i
-  adc_clk_n adc_clk_n_i
+cell pavel-demin:user:axis_red_pitaya_adc:2.0 adc_0 {} {
+  aclk pll_0/clk_out1
   adc_dat_a adc_dat_a_i
   adc_dat_b adc_dat_b_i
   adc_csn adc_csn_o
 }
 
+
 # Create c_counter_binary
 cell xilinx.com:ip:c_counter_binary:12.0 cntr_0 {
   Output_Width 32
 } {
-  CLK adc_0/adc_clk
+  CLK pll_0/clk_out1
 }
 
 # Create xlslice
@@ -140,7 +136,7 @@ cell xilinx.com:ip:xlconstant:1.1 const_1
 cell xilinx.com:ip:axis_clock_converter:1.1 fifo_ADC { 
 } {
   S_AXIS adc_0/M_AXIS
-  s_axis_aclk adc_0/adc_clk
+  s_axis_aclk pll_0/clk_out1
   s_axis_aresetn const_1/dout
   m_axis_aclk ps_0/FCLK_CLK0
   m_axis_aresetn rst_0/peripheral_aresetn
@@ -219,13 +215,13 @@ cell xilinx.com:ip:axis_combiner:1.1 comb_sine_phase {
 
 
 # Create clk_wiz
-cell xilinx.com:ip:clk_wiz:5.3 pll_0 {
+cell xilinx.com:ip:clk_wiz:6.0 pll_1 {
   PRIM_IN_FREQ.VALUE_SRC USER
   PRIM_IN_FREQ 125.0
   CLKOUT1_USED true
   CLKOUT1_REQUESTED_OUT_FREQ 250.0
 } {
-  clk_in1 adc_0/adc_clk
+  clk_in1 pll_0/clk_out1
 }
 
 
@@ -490,15 +486,15 @@ cell xilinx.com:ip:axis_clock_converter:1.1 fifo_DAC {
   s_axis switch_dac/M_AXIS
   s_axis_aclk ps_0/FCLK_CLK0
   s_axis_aresetn rst_0/peripheral_aresetn
-  m_axis_aclk adc_0/adc_clk
+  m_axis_aclk pll_0/clk_out1
   m_axis_aresetn const_1/dout
 }
 
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac:1.0 dac_0 {} {
-  aclk adc_0/adc_clk
-  ddr_clk pll_0/clk_out1
-  locked pll_0/locked
+  aclk pll_0/clk_out1
+  ddr_clk pll_1/clk_out1
+  locked pll_1/locked
   S_AXIS fifo_DAC/M_AXIS
   dac_clk dac_clk_o
   dac_rst dac_rst_o
