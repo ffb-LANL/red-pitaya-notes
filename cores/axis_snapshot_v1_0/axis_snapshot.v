@@ -3,7 +3,8 @@
 
 module axis_snapshot #
 (
-  parameter integer AXIS_TDATA_WIDTH = 32 
+  parameter integer AXIS_TDATA_WIDTH = 32,
+  parameter         ALWAYS_READY = "TRUE" 
 )
 (
   // System signals
@@ -28,9 +29,6 @@ module axis_snapshot #
 reg [AXIS_TDATA_WIDTH-1:0] int_data_reg,int_data_reg_next;
 reg int_enbl_reg, int_enbl_next, int_done, int_done_next;
 
-wire int_tvalid_wire;
-
-
 always @(posedge aclk)
  begin
    if(~aresetn)
@@ -47,8 +45,6 @@ always @(posedge aclk)
     end		
  end
 
-assign int_tvalid_wire = m_axis_tready & s_axis_tvalid;
-
 always @*
   begin
    int_data_reg_next =  int_data_reg;
@@ -58,7 +54,7 @@ always @*
      begin
        int_enbl_next = 1'b1;
      end
-   if(int_enbl_reg & int_tvalid_wire)
+   if(int_enbl_reg & s_axis_tvalid)
      begin
        int_data_reg_next = s_axis_tdata;
        int_done_next = 1'b1;
@@ -66,6 +62,16 @@ always @*
      end		
   end
 
-  assign s_axis_tready = m_axis_tready; 
+  generate
+    if(ALWAYS_READY == "TRUE")
+    begin : READY
+      assign s_axis_tready = 1'b1;
+    end
+    else
+    begin : BLOCKING
+      assign s_axis_tready = m_axis_tready; 
+    end
+  endgenerate
+
   assign data = int_data_reg; 
 endmodule
