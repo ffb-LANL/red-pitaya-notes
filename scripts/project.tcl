@@ -7,6 +7,8 @@ file delete -force tmp/$project_name.cache tmp/$project_name.hw tmp/$project_nam
 
 file delete -force tmp/$project_name.sim
 
+file delete -force tmp/$project_name.ip_user_files
+
 create_project -part $part_name $project_name tmp
 
 set_property IP_REPO_PATHS tmp/cores [current_project]
