@@ -127,16 +127,6 @@ cell xilinx.com:ip:xlslice:1.0 slice_trig_record {
   Din cfg_0/cfg_data
 }
 
-# Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_trx_reset {
-  DIN_WIDTH 256 DIN_FROM 4 DIN_TO 4
-} {
-  Din cfg_0/cfg_data
-}
-
-# Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_1
-
 # Create gpio_trigger
 cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
 	GPIO_DATA_WIDTH 8
@@ -209,7 +199,21 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_DDS {
   aclk pll_0/clk_out1
   aresetn rst_0/peripheral_aresetn
 }
+# create delay
+cell pavel-demin:user:axis_fixed_delay:1.0 delay_dds_0 { 
+ DEPTH 14
+} {
+  s_axis bcast_DDS/M00_AXIS
+  aclk pll_0/clk_out1
+}
 
+# create delay
+cell pavel-demin:user:axis_fixed_delay:1.0 delay_dds_1 { 
+ DEPTH 14
+} {
+  s_axis bcast_DDS/M01_AXIS
+  aclk pll_0/clk_out1
+}
 
 # Create axis_lfsr
 cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
@@ -222,13 +226,6 @@ cell pavel-demin:user:axis_lfsr:1.0 lfsr_0 {} {
 cell pavel-demin:user:axis_lfsr:1.0 lfsr_1 {} {
   aclk pll_0/clk_out1
   aresetn rst_0/peripheral_aresetn
-}
-
-# Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_dds_delay {
-  DIN_WIDTH 256 DIN_FROM 255 DIN_TO 224
-} {
-  Din cfg_0/cfg_data
 }
 
 #  M02_TDATA_REMAP tdata[95:64]
@@ -258,7 +255,7 @@ cell xilinx.com:ip:cmpy:6.0 mult_0 {
   OUTPUTWIDTH 28
 } {
   S_AXIS_A bcast_ADC/M00_AXIS
-  s_axis_b bcast_DDS/M00_AXIS
+  s_axis_b delay_dds_0/M_AXIS
   S_AXIS_CTRL lfsr_0/M_AXIS
   aclk pll_0/clk_out1
 }
@@ -275,7 +272,7 @@ cell xilinx.com:ip:cmpy:6.0 mult_1 {
   OUTPUTWIDTH 28
 } {
   S_AXIS_A bcast_ADC/M01_AXIS
-  s_axis_b bcast_DDS/M01_AXIS
+  s_axis_b delay_dds_1/M_AXIS
   S_AXIS_CTRL lfsr_1/M_AXIS
   aclk pll_0/clk_out1
 }
