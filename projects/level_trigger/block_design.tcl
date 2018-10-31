@@ -237,7 +237,6 @@ cell pavel-demin:user:gpio_delayed_trigger:1.0 trigger_0 {
   aresetn slice_pktzr_reset/Dout
 }
 
-
 # Create axis_packetizer_phase
 cell pavel-demin:user:axis_packetizer_phase:1.0 pktzr_0 {
   AXIS_TDATA_WIDTH 32
@@ -248,7 +247,7 @@ cell pavel-demin:user:axis_packetizer_phase:1.0 pktzr_0 {
 } {
   S_AXIS bcast_ADC/M00_AXIS
   cfg_data slice_record_length/Dout
-  trigger trigger_0/trigger
+  trigger trigger_0/instant_trigger
   aclk pll_0/clk_out1
   aresetn slice_pktzr_reset/Dout
 }
