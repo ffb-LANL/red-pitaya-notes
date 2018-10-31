@@ -18,7 +18,9 @@ module gpio_delayed_trigger #
 
   input  wire                        soft_trig,
   input  wire [31:0]                 delay,
-  output wire                        trigger
+  output wire                        trigger,
+  output wire                        instant_trigger,
+  output wire                        delay_pulse
 );
 
   reg  [GPIO_DATA_WIDTH-1:0] int_data_reg [1:0];
@@ -26,9 +28,12 @@ module gpio_delayed_trigger #
   reg  [31:0] counter, counter_next;
   wire [GPIO_DATA_WIDTH-1:0] int_data_wire;
   wire int_comp_wire;
+  wire [GPIO_OUTPUT_WIDTH-1:0] int_output;
 
   genvar j;
 
+
+  // input pins
   generate
     for(j = 0; j < GPIO_INPUT_WIDTH; j = j + 1)
       begin : GPIO
@@ -36,10 +41,11 @@ module gpio_delayed_trigger #
       end
   endgenerate
 
+  // output pins
   generate
     for(j = GPIO_INPUT_WIDTH; j < GPIO_DATA_WIDTH; j = j + 1)
       begin : GPIO_OUT
-        IOBUF gpio_iobuf (.O(int_data_wire[j]), .IO(gpio_data[j]), .I(out_data[j-GPIO_INPUT_WIDTH]), .T(1'b0)); 
+        IOBUF gpio_iobuf (.O(int_data_wire[j]), .IO(gpio_data[j]), .I(int_output[j-GPIO_INPUT_WIDTH]), .T(1'b0)); 
       end
   endgenerate
  
@@ -56,7 +62,7 @@ module gpio_delayed_trigger #
          end
       else
          begin
-  	       int_trig_reg <= int_trig_reg_next;
+  	    int_trig_reg <= int_trig_reg_next;
             out_trig <= out_trig_next;
             counter <= counter_next;
          end
@@ -77,5 +83,8 @@ module gpio_delayed_trigger #
     
 
   assign trigger  = out_trig;
+  assign instant_trigger  = int_trig_reg;
+  assign delay_pulse = instant_trigger&~trigger;
+  assign int_output = {{(GPIO_OUTPUT_WIDTH-1){1'b0}},delay_pulse};
 
 endmodule
