@@ -32,7 +32,7 @@ CORES += axis_delay_v1_0 axis_snapshot_v1_0 axis_circular_packetizer_v1_0 axis_v
   gpio_trigger_v1_0 axis_cdc_variable_v1_0 axis_usr_split_v1_0 axis_usr_merge_v1_0 \
   axis_usr_split_test_v1_0 axis_usr_merge_test_v1_0 gpio_delayed_trigger_v1_0 \
   axis_measure_pulse_v1_0 axis_unblock_v1_0 axis_packetizer_phase_v1_0 axis_scaler_v1_0 axis_switch_v1_0 \
-  axis_level_cross_v1_0 axis_fixed_delay_v1_0
+  axis_level_cross_v1_0 axis_fixed_delay_v1_0 gpio_trigger_master_v1_0
   
 
 

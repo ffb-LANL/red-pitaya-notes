@@ -128,8 +128,10 @@ cell xilinx.com:ip:xlslice:1.0 slice_trig_record {
 }
 
 # Create gpio_trigger
-cell pavel-demin:user:gpio_trigger:1.0 trigger_0 {
+cell pavel-demin:user:gpio_trigger_master:1.0 trigger_0 {
 	GPIO_DATA_WIDTH 8
+	GPIO_INPUT_WIDTH 2
+	GPIO_OUTPUT_WIDTH 6
 } {
   gpio_data exp_p_tri_io
   soft_trig slice_trig_record/Dout
