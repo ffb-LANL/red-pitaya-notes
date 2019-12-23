@@ -7,7 +7,7 @@ create_bd_pin -dir I -type clk aclk
 create_bd_pin -dir I -type data -from 255 -to 0 cfg
 
 # Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster:1.1 bcast_two {
+cell xilinx.com:ip:axis_broadcaster bcast_two {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 8
@@ -21,7 +21,7 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_two {
 }
 
 # Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_decimate {
+cell xilinx.com:ip:xlslice slice_decimate {
   DIN_WIDTH 256 DIN_FROM 127 DIN_TO 96
 } {
   Din cfg
@@ -59,7 +59,7 @@ module delay_f {
 
 
 # Create axis_decimator
-cell pavel-demin:user:axis_decimator:1.0 dcmtr_f {
+cell pavel-demin:user:axis_decimator dcmtr_f {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 16
 } {
@@ -70,7 +70,7 @@ cell pavel-demin:user:axis_decimator:1.0 dcmtr_f {
 }
 
 # Create axis_combiner
-cell  xilinx.com:ip:axis_combiner:1.1 comb_xy {
+cell  xilinx.com:ip:axis_combiner comb_xy {
   NUM_SI 3
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4

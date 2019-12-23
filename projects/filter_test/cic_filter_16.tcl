@@ -7,7 +7,7 @@ create_bd_pin -dir I -type data -from 15 -to 0 cfg
 
 
 # Create axis_variable
-cell pavel-demin:user:axis_variable:1.0 rate_0 {
+cell pavel-demin:user:axis_variable rate_0 {
   AXIS_TDATA_WIDTH 16
 } {
   cfg_data cfg
@@ -17,7 +17,7 @@ cell pavel-demin:user:axis_variable:1.0 rate_0 {
 
 
 # Create cic_compiler
-cell xilinx.com:ip:cic_compiler:4.0 cic_0 {
+cell xilinx.com:ip:cic_compiler cic_0 {
   INPUT_DATA_WIDTH.VALUE_SRC USER
   FILTER_TYPE Decimation
   NUMBER_OF_STAGES 6

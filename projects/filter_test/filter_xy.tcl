@@ -7,7 +7,7 @@ create_bd_pin -dir I -type clk aclk
 create_bd_pin -dir I -type data -from 255 -to 0 cfg
 
 # Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster:1.1 bcast_two {
+cell xilinx.com:ip:axis_broadcaster bcast_two {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 8
@@ -21,14 +21,14 @@ cell xilinx.com:ip:axis_broadcaster:1.1 bcast_two {
 }
 
 # Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_decimate {
+cell xilinx.com:ip:xlslice slice_decimate {
   DIN_WIDTH 256 DIN_FROM 127 DIN_TO 96
 } {
   Din cfg
 }
 
 # Create cic_compiler
-cell xilinx.com:ip:cic_compiler:4.0 cic_filter_x0 {
+cell xilinx.com:ip:cic_compiler cic_filter_x0 {
   INPUT_DATA_WIDTH.VALUE_SRC USER
   FILTER_TYPE Decimation
   NUMBER_OF_STAGES 3
@@ -61,7 +61,7 @@ module cic_filter_x1 {
 }
 
 # Create cic_compiler
-cell xilinx.com:ip:cic_compiler:4.0 cic_filter_y0 {
+cell xilinx.com:ip:cic_compiler cic_filter_y0 {
   INPUT_DATA_WIDTH.VALUE_SRC USER
   FILTER_TYPE Decimation
   NUMBER_OF_STAGES 3

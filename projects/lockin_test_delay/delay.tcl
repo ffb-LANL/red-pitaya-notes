@@ -5,7 +5,7 @@ create_bd_pin -dir I -type rst aresetn
 create_bd_pin -dir I -type clc aclk
 
 # Create slice
-cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_0 {
+cell xilinx.com:ip:axis_register_slice axi_slice_0 {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
   HAS_TREADY.VALUE_SRC USER
@@ -21,7 +21,7 @@ cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_0 {
 
 
 # Create delay
-cell xilinx.com:ip:c_shift_ram:12.0 c_shift_ram_0 {
+cell xilinx.com:ip:c_shift_ram c_shift_ram_0 {
   WIDTH 32
   DEPTH 28
   CE true
@@ -32,7 +32,7 @@ cell xilinx.com:ip:c_shift_ram:12.0 c_shift_ram_0 {
 
 
 # Create slice
-cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_1 {
+cell xilinx.com:ip:axis_register_slice axi_slice_1 {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
   HAS_TREADY.VALUE_SRC USER
@@ -49,7 +49,7 @@ cell xilinx.com:ip:axis_register_slice:1.1 axi_slice_1 {
 
 
 # Create logic
-cell xilinx.com:ip:util_vector_logic:2.0 logic_0 {
+cell xilinx.com:ip:util_vector_logic logic_0 {
   C_SIZE 1
   C_OPERATION and
 } {
