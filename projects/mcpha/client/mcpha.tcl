@@ -365,10 +365,11 @@ namespace eval ::mcpha {
     }
 
     blt::vector create [my varname xvec](16385)
-    blt::vector create [my varname yvec](16384)
+    blt::vector create [my varname yvec](16385)
 
     # fill one vector for the x axis with 16385 points
     [my varname xvec] seq -0.5 16383.5
+    set [my varname yvec](:) 1e-99
 
     my setup
   }
@@ -676,7 +677,8 @@ namespace eval ::mcpha {
     set index [$W axis invtransform x $x]
     set index [::tcl::mathfunc::round $index]
     catch {
-      ${config}.chan_frame.axisy_value configure -text [[my varname yvec] index $index]
+      set value [::tcl::mathfunc::round [[my varname yvec] index $index]]
+      ${config}.chan_frame.axisy_value configure -text ${value}.0
       ${config}.chan_frame.axisx_value configure -text ${index}.0
     }
   }
@@ -769,10 +771,10 @@ namespace eval ::mcpha {
     ${config}.roi_frame.max_value configure -text $xmax_val
 
     ${config}.stat_frame.tot_value configure \
-      -text [blt::vector expr "sum([my varname yvec]($xmin_val:$xmax_val))"]
+      -text [blt::vector expr "round(sum([my varname yvec]($xmin_val:$xmax_val)))"]
 
     ${config}.stat_frame.bkg_value configure \
-      -text [expr {($xmax_val - $xmin_val + 1) * ($ymin_val + $ymax_val) / 2.0}]
+      -text [expr {round(($xmax_val - $xmin_val + 1) * ($ymin_val + $ymax_val)) / 2.0}]
  }
 # -------------------------------------------------------------------------
 
@@ -900,7 +902,7 @@ namespace eval ::mcpha {
       set cntr_val $cntr_tmp
       set cntr_bak $cntr_tmp
       set cntr_old $cntr_tmp
-      set yvec_bak [blt::vector expr "sum([my varname yvec](0:16383))"]
+      set yvec_bak [blt::vector expr "round(sum([my varname yvec](0:16383)))"]
       set yvec_old $yvec_bak
 
       my base_update
@@ -993,7 +995,8 @@ namespace eval ::mcpha {
     catch {set cntr_val $cntr_new}
 
     $controller commandReadVec 14 $number $size u4 [my varname yvec]
-    set yvec_new [blt::vector expr "sum([my varname yvec](0:16383))"]
+    [my varname yvec] expr "[my varname yvec] + 1e-99"
+    set yvec_new [blt::vector expr "round(sum([my varname yvec](0:16383)))"]
 
     if {$cntr_new < $cntr_old} {
       set rate_val(inst) [expr {($yvec_new - $yvec_old)*125000000/($cntr_old - $cntr_new)}]
@@ -1043,7 +1046,7 @@ namespace eval ::mcpha {
       close $fid
     }]
 
-    if { $x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname] } {
+    if {$x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname]} {
       tk_messageBox -icon error \
         -message "An error occurred while writing to \"$fname\""
     } else {
@@ -1072,21 +1075,28 @@ namespace eval ::mcpha {
       close $fid
     }]
 
-    if { $x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname] } {
+    if {$x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname]} {
       tk_messageBox -icon error \
         -message "An error occurred while reading \"$fname\""
     } else {
       tk_messageBox -icon info \
         -message "File \"$fname\" read successfully"
       my cntr_reset
-      [my varname yvec] set $yvec_new
+      set i 0
+      foreach value $yvec_new {
+        if {[string is space $value]} continue
+        if {$i > 16383} break
+        set [my varname yvec]($i) $value
+        incr i
+      }
+      [my varname yvec] expr "[my varname yvec] + 1e-99"
     }
   }
 
 # -------------------------------------------------------------------------
 
   oo::define HstDisplay method register {} {
-    my save_data [join [[my varname yvec] range 0 16383] \n]
+    my save_data [join [blt::vector expr "round([my varname yvec](0:16383))"] \n]
   }
 
 # -------------------------------------------------------------------------
@@ -1094,7 +1104,7 @@ namespace eval ::mcpha {
   oo::define HstDisplay method recover {} {
     my variable config
     my open_data
-    ${config}.chan_frame.entr_value configure -text [blt::vector expr "sum([my varname yvec](0:16383))"]
+    ${config}.chan_frame.entr_value configure -text [blt::vector expr "round(sum([my varname yvec](0:16383)))"]
     my stat_update
   }
 
@@ -1149,8 +1159,6 @@ namespace eval ::mcpha {
     trace add variable [my varname source] write [mymethod source_update]
     trace add variable [my varname slope] write [mymethod slope_update]
     trace add variable [my varname level] write [mymethod level_update]
-
-    trace add variable [my varname recs_val] write [mymethod recs_val_update]
 
     trace add variable [my varname last] write [mymethod last_update]
 
@@ -1332,14 +1340,6 @@ namespace eval ::mcpha {
 
 # -------------------------------------------------------------------------
 
-  oo::define OscDisplay method recs_val_update args {
-    my variable recs_val recs_bak
-
-    set recs_bak $recs_val
-  }
-
-# -------------------------------------------------------------------------
-
   oo::define OscDisplay method last_update args {
     my variable graph last
 
@@ -1388,6 +1388,30 @@ namespace eval ::mcpha {
 
 # -------------------------------------------------------------------------
 
+  oo::define OscDisplay method data_update args {
+    my variable graph chan waiting sequence auto
+    my variable data yvec
+
+    $data split tmp1 tmp2
+    [dict get $yvec 1] set tmp1
+    [dict get $yvec 2] set tmp2
+    blt::vector destroy tmp1 tmp2
+
+    foreach {key value} [array get chan] {
+      $graph pen configure pen${key} -dashes 0
+    }
+
+    set waiting 0
+
+    if {$sequence} {
+      my sequence_register
+    } elseif {$auto} {
+      after 1000 [mymethod acquire_start]
+    }
+  }
+
+# -------------------------------------------------------------------------
+
   oo::define OscDisplay method acquire_start {} {
     my variable graph chan controller waiting
 
@@ -1414,8 +1438,8 @@ namespace eval ::mcpha {
 # -------------------------------------------------------------------------
 
   oo::define OscDisplay method acquire_loop {} {
-    my variable controller graph chan waiting sequence auto
-    my variable data yvec
+    my variable controller waiting sequence
+    my variable data
 
     set size 65536
 
@@ -1424,28 +1448,15 @@ namespace eval ::mcpha {
 
     if {[string length $status] == 0} {
       set auto 0
-      my sequence_stop
+      if {$sequence} {
+        my sequence_stop
+      }
       return
     }
 
     if {$status == 0} {
       $controller commandReadVec 23 0 [expr {$size * 2}] i2 $data
-      $data split tmp1 tmp2
-      [dict get $yvec 1] set tmp1
-      [dict get $yvec 2] set tmp2
-      blt::vector destroy tmp1 tmp2
-
-      foreach {key value} [array get chan] {
-        $graph pen configure pen${key} -dashes 0
-      }
-
-      set waiting 0
-
-      if {$sequence} {
-        my sequence_register
-      } elseif {$auto} {
-        after 1000 [mymethod acquire_start]
-      }
+      my data_update
     }
 
     if {$waiting} {
@@ -1483,11 +1494,7 @@ namespace eval ::mcpha {
     set fid [open $fname w+]
     fconfigure $fid -translation binary -encoding binary
 
-#    puts -nonewline $fid [binary format "H*iH*" "1f8b0800" [clock seconds] "0003"]
-#    puts -nonewline $fid [zlib deflate $data]
-    puts -nonewline $fid $data
-#    puts -nonewline $fid [binary format i [zlib crc32 $data]]
-#    puts -nonewline $fid [binary format i [string length $data]]
+    $data binwrite $fid -at 0
 
     close $fid
   }
@@ -1510,14 +1517,12 @@ namespace eval ::mcpha {
     set x [catch {
       set fid [open $fname r+]
       fconfigure $fid -translation binary -encoding binary
-#      set size [file size $fname]
-#      seek $fid 10
-#      set data [zlib inflate [read $fid [expr {$size - 18}]]]
-      set data [read $fid]
+      $data binread $fid -at 0
       close $fid
+      my data_update
     }]
 
-    if { $x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname] } {
+    if {$x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname]} {
       tk_messageBox -icon error \
         -message "An error occurred while reading \"$fname\""
     } else {
@@ -1593,13 +1598,13 @@ namespace eval ::mcpha {
 
     set fname [file join $directory oscillogram_$counter.dat]
 
-    my incr counter
+    incr counter
 
     if {[catch {my save_data $fname} result]} {
       tk_messageBox -icon error \
         -message "An error occurred while writing to \"$fname\""
     } elseif {$counter <= $recs_bak} {
-      set recs_val [expr {$recs_bak - $counter}]
+      ${config}.recs_field set [expr {$recs_bak - $counter}]
       my acquire_start
       return
     }
@@ -1614,7 +1619,7 @@ namespace eval ::mcpha {
 
     set sequence 0
 
-    set recs_val $recs_bak
+    ${config}.recs_field set $recs_bak
 
     ${config}.recs_field configure -state normal
     ${config}.sequence configure -text {Start Recording} -command [mymethod sequence_start]
@@ -1633,9 +1638,7 @@ namespace eval ::mcpha {
     my variable number master controller
 
     foreach {param value} $args {
-      if {$param eq "-number"} {
-        set number $value
-      } elseif {$param eq "-master"} {
+      if {$param eq "-master"} {
         set master $value
       } elseif {$param eq "-controller"} {
         set controller $value
@@ -1645,10 +1648,11 @@ namespace eval ::mcpha {
     }
 
     blt::vector create [my varname xvec](4097)
-    blt::vector create [my varname yvec](4096)
+    blt::vector create [my varname yvec](4097)
 
     # fill one vector for the x axis with 4097 points
     [my varname xvec] seq -0.5 4095.5
+    set [my varname yvec](:) 1e-99
 
     my setup
   }
@@ -1793,7 +1797,8 @@ namespace eval ::mcpha {
     set index [$W axis invtransform x $x]
     set index [::tcl::mathfunc::round $index]
     catch {
-      ${config}.chan_frame.axisy_value configure -text [[my varname yvec] index $index]
+      set value [::tcl::mathfunc::round [[my varname yvec] index $index]]
+      ${config}.chan_frame.axisy_value configure -text ${value}.0
       ${config}.chan_frame.axisx_value configure -text ${index}.0
     }
   }
@@ -1950,13 +1955,20 @@ namespace eval ::mcpha {
       close $fid
     }]
 
-    if { $x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname] } {
+    if {$x || ![file exists $fname] || ![file isfile $fname] || ![file readable $fname]} {
       tk_messageBox -icon error \
         -message "An error occurred while reading \"$fname\""
     } else {
       tk_messageBox -icon info \
         -message "File \"$fname\" read successfully"
-      [my varname yvec] set $yvec_new
+      set i 0
+      foreach value $yvec_new {
+        if {[string is space $value]} continue
+        if {$i > 4095} break
+        set [my varname yvec]($i) $value
+        incr i
+      }
+      [my varname yvec] expr "[my varname yvec] + 1e-99"
     }
   }
 
@@ -1965,7 +1977,7 @@ namespace eval ::mcpha {
   oo::define GenDisplay method recover {} {
     my variable config
     my open_data
-    ${config}.chan_frame.entr_value configure -text [blt::vector expr "sum([my varname yvec](0:4095))"]
+    ${config}.chan_frame.entr_value configure -text [blt::vector expr "round(sum([my varname yvec](0:4095)))"]
   }
 
 # -------------------------------------------------------------------------
@@ -1981,7 +1993,7 @@ set config [frame .config]
 
 mcpha::CfgDisplay create cfg -master $config
 
-if { [catch {blt::tabnotebook .notebook -borderwidth 1 -selectforeground black -side bottom} notebook] } {
+if {[catch {blt::tabnotebook .notebook -borderwidth 1 -selectforeground black -side bottom} notebook]} {
   set notebook [ttk::notebook .notebook]
   set frame_1 [frame ${notebook}.hst_1]
   set frame_2 [frame ${notebook}.hst_2]
@@ -2002,8 +2014,8 @@ if { [catch {blt::tabnotebook .notebook -borderwidth 1 -selectforeground black -
   $notebook insert end -text "Pulse generator" -window $frame_4 -fill both
 }
 
-mcpha::HstDisplay create hst_0 -number 0 -master $frame_1 -controller cfg
-mcpha::HstDisplay create hst_1 -number 1 -master $frame_2 -controller cfg
+mcpha::HstDisplay create hst_1 -number 0 -master $frame_1 -controller cfg
+mcpha::HstDisplay create hst_2 -number 1 -master $frame_2 -controller cfg
 mcpha::OscDisplay create osc -master $frame_3 -controller cfg
 mcpha::GenDisplay create gen -master $frame_4 -controller cfg
 
@@ -2017,9 +2029,9 @@ update
 
 cfg run
 
-hst_0 run
-
 hst_1 run
+
+hst_2 run
 
 osc run
 

@@ -3,8 +3,8 @@ device=$1
 boot_dir=`mktemp -d /tmp/BOOT.XXXXXXXXXX`
 root_dir=`mktemp -d /tmp/ROOT.XXXXXXXXXX`
 
-linux_dir=tmp/linux-4.14
-linux_ver=4.14.42-xilinx
+linux_dir=tmp/linux-4.19
+linux_ver=4.19.84-xilinx
 
 # Choose mirror automatically, depending the geographic and network location
 mirror=http://deb.debian.org/debian
@@ -156,6 +156,14 @@ wpa_passphrase=RedPitaya
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=CCMP
 rsn_pairwise=CCMP
+EOF_CAT
+
+cat <<- EOF_CAT > etc/default/hostapd
+DAEMON_CONF=/etc/hostapd/hostapd.conf
+EOF_CAT
+
+cat <<- EOF_CAT > etc/default/isc-dhcp-server
+INTERFACESv4=wlan0
 EOF_CAT
 
 cat <<- EOF_CAT > etc/dhcp/dhcpd.conf

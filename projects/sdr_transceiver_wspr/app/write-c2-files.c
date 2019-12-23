@@ -20,17 +20,17 @@ int main(int argc, char *argv[])
   volatile uint8_t *rst, *sel;
   volatile uint16_t *cntr;
   int32_t type = 2;
-  uint64_t buffer[8][45000];
+  uint64_t *buffer;
   config_t config;
   config_setting_t *setting, *element;
   char date[12];
-  char name[32];
+  char name[64];
   char zeros[15] = "000000_0000.c2";
   double dialfreq;
   double corr;
   double freq[8] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-  int number;
-  uint8_t chan = 0;
+  int chan[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+  uint8_t value = 0;
 
   if(argc != 2)
   {
@@ -89,31 +89,31 @@ int main(int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    if(!config_setting_lookup_int(element, "chan", &number))
+    if(!config_setting_lookup_int(element, "chan", &chan[i]))
     {
       fprintf(stderr, "No 'chan' setting in element %d.\n", i);
       return EXIT_FAILURE;
     }
 
-    if(number < 1 || number > 2)
+    if(chan[i] < 1 || chan[i] > 2)
     {
       fprintf(stderr, "Wrong 'chan' setting in element %d.\n", i);
       return EXIT_FAILURE;
     }
 
-    chan |= (number - 1) << i;
+    value |= (chan[i] - 1) << i;
   }
 
   t = time(NULL);
   if((gmt = gmtime(&t)) == NULL)
   {
-    perror("gmtime");
+    fprintf(stderr, "Cannot convert time.\n");
     return EXIT_FAILURE;
   }
 
   if((fd = open("/dev/mem", O_RDWR)) < 0)
   {
-    perror("open");
+    fprintf(stderr, "Cannot open /dev/mem.\n");
     return EXIT_FAILURE;
   }
 
@@ -130,12 +130,13 @@ int main(int argc, char *argv[])
   sel = (uint8_t *)(cfg + 4);
   cntr = (uint16_t *)(sts + 12);
 
-  *sel = chan;
+  *sel = value;
 
   *rst |= 1;
   *rst &= ~1;
 
   offset = 0;
+  buffer = malloc(45000 * 8 * 8);
   memset(buffer, 0, 45000 * 8 * 8);
 
   while(offset < 42000)
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
     {
       for(j = 0; j < 8; ++j)
       {
-        buffer[j][offset + i] = *fifo[j];
+        buffer[j * 45000 + offset + i] = *fifo[j];
       }
     }
 
@@ -157,16 +158,16 @@ int main(int argc, char *argv[])
   {
     dialfreq = freq[i] - 0.0015;
     strftime(date, 12, "%y%m%d_%H%M", gmt);
-    sprintf(name, "wspr_%d_%d_%s.c2", i, (uint32_t)(dialfreq * 1.0e6), date);
+    sprintf(name, "wspr_%d_%d_%d_%s.c2", i, (uint32_t)(dialfreq * 1.0e6), chan[i], date);
     if((fp = fopen(name, "wb")) == NULL)
     {
-      perror("fopen");
+      fprintf(stderr, "Cannot open output file %s.\n", name);
       return EXIT_FAILURE;
     }
     fwrite(zeros, 1, 14, fp);
     fwrite(&type, 1, 4, fp);
     fwrite(&dialfreq, 1, 8, fp);
-    fwrite(buffer[i], 1, 360000, fp);
+    fwrite(&buffer[i * 45000], 1, 45000 * 8, fp);
     fclose(fp);
   }
 

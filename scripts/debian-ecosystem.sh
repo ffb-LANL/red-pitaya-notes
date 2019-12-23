@@ -3,8 +3,8 @@ device=$1
 boot_dir=`mktemp -d /tmp/BOOT.XXXXXXXXXX`
 root_dir=`mktemp -d /tmp/ROOT.XXXXXXXXXX`
 
-linux_dir=tmp/linux-4.14
-linux_ver=4.14.42-xilinx
+linux_dir=tmp/linux-4.19
+linux_ver=4.19.84-xilinx
 
 ecosystem_tar=red-pitaya-ecosystem-0.95-20160526.tgz
 ecosystem_url=https://www.dropbox.com/sh/5fy49wae6xwxa8a/AADrueq0P1OJFy9z6AaJ72nWa/red-pitaya-ecosystem/red-pitaya-ecosystem-0.95-20160526.tgz?dl=1
@@ -213,6 +213,14 @@ wpa_passphrase=RedPitaya
 wpa_key_mgmt=WPA-PSK
 wpa_pairwise=CCMP
 rsn_pairwise=CCMP
+EOF_CAT
+
+cat <<- EOF_CAT > etc/default/hostapd
+DAEMON_CONF=/etc/hostapd/hostapd.conf
+EOF_CAT
+
+cat <<- EOF_CAT > etc/default/isc-dhcp-server
+INTERFACESv4=wlan0
 EOF_CAT
 
 cat <<- EOF_CAT > etc/dhcp/dhcpd.conf
