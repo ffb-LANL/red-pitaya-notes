@@ -15,8 +15,8 @@ volatile uint16_t *rx_cntr;
 volatile float *rx_data;
 
 int sock_thread = -1;
-uint32_t rate_thread = 5;
-uint32_t size_thread = 6000;
+uint32_t rate_thread = 10;
+uint32_t size_thread = 5000;
 
 void *read_handler(void *arg);
 
@@ -61,12 +61,12 @@ int main(int argc, char *argv[])
   *tx_phase[1] = 0;
   *tx_level[0] = 32766;
   *tx_level[1] = 0;
-  *rx_size = 25000 - 1;
+  *rx_size = 50000 - 1;
 
   start = 10000;
-  stop = 60000000;
-  size = 6000;
-  rate = 5;
+  stop = 50000000;
+  size = 5000;
+  rate = 10;
   corr = 0;
 
   *rst &= ~3;
@@ -113,6 +113,7 @@ int main(int argc, char *argv[])
     {
       if(recv(sock_client, (char *)&command, 4, MSG_WAITALL) <= 0) break;
       value = command & 0xfffffff;
+      value |= (value & 0x8000000) ? 0xf0000000 : 0;
       switch(command >> 28)
       {
         case 0:
@@ -132,9 +133,9 @@ int main(int argc, char *argv[])
           break;
         case 3:
           /* set rate */
-          if(value < 5 || value > 50000) continue;
+          if(value < 10 || value > 100000) continue;
           rate = value;
-          *rx_size = 2500 * (rate + 5) - 1;
+          *rx_size = 2500 * (rate + 10) - 1;
           break;
         case 4:
           /* set correction */
@@ -219,7 +220,7 @@ void *read_handler(void *arg)
 
   i = 0;
   cntr = 0;
-  while(cntr < size * (rate + 5))
+  while(cntr < size * (rate + 10))
   {
     if(sock_thread < 0) break;
 
@@ -229,7 +230,7 @@ void *read_handler(void *arg)
       continue;
     }
 
-    if(i < 5)
+    if(i < 10)
     {
       for(j = 0; j < 4; ++j)
       {
@@ -248,7 +249,7 @@ void *read_handler(void *arg)
     ++i;
     ++cntr;
 
-    if(i < rate + 5) continue;
+    if(i < rate + 10) continue;
 
     i = 0;
 

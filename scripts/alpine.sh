@@ -1,16 +1,16 @@
-alpine_url=http://dl-cdn.alpinelinux.org/alpine/v3.9
+alpine_url=http://dl-cdn.alpinelinux.org/alpine/v3.14
 
-uboot_tar=alpine-uboot-3.9.0-armv7.tar.gz
+uboot_tar=alpine-uboot-3.14.0-armv7.tar.gz
 uboot_url=$alpine_url/releases/armv7/$uboot_tar
 
-tools_tar=apk-tools-static-2.10.3-r1.apk
+tools_tar=apk-tools-static-2.12.5-r1.apk
 tools_url=$alpine_url/main/armv7/$tools_tar
 
-firmware_tar=linux-firmware-other-20190322-r0.apk
+firmware_tar=linux-firmware-other-20210511-r0.apk
 firmware_url=$alpine_url/main/armv7/$firmware_tar
 
-linux_dir=tmp/linux-4.19
-linux_ver=4.19.84-xilinx
+linux_dir=tmp/linux-5.10
+linux_ver=5.10.46-xilinx
 
 modules_dir=alpine-modloop/lib/modules/$linux_ver
 
@@ -21,7 +21,7 @@ test -f $tools_tar || curl -L $tools_url -o $tools_tar
 
 test -f $firmware_tar || curl -L $firmware_url -o $firmware_tar
 
-for tar in linux-firmware-ath9k_htc-20190322-r0.apk linux-firmware-brcm-20190322-r0.apk linux-firmware-rtlwifi-20190322-r0.apk
+for tar in linux-firmware-ath9k_htc-20210511-r0.apk linux-firmware-brcm-20210511-r0.apk linux-firmware-cypress-20210511-r0.apk linux-firmware-rtlwifi-20210511-r0.apk
 do
   url=$alpine_url/main/armv7/$tar
   test -f $tar || curl -L $url -o $tar
@@ -36,7 +36,7 @@ tar -zxf $tools_tar --directory=alpine-apk --warning=no-unknown-keyword
 mkdir alpine-initramfs
 cd alpine-initramfs
 
-gzip -dc ../alpine-uboot/boot/initramfs-vanilla | cpio -id
+gzip -dc ../alpine-uboot/boot/initramfs-lts | cpio -id
 rm -rf etc/modprobe.d
 rm -rf lib/firmware
 rm -rf lib/modules
@@ -57,7 +57,7 @@ depmod -a -b alpine-modloop $linux_ver
 
 tar -zxf $firmware_tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1 --wildcards lib/firmware/ar* lib/firmware/rt*
 
-for tar in linux-firmware-ath9k_htc-20190322-r0.apk linux-firmware-brcm-20190322-r0.apk linux-firmware-rtlwifi-20190322-r0.apk
+for tar in linux-firmware-ath9k_htc-20210511-r0.apk linux-firmware-brcm-20210511-r0.apk linux-firmware-cypress-20210511-r0.apk linux-firmware-rtlwifi-20210511-r0.apk
 do
   tar -zxf $tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1
 done
@@ -81,7 +81,15 @@ ln -s /media/mmcblk0p1/cache $root_dir/etc/apk/cache
 cp -r alpine/etc $root_dir/
 cp -r alpine/apps $root_dir/media/mmcblk0p1/
 
-for project in led_blinker sdr_receiver_hpsdr sdr_transceiver sdr_transceiver_emb sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha vna
+for project in common_tools led_blinker sdr_receiver_hpsdr sdr_transceiver sdr_transceiver_emb sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha pulsed_nmr vna
+do
+  mkdir -p $root_dir/media/mmcblk0p1/apps/$project
+  cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
+  cp -r projects/$project/app/* $root_dir/media/mmcblk0p1/apps/$project/
+  cp tmp/$project.bit $root_dir/media/mmcblk0p1/apps/$project/
+done
+
+for project in led_blinker_122_88 sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_emb_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 pulsed_nmr_122_88 vna_122_88
 do
   mkdir -p $root_dir/media/mmcblk0p1/apps/$project
   cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
@@ -99,31 +107,30 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add haveged openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix
+apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix
 
-ln -s /etc/init.d/bootmisc etc/runlevels/boot/bootmisc
-ln -s /etc/init.d/hostname etc/runlevels/boot/hostname
-ln -s /etc/init.d/hwdrivers etc/runlevels/boot/hwdrivers
-ln -s /etc/init.d/modloop etc/runlevels/boot/modloop
-ln -s /etc/init.d/swclock etc/runlevels/boot/swclock
-ln -s /etc/init.d/sysctl etc/runlevels/boot/sysctl
-ln -s /etc/init.d/syslog etc/runlevels/boot/syslog
-ln -s /etc/init.d/urandom etc/runlevels/boot/urandom
+rc-update add bootmisc boot
+rc-update add hostname boot
+rc-update add hwdrivers boot
+rc-update add modloop boot
+rc-update add swclock boot
+rc-update add sysctl boot
+rc-update add syslog boot
+rc-update add urandom boot
 
-ln -s /etc/init.d/killprocs etc/runlevels/shutdown/killprocs
-ln -s /etc/init.d/mount-ro etc/runlevels/shutdown/mount-ro
-ln -s /etc/init.d/savecache etc/runlevels/shutdown/savecache
+rc-update add killprocs shutdown
+rc-update add mount-ro shutdown
+rc-update add savecache shutdown
 
-ln -s /etc/init.d/devfs etc/runlevels/sysinit/devfs
-ln -s /etc/init.d/dmesg etc/runlevels/sysinit/dmesg
-ln -s /etc/init.d/mdev etc/runlevels/sysinit/mdev
+rc-update add devfs sysinit
+rc-update add dmesg sysinit
+rc-update add mdev sysinit
 
 rc-update add avahi-daemon default
 rc-update add chronyd default
 rc-update add dhcpcd default
 rc-update add local default
 rc-update add dcron default
-rc-update add haveged default
 rc-update add sshd default
 
 mkdir -p etc/runlevels/wifi
@@ -154,23 +161,57 @@ ln -s /media/mmcblk0p1/wifi root/wifi
 
 lbu add root
 lbu delete etc/resolv.conf
-lbu delete etc/periodic/ft8
-lbu delete etc/periodic/wspr
+lbu delete etc/cron.d/ft8
+lbu delete etc/cron.d/ft8_122_88
+lbu delete etc/cron.d/wspr
+lbu delete etc/cron.d/wspr_122_88
 lbu delete root/.ash_history
 
 lbu commit -d
 
-apk add subversion make gcc gfortran
+apk add patch make gcc gfortran
 
-for project in server sdr_receiver_hpsdr sdr_transceiver sdr_transceiver_emb sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide mcpha vna
+wdsp_dir=/media/mmcblk0p1/apps/wdsp
+wdsp_tar=/media/mmcblk0p1/apps/wdsp.tar.gz
+wdsp_url=https://github.com/pavel-demin/wdsp/archive/master.tar.gz
+
+curl -L \$wdsp_url -o \$wdsp_tar
+mkdir -p \$wdsp_dir
+tar -zxf \$wdsp_tar --strip-components=1 --directory=\$wdsp_dir
+rm \$wdsp_tar
+make -C \$wdsp_dir
+
+ft8d_dir=/media/mmcblk0p1/apps/ft8d
+ft8d_tar=/media/mmcblk0p1/apps/ft8d.tar.gz
+ft8d_url=https://github.com/pavel-demin/ft8d/archive/master.tar.gz
+
+curl -L \$ft8d_url -o \$ft8d_tar
+mkdir -p \$ft8d_dir
+tar -zxf \$ft8d_tar --strip-components=1 --directory=\$ft8d_dir
+rm \$ft8d_tar
+make -C \$ft8d_dir
+
+wsprd_dir=/media/mmcblk0p1/apps/wsprd
+wsprd_tar=/media/mmcblk0p1/apps/wsprd.tar.gz
+wsprd_url=https://github.com/pavel-demin/wsprd/archive/master.tar.gz
+
+curl -L \$wsprd_url -o \$wsprd_tar
+mkdir -p \$wsprd_dir
+tar -zxf \$wsprd_tar --strip-components=1 --directory=\$wsprd_dir
+rm \$wsprd_tar
+make -C \$wsprd_dir
+
+for project in common_tools server sdr_receiver_hpsdr sdr_transceiver sdr_transceiver_emb sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha pulsed_nmr vna
 do
   make -C /media/mmcblk0p1/apps/\$project clean
   make -C /media/mmcblk0p1/apps/\$project
 done
 
-svn co svn://svn.code.sf.net/p/wsjt/wsjt/wsjtx/trunk/lib/wsprd /media/mmcblk0p1/apps/sdr_transceiver_wspr/wsprd
-make -C /media/mmcblk0p1/apps/sdr_transceiver_wspr/wsprd CFLAGS='-O3 -march=armv7-a -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard -ffast-math -fsingle-precision-constant -mvectorize-with-neon-quad' wsprd
-make -C /media/mmcblk0p1/apps/sdr_transceiver_wspr
+for project in sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_emb_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 pulsed_nmr_122_88 vna_122_88
+do
+  make -C /media/mmcblk0p1/apps/\$project clean
+  make -C /media/mmcblk0p1/apps/\$project
+done
 
 EOF_CHROOT
 
@@ -184,6 +225,6 @@ hostname -F /etc/hostname
 
 rm -rf $root_dir alpine-apk
 
-zip -r red-pitaya-alpine-3.9-armv7-`date +%Y%m%d`.zip apps boot.bin cache devicetree.dtb modloop red-pitaya.apkovl.tar.gz uEnv.txt uImage uInitrd wifi
+zip -r red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip apps boot.bin cache devicetree.dtb modloop red-pitaya.apkovl.tar.gz uEnv.txt uImage uInitrd wifi
 
 rm -rf apps cache modloop red-pitaya.apkovl.tar.gz uInitrd wifi

@@ -37,7 +37,9 @@ cell xilinx.com:ip:proc_sys_reset rst_0 {} {
 # ADC
 
 # Create axis_red_pitaya_adc
-cell pavel-demin:user:axis_red_pitaya_adc adc_0 {} {
+cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
+  ADC_DATA_WIDTH 14
+} {
   aclk pll_0/clk_out1
   adc_dat_a adc_dat_a_i
   adc_dat_b adc_dat_b_i
@@ -51,14 +53,7 @@ cell pavel-demin:user:axi_cfg_register cfg_0 {
   AXI_DATA_WIDTH 32
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins cfg_0/S_AXI]
-
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
-set_property OFFSET 0x40000000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
+addr 0x40000000 4K cfg_0/S_AXI /ps_0/M_AXI_GP0
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer slice_1 {
@@ -243,8 +238,6 @@ cell xilinx.com:ip:fir_compiler fir_0 {
 cell xilinx.com:ip:blk_mem_gen bram_0 {
   MEMORY_TYPE True_Dual_Port_RAM
   USE_BRAM_BLOCK Stand_Alone
-  USE_BYTE_WRITE_ENABLE true
-  BYTE_SIZE 8
   WRITE_WIDTH_A 64
   WRITE_DEPTH_A 1024
   WRITE_WIDTH_B 32
@@ -275,14 +268,7 @@ cell pavel-demin:user:axi_bram_reader reader_0 {
   BRAM_PORTA bram_0/BRAM_PORTB
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins reader_0/S_AXI]
-
-set_property RANGE 8K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-set_property OFFSET 0x40002000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
+addr 0x40002000 8K reader_0/S_AXI /ps_0/M_AXI_GP0
 
 # Create axi_sts_register
 cell pavel-demin:user:axi_sts_register sts_0 {
@@ -293,11 +279,4 @@ cell pavel-demin:user:axi_sts_register sts_0 {
   sts_data writer_0/sts_data
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins sts_0/S_AXI]
-
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
-set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
+addr 0x40001000 4K sts_0/S_AXI /ps_0/M_AXI_GP0

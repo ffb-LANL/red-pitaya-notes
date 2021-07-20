@@ -6,9 +6,6 @@ cell xilinx.com:ip:clk_wiz pll_0 {
   PRIM_SOURCE Differential_clock_capable_pin
   CLKOUT1_USED true
   CLKOUT1_REQUESTED_OUT_FREQ 125.0
-  CLKOUT2_USED true
-  CLKOUT2_REQUESTED_OUT_FREQ 250.0
-  CLKOUT2_REQUESTED_PHASE -90.0
   USE_RESET false
 } {
   clk_in1_p adc_clk_p_i
@@ -90,6 +87,8 @@ cell pavel-demin:user:port_slicer slice_5 {
 cell xilinx.com:ip:blk_mem_gen bram_0 {
   MEMORY_TYPE True_Dual_Port_RAM
   USE_BRAM_BLOCK Stand_Alone
+  USE_BYTE_WRITE_ENABLE true
+  BYTE_SIZE 8
   WRITE_WIDTH_A 32
   WRITE_DEPTH_A 16384
   WRITE_WIDTH_B 64
@@ -234,30 +233,9 @@ cell pavel-demin:user:axi_axis_reader reader_1 {
   aresetn rst_0/peripheral_aresetn
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins cfg_0/S_AXI]
+addr 0x40001000 4K cfg_0/S_AXI /ps_0/M_AXI_GP0
 
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
-set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
+addr 0x40010000 64K reader_1/S_AXI /ps_0/M_AXI_GP0
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins reader_1/S_AXI]
-
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_reader_1_reg0]
-set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_reader_1_reg0]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins writer_0/S_AXI]
-
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
-set_property OFFSET 0x40030000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
+addr 0x40030000 64K writer_0/S_AXI /ps_0/M_AXI_GP0
 
