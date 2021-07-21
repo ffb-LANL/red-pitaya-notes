@@ -38,7 +38,7 @@ cell xilinx.com:ip:xlslice:1.0 slice_cic_update {
 
 # create filter
 module cic_filter_0 {
-  source projects/filter_test/cic_filter_16.tcl
+  source projects/low_pass/cic_filter_16.tcl
 } {
   s_axis bcast_two/M00_AXIS
   cfg slice_decimate/Dout
@@ -50,7 +50,7 @@ module cic_filter_0 {
 
 # create filter
 module cic_filter_1 {
-  source projects/filter_test/cic_filter_16.tcl
+  source projects/low_pass/cic_filter_16.tcl
 } {
   s_axis bcast_two/M01_AXIS
   cfg slice_decimate/Dout

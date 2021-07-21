@@ -281,7 +281,7 @@ cell xilinx.com:ip:cmpy mult_1 {
 
 # create filter
 module filter_xy_0 {
-  source projects/filter_test/filter_xy.tcl
+  source projects/low_pass/filter_xy.tcl
 } {
   s_axis mult_0/M_AXIS_DOUT
   cfg cfg_0/cfg_data
@@ -291,7 +291,7 @@ module filter_xy_0 {
 
 # create filter
 module filter_xy_1 {
-  source projects/filter_test/filter_xy_reversed.tcl
+  source projects/low_pass/filter_xy_reversed.tcl
 } {
   s_axis mult_1/M_AXIS_DOUT
   cfg cfg_0/cfg_data

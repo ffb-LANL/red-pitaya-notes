@@ -35,7 +35,7 @@ cell xilinx.com:ip:axis_subset_converter:1.1 subset_0 {
 
 # create filter
 module cic_filter_0 {
-  source projects/filter_test/cic_filter.tcl
+  source projects/low_pass/cic_filter.tcl
 } {
   s_axis subset_0/M_AXIS
   cfg slice_5/Dout

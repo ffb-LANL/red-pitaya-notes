@@ -32,7 +32,7 @@ cell xilinx.com:ip:xlslice slice_decimate {
 
 # create filter
 module cic_filter_x_var {
-  source projects/filter_test/cic_filter_28_32.tcl
+  source projects/low_pass/cic_filter_28_32.tcl
 } {
   s_axis bcast_two/M00_AXIS
   cfg slice_decimate/Dout
@@ -66,7 +66,7 @@ cell xilinx.com:ip:cic_compiler cic_filter_x_fixed {
 
 # create filter
 module cic_filter_y_var {
-  source projects/filter_test/cic_filter_28_32.tcl
+  source projects/low_pass/cic_filter_28_32.tcl
 } {
   s_axis bcast_two/M01_AXIS
   cfg slice_decimate/Dout

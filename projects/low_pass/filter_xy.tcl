@@ -51,7 +51,7 @@ cell xilinx.com:ip:cic_compiler cic_filter_x0 {
 
 # create filter
 module cic_filter_x1 {
-  source projects/filter_test/cic_filter_32.tcl
+  source projects/low_pass/cic_filter_32.tcl
 } {
   s_axis cic_filter_x0/m_axis_data
   cfg slice_decimate/Dout
@@ -82,7 +82,7 @@ cell xilinx.com:ip:cic_compiler cic_filter_y0 {
 
 # create filter
 module cic_filter_y1 {
-  source projects/filter_test/cic_filter_32.tcl
+  source projects/low_pass/cic_filter_32.tcl
 } {
   s_axis cic_filter_y0/m_axis_data
   cfg slice_decimate/Dout
