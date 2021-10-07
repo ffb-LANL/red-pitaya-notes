@@ -8,7 +8,7 @@ dual channel lockin 109
 #current-voltage test pattern 110
 fast digitizer delayed 111
 level_trigger 112
-
+single channel lockin 113
 
 CFG map:
 0-0     PKTZR RESET
