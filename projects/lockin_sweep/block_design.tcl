@@ -290,7 +290,7 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
 
 # create filter
 module filter_xy {
-  source projects/filter_test/filter_xy.tcl
+  source projects/low_pass/filter_xy.tcl
 } {
   s_axis mult_0/M_AXIS_DOUT
   cfg cfg_0/cfg_data
