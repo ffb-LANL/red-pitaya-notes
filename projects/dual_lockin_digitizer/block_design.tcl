@@ -160,17 +160,17 @@ cell pavel-demin:user:axis_constant phase_0 {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_modulus {
   CONST_WIDTH 32
-  CONST_VAL 15120
+  CONST_VAL 0
 }
 
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler dds_0 {
-  MODE_OF_OPERATION Rasterized
-  MODULUS 15120
+  # MODE_OF_OPERATION Rasterized
+  # MODULUS 15120
   DDS_CLOCK_RATE 125
   parameter_entry Hardware_Parameters
   OUTPUT_WIDTH 14
-  PHASE_WIDTH 14
+  PHASE_WIDTH 32
   PHASE_INCREMENT Streaming
   DSP48_USE Maximal
   HAS_TREADY true
@@ -375,6 +375,23 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
 
 assign_bd_address [get_bd_addr_segs ps_0/S_AXI_HP0/HP0_DDR_LOWOCM]
 
+# Create xlslice
+cell xilinx.com:ip:xlslice scale_factor {
+  DIN_WIDTH 256 DIN_FROM 159 DIN_TO 144
+} {
+  Din cfg_0/cfg_data
+}
+
+
+# Create axis_scaler
+cell pavel-demin:user:axis_scaler scaler {
+  AXIS_TDATA_WIDTH 14
+} {
+  S_AXIS bcast_DDS/M02_AXIS
+  cfg_data scale_factor/Dout
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
@@ -382,7 +399,7 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
   ddr_clk pll_0/clk_out2
   wrt_clk pll_0/clk_out3
   locked pll_0/locked
-  S_AXIS bcast_DDS/M02_AXIS
+  S_AXIS scaler/M_AXIS
   dac_clk dac_clk_o
   dac_rst dac_rst_o
   dac_sel dac_sel_o
