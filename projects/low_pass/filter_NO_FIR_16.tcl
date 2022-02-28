@@ -27,14 +27,6 @@ cell xilinx.com:ip:xlslice:1.0 slice_decimate {
 }
 
 
-# Create xlslice
-cell xilinx.com:ip:xlslice:1.0 slice_cic_update {
-  DIN_WIDTH 256 DIN_FROM 2 DIN_TO 2
-} {
-  Din cfg
-}
-
-
 
 # create filter
 module cic_filter_0 {
@@ -42,7 +34,6 @@ module cic_filter_0 {
 } {
   s_axis bcast_two/M00_AXIS
   cfg slice_decimate/Dout
-  update  slice_cic_update/Dout
   aclk aclk
   aresetn aresetn 
 }
@@ -54,7 +45,6 @@ module cic_filter_1 {
 } {
   s_axis bcast_two/M01_AXIS
   cfg slice_decimate/Dout
-  update  slice_cic_update/Dout
   aclk aclk
   aresetn aresetn 
 }
