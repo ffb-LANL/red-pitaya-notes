@@ -176,7 +176,7 @@ cell xilinx.com:ip:xlconstant const_pktzr_length {
 # Create axis_circular_packetizer
 cell pavel-demin:user:axis_circular_packetizer pktzr_0 {
   AXIS_TDATA_WIDTH 64
-  CNTR_WIDTH 25
+  CNTR_WIDTH 26
   CONTINUOUS FALSE
 } {
   S_AXIS filter_0/M_AXIS
@@ -187,15 +187,15 @@ cell pavel-demin:user:axis_circular_packetizer pktzr_0 {
 }
 
 # Create axis_dwidth_converter
-#cell xilinx.com:ip:axis_dwidth_converter conv_0 {
-#  S_TDATA_NUM_BYTES.VALUE_SRC USER
-#  S_TDATA_NUM_BYTES 4
-#  M_TDATA_NUM_BYTES 8
-#} {
-#  S_AXIS pktzr_0/M_AXIS
-#  aclk pll_0/clk_out1
-#  aresetn slice_write_enable/Dout
-#}
+cell xilinx.com:ip:axis_dwidth_converter conv_0 {
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 8
+} {
+  S_AXIS pktzr_0/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn slice_write_enable/Dout
+}
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_2 {
@@ -207,8 +207,10 @@ cell xilinx.com:ip:xlconstant const_2 {
 cell pavel-demin:user:axis_ram_writer writer_0 {
   ADDR_WIDTH 25
 } {
-  S_AXIS pktzr_0/M_AXIS
+  S_AXIS conv_0/M_AXIS
   M_AXI ps_0/S_AXI_HP0
+  m_axi_awready  ps_0/S_AXI_HP0_AWREADY
+  m_axi_wready ps_0/S_AXI_HP0_WREADY
   cfg_data const_2/dout
   aclk pll_0/clk_out1
   aresetn slice_write_enable/Dout
@@ -270,19 +272,23 @@ cell xilinx.com:ip:xlconstant const_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_sts {
-  NUM_PORTS 6
+  NUM_PORTS 8
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
   IN3_WIDTH 1
-  IN4_WIDTH 14
-  IN5_WIDTH 16
+  IN4_WIDTH 1
+  IN5_WIDTH 1
+  IN6_WIDTH 12
+  IN7_WIDTH 16
   } {
   In0 writer_0/sts_data
   In1 pktzr_0/trigger_pos
   In2 trigger_0/trigger
-  In3 pktzr_0/complete 
-  In5 const_ID/dout
+  In3 pktzr_0/complete
+  In4 ps_0/S_AXI_HP0_AWREADY
+  In5 ps_0/S_AXI_HP0_WREADY 
+  In7 const_ID/dout
 }
 
 # Create axi_sts_register
