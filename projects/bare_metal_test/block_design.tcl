@@ -37,7 +37,9 @@ cell xilinx.com:ip:proc_sys_reset rst_0 {} {
 # ADC
 
 # Create axis_red_pitaya_adc
-cell pavel-demin:user:axis_red_pitaya_adc adc_0 {} {
+cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
+  ADC_DATA_WIDTH 14
+} {
   aclk pll_0/clk_out1
   adc_dat_a adc_dat_a_i
   adc_dat_b adc_dat_b_i
@@ -66,14 +68,7 @@ cell pavel-demin:user:axi_cfg_register cfg_0 {
   AXI_DATA_WIDTH 32
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins cfg_0/S_AXI]
-
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
-set_property OFFSET 0x40000000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
+addr 0x40000000 4K cfg_0/S_AXI /ps_0/M_AXI_GP0
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer slice_1 {

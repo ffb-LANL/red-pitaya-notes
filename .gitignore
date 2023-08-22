@@ -1,29 +1,13 @@
-# Libraries
-*.lvlibp
-*.llb
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-
-# Metadata
-*.aliases
-*.lvlps
-*.project
-*.cproject
-
-#folders
-Applications/builds
-tmp
-.Xil
+*.apk
+*.bin
+*.dtb
+*.img
+*.tar.gz
+*.zip
+vivado*
 webtalk*
-hs_err*
-/server/rp
-*.o
-/Simulation*
-/workspace*
+tmp
+uImage
+.vscode
+.Xil
+/torp.bat

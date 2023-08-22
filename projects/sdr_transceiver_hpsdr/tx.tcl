@@ -183,6 +183,8 @@ cell xilinx.com:ip:axis_broadcaster bcast_0 {
 cell xilinx.com:ip:blk_mem_gen bram_0 {
   MEMORY_TYPE True_Dual_Port_RAM
   USE_BRAM_BLOCK Stand_Alone
+  USE_BYTE_WRITE_ENABLE true
+  BYTE_SIZE 8
   WRITE_WIDTH_A 32
   WRITE_DEPTH_A 1024
   WRITE_WIDTH_B 32
@@ -406,7 +408,7 @@ cell xilinx.com:ip:cordic cordic_0 {
   INPUT_WIDTH 24
   OUTPUT_WIDTH 15
   ROUND_MODE Round_Pos_Neg_Inf
-  COMPENSATION_SCALING Embedded_Multiplier
+  COMPENSATION_SCALING BRAM
 } {
   S_AXIS_CARTESIAN comb_1/M_AXIS
   aclk /pll_0/clk_out1

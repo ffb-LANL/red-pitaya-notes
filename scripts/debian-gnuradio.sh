@@ -3,13 +3,13 @@ device=$1
 boot_dir=`mktemp -d /tmp/BOOT.XXXXXXXXXX`
 root_dir=`mktemp -d /tmp/ROOT.XXXXXXXXXX`
 
-linux_dir=tmp/linux-4.19
-linux_ver=4.19.84-xilinx
+linux_dir=tmp/linux-5.10
+linux_ver=5.10.107-xilinx
 
 # Choose mirror automatically, depending the geographic and network location
 mirror=http://deb.debian.org/debian
 
-distro=stretch
+distro=bullseye
 arch=armhf
 
 passwd=changeme
@@ -73,8 +73,8 @@ deb $mirror $distro main contrib non-free
 deb-src $mirror $distro main contrib non-free
 deb $mirror $distro-updates main contrib non-free
 deb-src $mirror $distro-updates main contrib non-free
-deb http://security.debian.org/debian-security $distro/updates main contrib non-free
-deb-src http://security.debian.org/debian-security $distro/updates main contrib non-free
+deb http://security.debian.org/debian-security $distro-security main contrib non-free
+deb-src http://security.debian.org/debian-security $distro-security main contrib non-free
 EOF_CAT
 
 cat <<- EOF_CAT > etc/apt/apt.conf.d/99norecommends
@@ -87,12 +87,6 @@ cat <<- EOF_CAT > etc/fstab
 # <file system> <mount point>   <type>  <options>           <dump>  <pass>
 /dev/mmcblk0p2  /               ext4    errors=remount-ro   0       1
 /dev/mmcblk0p1  /boot           vfat    defaults            0       2
-EOF_CAT
-
-cat <<- EOF_CAT >> etc/securetty
-
-# Serial Console for Xilinx Zynq-7000
-ttyPS0
 EOF_CAT
 
 echo red-pitaya > etc/hostname
@@ -111,12 +105,23 @@ dpkg-reconfigure --frontend=noninteractive tzdata
 
 apt-get -y install openssh-server ca-certificates ntp ntpdate fake-hwclock \
   usbutils psmisc lsof parted curl vim wpasupplicant hostapd isc-dhcp-server \
-  iw firmware-realtek firmware-ralink firmware-atheros firmware-brcm80211 \
+  firmware-misc-nonfree firmware-realtek firmware-atheros firmware-brcm80211 \
   build-essential libasound2-dev libconfig-dev libfftw3-dev subversion git \
   alsa-utils gnuradio python-numpy python-gtk2 python-urwid python-serial \
-  python-alsaaudio xauth xterm parallel ifplugd ntfs-3g net-tools less
+  python-alsaaudio xauth xterm parallel iw iptables ifplugd ntfs-3g net-tools \
+  less
+
+systemctl disable isc-dhcp-server
+systemctl disable nftables
+systemctl disable wpa_supplicant
 
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
+
+cat <<- EOF_CAT >> etc/securetty
+
+# Serial Console for Xilinx Zynq-7000
+ttyPS0
+EOF_CAT
 
 touch etc/udev/rules.d/80-net-setup-link.rules
 

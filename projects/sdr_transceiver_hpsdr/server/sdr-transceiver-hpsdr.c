@@ -41,12 +41,13 @@
 #define ADDR_DAC0 0x60 /* MCP4725 address 0 */
 #define ADDR_DAC1 0x61 /* MCP4725 address 1 */
 #define ADDR_ARDUINO 0x40 /* G8NJJ Arduino sketch */
+#define ADDR_NUCLEO 0x55 /* NUCLEO-G071RB */
 
-volatile uint32_t *rx_freq[2], *tx_freq, *alex, *tx_mux, *dac_freq;
+volatile uint32_t *rx_freq[3], *tx_freq, *alex, *tx_mux, *dac_freq;
 volatile uint16_t *rx_rate, *rx_cntr, *tx_cntr, *dac_cntr, *adc_cntr;
 volatile int16_t *tx_level, *dac_level;
 volatile uint8_t *gpio_in, *gpio_out, *rx_rst, *tx_rst, *lo_rst;
-volatile uint64_t *rx_data;
+volatile uint64_t *rx_data[5];
 volatile uint32_t *tx_data, *dac_data;
 volatile uint16_t *adc_data;
 volatile int32_t *xadc;
@@ -78,6 +79,7 @@ int i2c_codec = 0;
 int i2c_dac0 = 0;
 int i2c_dac1 = 0;
 int i2c_arduino = 0;
+int i2c_nucleo = 0;
 
 uint16_t i2c_pene_data = 0;
 uint16_t i2c_alex_data = 0;
@@ -86,6 +88,7 @@ uint16_t i2c_misc_data = 0;
 uint16_t i2c_drive_data = 0;
 uint16_t i2c_dac0_data = 0xfff;
 uint16_t i2c_dac1_data = 0xfff;
+uint32_t i2c_nucleo_data[2] = {0};
 
 uint16_t i2c_ard_frx1_data = 0; /* rx 1 freq in kHz */
 uint16_t i2c_ard_frx2_data = 0; /* rx 2 freq in kHz */
@@ -155,13 +158,21 @@ ssize_t i2c_write_data16(int fd, uint16_t data)
   return write(fd, buffer, 2);
 }
 
+ssize_t i2c_write_data40(int fd, uint32_t low, uint32_t high)
+{
+  uint32_t buffer[2];
+  buffer[0] = low;
+  buffer[1] = high;
+  return write(fd, buffer, 5);
+}
+
 uint16_t alex_data_rx = 0;
 uint16_t alex_data_tx = 0;
 uint16_t alex_data_0 = 0;
 uint16_t alex_data_1 = 0;
+uint16_t alex_update = 0;
 
 uint32_t freq_data[3] = {0, 0, 0};
-
 
 /* calculate lookup table from drive scale value to 0.5 dB attenuation units */
 void calc_log_lookup()
@@ -256,10 +267,6 @@ void alex_write()
   }
 }
 
-uint16_t misc_data_0 = 0;
-uint16_t misc_data_1 = 0;
-uint16_t misc_data_2 = 0;
-
 static inline int lower_bound(int *array, int size, int value)
 {
   int i = 0, j = size, k;
@@ -272,10 +279,27 @@ static inline int lower_bound(int *array, int size, int value)
   return i;
 }
 
+uint16_t misc_data_0 = 0;
+uint16_t misc_data_1 = 0;
+uint16_t misc_data_2 = 0;
+uint16_t misc_update = 0;
+
 void misc_write()
 {
   uint16_t code[3], data = 0;
-  int i, freqs[20] = {1700000, 2100000, 3400000, 4100000, 6900000, 7350000, 9950000, 10200000, 12075000, 16209000, 16210000, 19584000, 19585000, 23170000, 23171000, 26465000, 26466000, 39850000, 39851000, 61000000};
+  int i, freqs[20] =
+  {
+     1700000,  2100000,
+     3400000,  3900000,
+     6900000,  7350000,
+     9900000, 10250000,
+    13900000, 14450000,
+    17950000, 18250000,
+    20900000, 21550000,
+    24800000, 25100000,
+    26900000, 30000000,
+    49000000, 55000000
+  };
 
   for(i = 0; i < 3; ++i)
   {
@@ -292,6 +316,49 @@ void misc_write()
     i2c_misc_data = data;
     ioctl(i2c_fd, I2C_SLAVE, ADDR_MISC);
     i2c_write_addr_data16(i2c_fd, 0x02, data);
+  }
+}
+
+uint32_t nucleo_data_0 = 0;
+uint32_t nucleo_data_1 = 0;
+uint32_t nucleo_data_2 = 0;
+uint32_t nucleo_data_3 = 0;
+uint32_t nucleo_update = 0;
+
+void nucleo_write()
+{
+  uint32_t data[2] = {0};
+  uint32_t code[3];
+  int i, freqs[22] =
+  {
+     1700000,  2100000,
+     3400000,  3900000,
+     5250000,  5450000,
+     6900000,  7350000,
+     9900000, 10250000,
+    13900000, 14450000,
+    17950000, 18250000,
+    20900000, 21550000,
+    24800000, 25100000,
+    26900000, 30000000,
+    49000000, 55000000
+  };
+
+  for(i = 0; i < 3; ++i)
+  {
+    code[i] = lower_bound(freqs, 22, freq_data[i]);
+    code[i] = code[i] % 2 ? code[i] / 2 + 1 : 0;
+  }
+
+  data[0] = nucleo_data_3 << 25 | nucleo_data_2 << 20 | nucleo_data_1 << 17 | nucleo_data_0 << 1 | (code[0] != code[1]);
+  data[1] = code[2] << 4 | code[1];
+
+  if(i2c_nucleo_data[0] != data[0] || i2c_nucleo_data[1] != data[1])
+  {
+    i2c_nucleo_data[0] = data[0];
+    i2c_nucleo_data[1] = data[1];
+    ioctl(i2c_fd, I2C_SLAVE, ADDR_NUCLEO);
+    i2c_write_data40(i2c_fd, data[0], data[1]);
   }
 }
 
@@ -342,14 +409,15 @@ int main(int argc, char *argv[])
   pthread_attr_t attr;
   pthread_t thread;
   volatile void *cfg, *sts;
-  volatile int32_t *tx_ramp, *dac_ramp;
+  volatile int32_t *tx_ramp;
   volatile uint16_t *tx_size, *dac_size;
-  volatile int16_t *ps_level;
+  volatile int16_t *ps_level, *dac_ramp;
   volatile uint8_t *rx_sel, *tx_sel;
   float scale, ramp[1024], a[4] = {0.35875, 0.48829, 0.14128, 0.01168};
   uint8_t reply[11] = {0xef, 0xfe, 2, 0, 0, 0, 0, 0, 0, 32, 1};
   uint8_t id[4] = {0xef, 0xfe, 1, 6};
   uint32_t code;
+  uint16_t data;
   struct termios tty;
   struct ifreq hwaddr;
   struct sockaddr_in addr_ep2, addr_from[10];
@@ -366,10 +434,10 @@ int main(int argc, char *argv[])
   for(i = 0; i < 5; ++i)
   {
     errno = 0;
-    number = (argc == 6) ? strtol(argv[i + 1], &end, 10) : -1;
+    number = (argc == 7) ? strtol(argv[i + 1], &end, 10) : -1;
     if(errno != 0 || end == argv[i + 1] || number < 1 || number > 2)
     {
-      printf("Usage: sdr-transceiver-hpsdr 1|2 1|2 1|2 1|2 1|2\n");
+      printf("Usage: sdr-transceiver-hpsdr 1|2 1|2 1|2 1|2 1|2 1|2\n");
       return EXIT_FAILURE;
     }
     chan |= (number - 1) << i;
@@ -446,14 +514,14 @@ int main(int argc, char *argv[])
     {
       if(i2c_write_data16(i2c_fd, i2c_dac0_data) > 0)
       {
-      i2c_dac0 = 1;
+        i2c_dac0 = 1;
       }
     }
     if(ioctl(i2c_fd, I2C_SLAVE, ADDR_DAC1) >= 0)
     {
       if(i2c_write_data16(i2c_fd, i2c_dac1_data) > 0)
       {
-      i2c_dac1 = 1;
+        i2c_dac1 = 1;
       }
     }
     if(ioctl(i2c_fd, I2C_SLAVE, ADDR_ARDUINO) >= 0)
@@ -461,6 +529,13 @@ int main(int argc, char *argv[])
       if(i2c_write_addr_data16(i2c_fd, 0x1, i2c_ard_frx1_data) > 0)
       {
         i2c_arduino = 1;
+      }
+    }
+    if(ioctl(i2c_fd, I2C_SLAVE, ADDR_NUCLEO) >= 0)
+    {
+      if(i2c_write_data40(i2c_fd, 0x02100000, 0) > 0)
+      {
+        i2c_nucleo = 1;
       }
     }
     if(ioctl(i2c_fd, I2C_SLAVE, ADDR_CODEC) >= 0)
@@ -499,8 +574,12 @@ int main(int argc, char *argv[])
   dac_data = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40006000);
   adc_data = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40007000);
   tx_data = mmap(NULL, 4*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x4000c000);
-  rx_data = mmap(NULL, 8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40010000);
   xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40020000);
+
+  for(i = 0; i < 5; ++i)
+  {
+    rx_data[i] = mmap(NULL, 2*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40010000 + i * 0x2000);
+  }
 
   rx_rst = ((uint8_t *)(cfg + 0));
   lo_rst = ((uint8_t *)(cfg + 1));
@@ -513,17 +592,18 @@ int main(int argc, char *argv[])
 
   rx_freq[0] = ((uint32_t *)(cfg + 8));
   rx_freq[1] = ((uint32_t *)(cfg + 12));
+  rx_freq[2] = ((uint32_t *)(cfg + 16));
 
-  tx_freq = ((uint32_t *)(cfg + 16));
-  tx_size = ((uint16_t *)(cfg + 20));
-  tx_level = ((int16_t *)(cfg + 22));
-  ps_level = ((int16_t *)(cfg + 24));
+  tx_freq = ((uint32_t *)(cfg + 20));
+  tx_size = ((uint16_t *)(cfg + 24));
+  tx_level = ((int16_t *)(cfg + 26));
+  ps_level = ((int16_t *)(cfg + 28));
 
-  tx_sel = ((uint8_t *)(cfg + 26));
+  tx_sel = ((uint8_t *)(cfg + 30));
 
-  dac_freq = ((uint32_t *)(cfg + 28));
-  dac_size = ((uint16_t *)(cfg + 32));
-  dac_level = ((int16_t *)(cfg + 34));
+  dac_freq = ((uint32_t *)(cfg + 32));
+  dac_size = ((uint16_t *)(cfg + 36));
+  dac_level = ((int16_t *)(cfg + 38));
 
   rx_cntr = ((uint16_t *)(sts + 12));
   tx_cntr = ((uint16_t *)(sts + 14));
@@ -532,8 +612,8 @@ int main(int argc, char *argv[])
   gpio_in = ((uint8_t *)(sts + 20));
 
   /* set rx and tx selectors */
-  *rx_sel = chan & 7;
-  *tx_sel = (chan >> 3) & 3;
+  *rx_sel = chan & 15;
+  *tx_sel = (chan >> 4) & 3;
 
   /* set all GPIO pins to low */
   *gpio_out = 0;
@@ -541,6 +621,7 @@ int main(int argc, char *argv[])
   /* set default rx phase increment */
   *rx_freq[0] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
   *rx_freq[1] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
+  *rx_freq[2] = (uint32_t)floor(600000 / 125.0e6 * (1 << 30) + 0.5);
 
   /* set default rx sample rate */
   *rx_rate = 1000;
@@ -601,7 +682,7 @@ int main(int argc, char *argv[])
     scale = 3.2e4 / ramp[size];
     for(i = 0; i <= size; ++i)
     {
-      dac_ramp[i] = (int32_t)floor(ramp[i] * scale + 0.5);
+      dac_ramp[i] = (int16_t)floor(ramp[i] * scale + 0.5);
     }
     *dac_size = size;
 
@@ -754,6 +835,38 @@ int main(int argc, char *argv[])
           break;
       }
     }
+
+    data = alex_data_0 | cw_ptt;
+    if(alex_data_0 != data)
+    {
+      alex_data_0 = data;
+      alex_update = 1;
+    }
+
+    if(alex_update)
+    {
+      alex_update = 0;
+      alex_write();
+    };
+
+    if(misc_update)
+    {
+      misc_update = 0;
+      misc_write();
+    };
+
+    data = nucleo_data_0 | cw_ptt;
+    if(nucleo_data_0 != data)
+    {
+      nucleo_data_0 = data;
+      nucleo_update = 1;
+    }
+
+    if(nucleo_update)
+    {
+      nucleo_update = 0;
+      nucleo_write();
+    };
   }
   close(sock_ep2);
 
@@ -815,7 +928,7 @@ void process_ep2(uint8_t *frame)
       if(alex_data_0 != data)
       {
         alex_data_0 = data;
-        alex_write();
+        alex_update = 1;
       }
 
       /* configure PENELOPE */
@@ -827,6 +940,24 @@ void process_ep2(uint8_t *frame)
           i2c_pene_data = data;
           ioctl(i2c_fd, I2C_SLAVE, ADDR_PENE);
           i2c_write_addr_data16(i2c_fd, 0x02, data);
+        }
+      }
+
+      if(i2c_nucleo)
+      {
+        data =
+          ((frame[4] & 0x03) == 2) << 15 |
+          ((frame[4] & 0x03) == 1) << 14 |
+          ((frame[4] & 0x03) == 0) << 13 |
+          (((frame[3] >> 5) & 0x03) == 3) << 12 |
+          (((frame[3] >> 5) & 0x03) == 2) << 11 |
+          (((frame[3] >> 5) & 0x03) == 1) << 10 |
+          (frame[3] & 0x18) << 5 | (frame[2] & 0xfe) | (frame[0] & 0x01);
+
+        if(nucleo_data_0 != data)
+        {
+          nucleo_data_0 = data;
+          nucleo_update = 1;
         }
       }
 
@@ -889,9 +1020,10 @@ void process_ep2(uint8_t *frame)
       if(freq_data[0] != freq)
       {
         freq_data[0] = freq;
-        alex_write();
         icom_write();
-        if(i2c_misc) misc_write();
+        alex_update = 1;
+        if(i2c_misc) misc_update = 1;
+        if(i2c_nucleo) nucleo_update = 1;
         if(i2c_arduino)
         {
           data = freq / 1000;
@@ -920,9 +1052,9 @@ void process_ep2(uint8_t *frame)
           *lo_rst &= ~3;
           *lo_rst |= 3;
         }
-        alex_write();
-        if(i2c_misc) misc_write();
-
+        alex_update = 1;
+        if(i2c_misc) misc_update = 1;
+        if(i2c_nucleo) nucleo_update = 1;
         if(i2c_arduino)
         {
           data = freq / 1000;
@@ -935,6 +1067,7 @@ void process_ep2(uint8_t *frame)
         }
       }
       break;
+#ifndef THETIS
     case 6:
     case 7:
       /* set rx phase increment */
@@ -945,8 +1078,9 @@ void process_ep2(uint8_t *frame)
       if(freq_data[2] != freq)
       {
         freq_data[2] = freq;
-        alex_write();
-        if(i2c_misc) misc_write();
+        alex_update = 1;
+        if(i2c_misc) misc_update = 1;
+        if(i2c_nucleo) nucleo_update = 1;
         if(i2c_arduino)
         {
           data = freq / 1000;
@@ -959,13 +1093,54 @@ void process_ep2(uint8_t *frame)
         }
       }
       break;
+    case 8:
+    case 9:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[2] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
+      break;
+#else
+    case 6:
+    case 7:
+      /* set rx phase increment */
+      if(rx_sync_data) break;
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[1] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
+      break;
+    case 8:
+    case 9:
+      /* set rx phase increment */
+      freq = ntohl(*(uint32_t *)(frame + 1));
+      if(freq < freq_min || freq > freq_max) break;
+      *rx_freq[2] = (uint32_t)floor(freq / 125.0e6 * (1 << 30) + 0.5);
+      if(freq_data[2] != freq)
+      {
+        freq_data[2] = freq;
+        alex_update = 1;
+        if(i2c_misc) misc_update = 1;
+        if(i2c_nucleo) nucleo_update = 1;
+        if(i2c_arduino)
+        {
+          data = freq / 1000;
+          if(data != i2c_ard_frx2_data)
+          {
+            i2c_ard_frx2_data = data;
+            ioctl(i2c_fd, I2C_SLAVE, ADDR_ARDUINO);
+            i2c_write_addr_data16(i2c_fd, 0x02, data);
+          }
+        }
+      }
+      break;
+#endif
     case 18:
     case 19:
       data = (frame[2] & 0x40) << 9 | frame[4] << 8 | frame[3];
       if(alex_data_1 != data)
       {
         alex_data_1 = data;
-        alex_write();
+        alex_update = 1;
       }
 
       if(i2c_misc)
@@ -974,7 +1149,17 @@ void process_ep2(uint8_t *frame)
         if(misc_data_2 != data)
         {
           misc_data_2 = data;
-          misc_write();
+          misc_update = 1;
+        }
+      }
+
+      if(i2c_nucleo)
+      {
+        data = (frame[3] & 0xe0) >> 5;
+        if(nucleo_data_1 != data)
+        {
+          nucleo_data_1 = data;
+          nucleo_update = 1;
         }
       }
 
@@ -1053,7 +1238,16 @@ void process_ep2(uint8_t *frame)
         if(misc_data_0 != data)
         {
           misc_data_0 = data;
-          misc_write();
+          misc_update = 1;
+        }
+      }
+      if(i2c_nucleo)
+      {
+        data = frame[4] & 0x1f;
+        if(nucleo_data_2 != data)
+        {
+          nucleo_data_2 = data;
+          nucleo_update = 1;
         }
       }
       if(i2c_arduino)
@@ -1081,7 +1275,16 @@ void process_ep2(uint8_t *frame)
         if(misc_data_1 != data)
         {
           misc_data_1 = data;
-          misc_write();
+          misc_update = 1;
+        }
+      }
+      if(i2c_nucleo)
+      {
+        data = frame[1] & 0x1f;
+        if(nucleo_data_3 != data)
+        {
+          nucleo_data_3 = data;
+          nucleo_update = 1;
         }
       }
       cw_reversed = (frame[2] >> 6) & 1;
@@ -1161,6 +1364,7 @@ void *handler_ep6(void *arg)
   uint8_t data1[4096];
   uint8_t data2[4096];
   uint8_t data3[4096];
+  uint8_t data4[4096];
   uint8_t buffer[25 * 1032];
   uint8_t *pointer;
   struct iovec iovec[25][1];
@@ -1214,7 +1418,7 @@ void *handler_ep6(void *arg)
     n = 504 / size;
     m = 256 / n;
 
-    if((i2c_codec && *adc_cntr >= 1024) || *rx_cntr >= 8192)
+    if((i2c_codec && *adc_cntr >= 1024) || *rx_cntr >= 2048)
     {
       if(i2c_codec)
       {
@@ -1228,7 +1432,7 @@ void *handler_ep6(void *arg)
       *rx_rst &= ~1;
     }
 
-    while(*rx_cntr < m * n * 16) usleep(1000);
+    while(*rx_cntr < m * n * 4) usleep(1000);
 
     if(i2c_codec && --rate_counter == 0)
     {
@@ -1242,10 +1446,11 @@ void *handler_ep6(void *arg)
 
     for(i = 0; i < m * n * 16; i += 8)
     {
-      *(uint64_t *)(data0 + i) = *rx_data;
-      *(uint64_t *)(data1 + i) = *rx_data;
-      *(uint64_t *)(data2 + i) = *rx_data;
-      *(uint64_t *)(data3 + i) = *rx_data;
+      *(uint64_t *)(data0 + i) = *rx_data[0];
+      *(uint64_t *)(data1 + i) = *rx_data[1];
+      *(uint64_t *)(data2 + i) = *rx_data[2];
+      *(uint64_t *)(data3 + i) = *rx_data[3];
+      *(uint64_t *)(data4 + i) = *rx_data[4];
     }
 
     data_offset = 0;
@@ -1292,7 +1497,16 @@ void *handler_ep6(void *arg)
         {
           memcpy(pointer + 6, data1 + data_offset, 6);
         }
-#ifndef ANANXD
+#ifndef THETIS
+        if(size > 14)
+        {
+          memcpy(pointer + 12, data3 + data_offset, 6);
+        }
+        if(size > 20)
+        {
+          memcpy(pointer + 18, data4 + data_offset, 6);
+        }
+#else
         if(size > 14)
         {
           memcpy(pointer + 12, data2 + data_offset, 6);
@@ -1301,14 +1515,9 @@ void *handler_ep6(void *arg)
         {
           memcpy(pointer + 18, data3 + data_offset, 6);
         }
-#else
-        if(size > 20)
-        {
-          memcpy(pointer + 18, data2 + data_offset, 6);
-        }
         if(size > 26)
         {
-          memcpy(pointer + 24, data3 + data_offset, 6);
+          memcpy(pointer + 24, data4 + data_offset, 6);
         }
 #endif
         data_offset += 8;

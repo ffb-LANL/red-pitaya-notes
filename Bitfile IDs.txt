@@ -1,14 +1,16 @@
 lockin digitizer 101
 digitizer 102
 lockin_sweep 103
-#current-voltage 104
+current-voltage 104
+slow_iv 105
 fast digitizer 107
 synchronous lockin 108
 dual channel lockin 109
 #current-voltage test pattern 110
 fast digitizer delayed 111
 level_trigger 112
-
+single channel lockin 113
+slow dual channel lockin 114
 
 CFG map:
 0-0     PKTZR RESET

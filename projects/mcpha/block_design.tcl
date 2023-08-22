@@ -8,7 +8,10 @@ cell xilinx.com:ip:clk_wiz pll_0 {
   CLKOUT1_REQUESTED_OUT_FREQ 125.0
   CLKOUT2_USED true
   CLKOUT2_REQUESTED_OUT_FREQ 250.0
-  CLKOUT2_REQUESTED_PHASE -90.0
+  CLKOUT2_REQUESTED_PHASE 157.5
+  CLKOUT3_USED true
+  CLKOUT3_REQUESTED_OUT_FREQ 250.0
+  CLKOUT3_REQUESTED_PHASE 202.5
   USE_RESET false
 } {
   clk_in1_p adc_clk_p_i
@@ -18,10 +21,11 @@ cell xilinx.com:ip:clk_wiz pll_0 {
 # Create processing_system7
 cell xilinx.com:ip:processing_system7 ps_0 {
   PCW_IMPORT_BOARD_PRESET cfg/red_pitaya.xml
-  PCW_USE_S_AXI_HP0 1
+  PCW_USE_S_AXI_ACP 1
+  PCW_USE_DEFAULT_ACP_USER_VAL 1
 } {
   M_AXI_GP0_ACLK pll_0/clk_out1
-  S_AXI_HP0_ACLK pll_0/clk_out1
+  S_AXI_ACP_ACLK pll_0/clk_out1
 }
 
 # Create all required interconnections
@@ -42,7 +46,9 @@ cell xilinx.com:ip:proc_sys_reset rst_0 {} {
 # ADC
 
 # Create axis_red_pitaya_adc
-cell pavel-demin:user:axis_red_pitaya_adc adc_0 {} {
+cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
+  ADC_DATA_WIDTH 14
+} {
   aclk pll_0/clk_out1
   adc_dat_a adc_dat_a_i
   adc_dat_b adc_dat_b_i
@@ -50,9 +56,12 @@ cell pavel-demin:user:axis_red_pitaya_adc adc_0 {} {
 }
 
 # Create axis_red_pitaya_dac
-cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
+cell pavel-demin:user:axis_red_pitaya_dac dac_0 {
+  DAC_DATA_WIDTH 14
+} {
   aclk pll_0/clk_out1
   ddr_clk pll_0/clk_out2
+  wrt_clk pll_0/clk_out3
   locked pll_0/locked
   dac_clk dac_clk_o
   dac_rst dac_rst_o
@@ -63,77 +72,77 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
 
 # Create axi_cfg_register
 cell pavel-demin:user:axi_cfg_register cfg_0 {
-  CFG_DATA_WIDTH 768
+  CFG_DATA_WIDTH 800
   AXI_ADDR_WIDTH 7
   AXI_DATA_WIDTH 32
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_0 {
-  DIN_WIDTH 768 DIN_FROM 7 DIN_TO 0
+  DIN_WIDTH 800 DIN_FROM 7 DIN_TO 0
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer neg_slice_0 {
-  DIN_WIDTH 768 DIN_FROM 4 DIN_TO 4
+  DIN_WIDTH 800 DIN_FROM 4 DIN_TO 4
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_1 {
-  DIN_WIDTH 768 DIN_FROM 15 DIN_TO 8
+  DIN_WIDTH 800 DIN_FROM 15 DIN_TO 8
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer neg_slice_1 {
-  DIN_WIDTH 768 DIN_FROM 12 DIN_TO 12
+  DIN_WIDTH 800 DIN_FROM 12 DIN_TO 12
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_2 {
-  DIN_WIDTH 768 DIN_FROM 23 DIN_TO 16
+  DIN_WIDTH 800 DIN_FROM 23 DIN_TO 16
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_3 {
-  DIN_WIDTH 768 DIN_FROM 31 DIN_TO 24
+  DIN_WIDTH 800 DIN_FROM 31 DIN_TO 24
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer neg_slice_2 {
-  DIN_WIDTH 768 DIN_FROM 28 DIN_TO 28
+  DIN_WIDTH 800 DIN_FROM 28 DIN_TO 28
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer neg_slice_3 {
-  DIN_WIDTH 768 DIN_FROM 29 DIN_TO 29
+  DIN_WIDTH 800 DIN_FROM 29 DIN_TO 29
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_4 {
-  DIN_WIDTH 768 DIN_FROM 30 DIN_TO 30
+  DIN_WIDTH 800 DIN_FROM 30 DIN_TO 30
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer rst_slice_5 {
-  DIN_WIDTH 768 DIN_FROM 31 DIN_TO 31
+  DIN_WIDTH 800 DIN_FROM 31 DIN_TO 31
 } {
   din cfg_0/cfg_data
 }
@@ -142,7 +151,7 @@ cell pavel-demin:user:port_slicer rst_slice_5 {
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer slice_0 {
-  DIN_WIDTH 768 DIN_FROM 47 DIN_TO 32
+  DIN_WIDTH 800 DIN_FROM 47 DIN_TO 32
 } {
   din cfg_0/cfg_data
 }
@@ -151,49 +160,49 @@ cell pavel-demin:user:port_slicer slice_0 {
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer slice_1 {
-  DIN_WIDTH 768 DIN_FROM 63 DIN_TO 48
+  DIN_WIDTH 800 DIN_FROM 63 DIN_TO 48
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_0 {
-  DIN_WIDTH 768 DIN_FROM 191 DIN_TO 64
+  DIN_WIDTH 800 DIN_FROM 191 DIN_TO 64
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_1 {
-  DIN_WIDTH 768 DIN_FROM 319 DIN_TO 192
+  DIN_WIDTH 800 DIN_FROM 319 DIN_TO 192
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_2 {
-  DIN_WIDTH 768 DIN_FROM 447 DIN_TO 320
+  DIN_WIDTH 800 DIN_FROM 447 DIN_TO 320
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_3 {
-  DIN_WIDTH 768 DIN_FROM 575 DIN_TO 448
+  DIN_WIDTH 800 DIN_FROM 575 DIN_TO 448
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_4 {
-  DIN_WIDTH 768 DIN_FROM 671 DIN_TO 576
+  DIN_WIDTH 800 DIN_FROM 703 DIN_TO 576
 } {
   din cfg_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer cfg_slice_5 {
-  DIN_WIDTH 768 DIN_FROM 767 DIN_TO 672
+  DIN_WIDTH 800 DIN_FROM 799 DIN_TO 704
 } {
   din cfg_0/cfg_data
 }
@@ -389,11 +398,12 @@ module osc_0 {
   slice_5/din cfg_slice_4/dout
   slice_6/din cfg_slice_4/dout
   slice_7/din cfg_slice_4/dout
+  slice_8/din cfg_slice_4/dout
   switch_0/S00_AXIS bcast_1/M02_AXIS
   switch_0/S01_AXIS bcast_1/M03_AXIS
   comb_0/S00_AXIS bcast_1/M04_AXIS
   comb_0/S01_AXIS bcast_1/M05_AXIS
-  writer_0/M_AXI ps_0/S_AXI_HP0
+  writer_0/M_AXI ps_0/S_AXI_ACP
 }
 
 module pha_2 {
@@ -554,67 +564,18 @@ cell pavel-demin:user:axi_sts_register sts_0 {
   sts_data concat_1/dout
 }
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins sts_0/S_AXI]
+addr 0x40000000 4K sts_0/S_AXI /ps_0/M_AXI_GP0
 
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
-set_property OFFSET 0x40000000 [get_bd_addr_segs ps_0/Data/SEG_sts_0_reg0]
+addr 0x40001000 4K cfg_0/S_AXI /ps_0/M_AXI_GP0
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins cfg_0/S_AXI]
+addr 0x40002000 4K osc_0/switch_0/S_AXI_CTRL /ps_0/M_AXI_GP0
 
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
-set_property OFFSET 0x40001000 [get_bd_addr_segs ps_0/Data/SEG_cfg_0_reg0]
+addr 0x40008000 32K reader_0/S_AXI /ps_0/M_AXI_GP0
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-}  [get_bd_intf_pins osc_0/switch_0/S_AXI_CTRL]
+addr 0x40010000 64K hst_0/reader_0/S_AXI /ps_0/M_AXI_GP0
 
-set_property RANGE 4K [get_bd_addr_segs ps_0/Data/SEG_switch_0_Reg]
-set_property OFFSET 0x40002000 [get_bd_addr_segs ps_0/Data/SEG_switch_0_Reg]
+addr 0x40020000 64K hst_1/reader_0/S_AXI /ps_0/M_AXI_GP0
 
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins reader_0/S_AXI]
+addr 0x40030000 64K gen_0/writer_0/S_AXI /ps_0/M_AXI_GP0
 
-set_property RANGE 32K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-set_property OFFSET 0x40008000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg0]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins hst_0/reader_0/S_AXI]
-
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg01]
-set_property OFFSET 0x40010000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg01]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins hst_1/reader_0/S_AXI]
-
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg02]
-set_property OFFSET 0x40020000 [get_bd_addr_segs ps_0/Data/SEG_reader_0_reg02]
-
-# Create all required interconnections
-apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config {
-  Master /ps_0/M_AXI_GP0
-  Clk Auto
-} [get_bd_intf_pins gen_0/writer_0/S_AXI]
-
-set_property RANGE 64K [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
-set_property OFFSET 0x40030000 [get_bd_addr_segs ps_0/Data/SEG_writer_0_reg0]
-
-assign_bd_address [get_bd_addr_segs ps_0/S_AXI_HP0/HP0_DDR_LOWOCM]
+assign_bd_address [get_bd_addr_segs ps_0/S_AXI_ACP/ACP_DDR_LOWOCM]

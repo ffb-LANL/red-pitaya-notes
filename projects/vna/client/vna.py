@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Control program for the Red Pitaya vector network analyzer
-# Copyright (C) 2017  Pavel Demin
+# Copyright (C) 2021  Pavel Demin
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,11 +31,18 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 from matplotlib.ticker import Formatter, FuncFormatter
 
-from PyQt5.uic import loadUiType
-from PyQt5.QtCore import QRegExp, QTimer, QSettings, QDir, Qt
-from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog, QFileDialog, QPushButton, QLabel, QSpinBox
-from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
+if 'PyQt5' in sys.modules:
+  from PyQt5.uic import loadUiType
+  from PyQt5.QtCore import QRegExp, QTimer, QSettings, QDir, Qt
+  from PyQt5.QtGui import QRegExpValidator
+  from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog, QFileDialog, QPushButton, QLabel, QSpinBox
+  from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
+else:
+  from PySide2.QtUiTools import loadUiType
+  from PySide2.QtCore import QRegExp, QTimer, QSettings, QDir, Qt
+  from PySide2.QtGui import QRegExpValidator
+  from PySide2.QtWidgets import QApplication, QMainWindow, QMessageBox, QDialog, QFileDialog, QPushButton, QLabel, QSpinBox
+  from PySide2.QtNetwork import QAbstractSocket, QTcpSocket
 
 Ui_VNA, QMainWindow = loadUiType('vna.ui')
 
@@ -72,7 +79,7 @@ class Measurement:
     self.period = 62500
 
 class FigureTab:
-  cursors = [15000, 45000]
+  cursors = [15000, 35000]
   colors = ['orange', 'violet']
 
   def __init__(self, layout, vna):
@@ -157,13 +164,13 @@ class FigureTab:
       gain = self.vna.gain_short(freq)
       magnitude = 20.0 * np.log10(np.absolute(gain))
       angle = np.angle(gain, deg = True)
-      row[1].set_text(unicode_minus('%.1f' % magnitude))
+      row[1].set_text(unicode_minus('%.2f' % magnitude))
       row[2].set_text(unicode_minus('%.1f' % angle))
     elif self.mode == 'gain_open':
       gain = self.vna.gain_open(freq)
       magnitude = 20.0 * np.log10(np.absolute(gain))
       angle = np.angle(gain, deg = True)
-      row[1].set_text(unicode_minus('%.1f' % magnitude))
+      row[1].set_text(unicode_minus('%.2f' % magnitude))
       row[2].set_text(unicode_minus('%.1f' % angle))
     else:
       swr = self.vna.swr(freq)
@@ -222,6 +229,7 @@ class FigureTab:
       value = self.cursors[i]
       self.cursorValues[i].setRange(min, max)
       self.cursorValues[i].setValue(value)
+      value = self.cursorValues[i].value()
       self.set_cursor(i, value)
     getattr(self, 'update_%s' % mode)()
 
@@ -457,8 +465,8 @@ class VNA(QMainWindow, Ui_VNA):
   def __init__(self):
     super(VNA, self).__init__()
     self.setupUi(self)
-    # IP address validator
-    rx = QRegExp('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$')
+    # address validator
+    rx = QRegExp('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])|rp-[0-9A-Fa-f]{6}\.local$')
     self.addrValue.setValidator(QRegExpValidator(rx, self.addrValue))
     # state variables
     self.idle = True
@@ -466,8 +474,8 @@ class VNA(QMainWindow, Ui_VNA):
     self.auto = False
     # sweep parameters
     self.sweep_start = 10
-    self.sweep_stop = 60000
-    self.sweep_size = 6000
+    self.sweep_stop = 50000
+    self.sweep_size = 5000
     # buffer and offset for the incoming samples
     self.buffer = bytearray(16 * 32768)
     self.offset = 0
@@ -484,7 +492,7 @@ class VNA(QMainWindow, Ui_VNA):
       layout = getattr(self, '%sLayout' % self.graphs[i])
       self.tabs[i] = FigureTab(layout, self)
     # configure widgets
-    self.rateValue.addItems(['10000', '5000', '1000', '500', '100', '50', '10', '5', '1'])
+    self.rateValue.addItems(['5000', '1000', '500', '100', '50', '10', '5', '1'])
     self.rateValue.lineEdit().setReadOnly(True)
     self.rateValue.lineEdit().setAlignment(Qt.AlignRight)
     for i in range(self.rateValue.count()):
@@ -615,12 +623,12 @@ class VNA(QMainWindow, Ui_VNA):
 
   def set_rate(self, value):
     if self.idle: return
-    rate = [5, 10, 50, 100, 500, 1000, 5000, 10000, 50000][value]
+    rate = [10, 50, 100, 500, 1000, 5000, 10000, 50000][value]
     self.socket.write(struct.pack('<I', 3<<28 | int(rate)))
 
   def set_corr(self, value):
     if self.idle: return
-    self.socket.write(struct.pack('<I', 4<<28 | int(value)))
+    self.socket.write(struct.pack('<I', 4<<28 | int(value & 0xfffffff)))
 
   def set_phase1(self, value):
     if self.idle: return
@@ -782,17 +790,17 @@ class VNA(QMainWindow, Ui_VNA):
     self.level1Value.setValue(settings.value('level_1', 0, type = int))
     self.level2Value.setValue(settings.value('level_2', -90, type = int))
     open_start = settings.value('open_start', 10, type = int)
-    open_stop = settings.value('open_stop', 60000, type = int)
-    open_size = settings.value('open_size', 6000, type = int)
+    open_stop = settings.value('open_stop', 50000, type = int)
+    open_size = settings.value('open_size', 5000, type = int)
     short_start = settings.value('short_start', 10, type = int)
-    short_stop = settings.value('short_stop', 60000, type = int)
-    short_size = settings.value('short_size', 6000, type = int)
+    short_stop = settings.value('short_stop', 50000, type = int)
+    short_size = settings.value('short_size', 5000, type = int)
     load_start = settings.value('load_start', 10, type = int)
-    load_stop = settings.value('load_stop', 60000, type = int)
-    load_size = settings.value('load_size', 6000, type = int)
+    load_stop = settings.value('load_stop', 50000, type = int)
+    load_size = settings.value('load_size', 5000, type = int)
     dut_start = settings.value('dut_start', 10, type = int)
-    dut_stop = settings.value('dut_stop', 60000, type = int)
-    dut_size = settings.value('dut_size', 6000, type = int)
+    dut_stop = settings.value('dut_stop', 50000, type = int)
+    dut_size = settings.value('dut_size', 5000, type = int)
     self.startValue.setValue(dut_start)
     self.stopValue.setValue(dut_stop)
     self.sizeValue.setValue(dut_size)
@@ -882,4 +890,4 @@ app = QApplication(sys.argv)
 window = VNA()
 window.update_tab()
 window.show()
-sys.exit(app.exec())
+sys.exit(app.exec_())
