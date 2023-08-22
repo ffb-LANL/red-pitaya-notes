@@ -49,12 +49,6 @@ for {set i 0} {$i <= 7} {incr i} {
 
 }
 
-# Create axis_lfsr
-cell pavel-demin:user:axis_lfsr lfsr_0 {} {
-  aclk /pll_0/clk_out1
-  aresetn /rst_0/peripheral_aresetn
-}
-
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_0
 
@@ -67,18 +61,14 @@ for {set i 0} {$i <= 15} {incr i} {
     din dds_[expr $i / 2]/m_axis_data_tdata
   }
 
-  cell xilinx.com:ip:xbip_dsp48_macro mult_$i {
-    INSTRUCTION1 RNDSIMPLE(A*B+CARRYIN)
-    A_WIDTH.VALUE_SRC USER
-    B_WIDTH.VALUE_SRC USER
-    OUTPUT_PROPERTIES User_Defined
+  # Create dsp48
+  cell pavel-demin:user:dsp48 mult_$i {
     A_WIDTH 24
     B_WIDTH 14
-    P_WIDTH 25
+    P_WIDTH 24
   } {
     A dds_slice_$i/dout
     B selector_[expr $i / 2]/dout
-    CARRYIN lfsr_0/m_axis_tdata
     CLK /pll_0/clk_out1
   }
 
@@ -230,61 +220,25 @@ cell xilinx.com:ip:axis_dwidth_converter conv_1 {
   aresetn /rst_0/peripheral_aresetn
 }
 
-# Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster bcast_8 {
-  S_TDATA_NUM_BYTES.VALUE_SRC USER
-  M_TDATA_NUM_BYTES.VALUE_SRC USER
-  S_TDATA_NUM_BYTES 64
-  M_TDATA_NUM_BYTES 8
-  NUM_MI 8
-  M00_TDATA_REMAP {tdata[31:0],tdata[63:32]}
-  M01_TDATA_REMAP {tdata[95:64],tdata[127:96]}
-  M02_TDATA_REMAP {tdata[159:128],tdata[191:160]}
-  M03_TDATA_REMAP {tdata[223:192],tdata[255:224]}
-  M04_TDATA_REMAP {tdata[287:256],tdata[319:288]}
-  M05_TDATA_REMAP {tdata[351:320],tdata[383:352]}
-  M06_TDATA_REMAP {tdata[415:384],tdata[447:416]}
-  M07_TDATA_REMAP {tdata[479:448],tdata[511:480]}
+# Create axis_fifo
+cell pavel-demin:user:axis_fifo fifo_0 {
+  S_AXIS_TDATA_WIDTH 512
+  M_AXIS_TDATA_WIDTH 512
+  WRITE_DEPTH 1024
+  ALWAYS_READY TRUE
 } {
   S_AXIS conv_1/M_AXIS
   aclk /pll_0/clk_out1
-  aresetn /rst_0/peripheral_aresetn
+  aresetn slice_0/dout
 }
 
-for {set i 0} {$i <= 7} {incr i} {
-
-  # Create fifo_generator
-  cell xilinx.com:ip:fifo_generator fifo_generator_$i {
-    PERFORMANCE_OPTIONS First_Word_Fall_Through
-    INPUT_DATA_WIDTH 64
-    INPUT_DEPTH 512
-    OUTPUT_DATA_WIDTH 32
-    OUTPUT_DEPTH 1024
-    READ_DATA_COUNT true
-    READ_DATA_COUNT_WIDTH 11
-  } {
-    clk /pll_0/clk_out1
-    srst slice_0/dout
-  }
-
-  # Create axis_fifo
-  cell pavel-demin:user:axis_fifo fifo_[expr $i + 1] {
-    S_AXIS_TDATA_WIDTH 64
-    M_AXIS_TDATA_WIDTH 32
-  } {
-    S_AXIS bcast_8/M0${i}_AXIS
-    FIFO_READ fifo_generator_$i/FIFO_READ
-    FIFO_WRITE fifo_generator_$i/FIFO_WRITE
-    aclk /pll_0/clk_out1
-  }
-
-  # Create axi_axis_reader
-  cell pavel-demin:user:axi_axis_reader reader_$i {
-    AXI_DATA_WIDTH 32
-  } {
-    S_AXIS fifo_[expr $i + 1]/M_AXIS
-    aclk /pll_0/clk_out1
-    aresetn /rst_0/peripheral_aresetn
-  }
-
+# Create axis_dwidth_converter
+cell xilinx.com:ip:axis_dwidth_converter conv_2 {
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 64
+  M_TDATA_NUM_BYTES 4
+} {
+  S_AXIS fifo_0/M_AXIS
+  aclk /pll_0/clk_out1
+  aresetn slice_0/dout
 }
