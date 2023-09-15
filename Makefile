@@ -112,7 +112,7 @@ tmp/cores/%: cores/%.v
 	mkdir -p $(@D)
 	$(VIVADO) -source scripts/core.tcl -tclargs $* $(PART)
 
-tmp/%.xpr: projects/% $(addprefix tmp/, $(CORES))
+tmp/%.xpr: projects/% projects/$(NAME)/block_design.tcl $(addprefix tmp/, $(CORES))
 	mkdir -p $(@D)
 	$(VIVADO) -source scripts/project.tcl -tclargs $* $(PART)
 
