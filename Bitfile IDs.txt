@@ -13,12 +13,12 @@ single channel lockin 113
 slow dual channel lockin 114
 
 CFG map:
-0-0     PKTZR RESET
-1-1     WRITE ENABLE
+0-0     PKTZR RESET | writer_reset
+1-1     WRITE ENABLE | run
 3-3     SOFT TRIGGER
-4-4     TRX RESET
+4-4     TRX RESET 
 7-7     OUTPUT SWITCH FWD/REV
-32-63   RECORD_LENGTH
+32-63   RECORD_LENGTH | tot_data
 64-95   FREQUENCY WORD
 96-127  DECIMATION
 128-134 LED
@@ -26,4 +26,15 @@ CFG map:
 160-319 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
 224-255 DDS DELAY
 320-351 TRIGGER DELAY 
-352-367 TRIGGER LEVEL 
+352-367 TRIGGER LEVEL
+368-383 trig_mask
+400-431	writer_address
+
+STS map:
+0-31	writer_0/sts_data 
+32-63   pktzr_0/trigger_pos | scope_0/sts_data
+64-65	pktzr_0/complete
+80-95	const_ID
+96-127	phase_snap
+128-255	value_xy
+256-287 const_modulus
