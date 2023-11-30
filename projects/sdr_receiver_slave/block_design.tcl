@@ -370,16 +370,23 @@ cell xilinx.com:ip:floating_point fp_0 {
 
 # DMA
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant const_1 {
+  CONST_WIDTH 16
+  CONST_VAL 65535
+}
+
 # Create axis_ram_writer
 cell pavel-demin:user:axis_ram_writer writer_0 {
-  ADDR_WIDTH 12
+  ADDR_WIDTH 16
   AXI_ID_WIDTH 3
   AXIS_TDATA_WIDTH 32
   FIFO_WRITE_DEPTH 1024
 } {
   S_AXIS fp_0/M_AXIS_RESULT
   M_AXI ps_0/S_AXI_ACP
-  cfg_data slice_3/dout
+  min_addr slice_3/dout
+  cfg_data const_1/dout
   sts_data hub_0/sts_data
   aclk pll_0/clk_out1
   aresetn slice_1/dout
@@ -419,5 +426,3 @@ cell xilinx.com:ip:xlconcat concat_0 {
   In1 mult_5/P
   dout dac_0/s_axis_tdata
 }
-
-assign_bd_address [get_bd_addr_segs ps_0/S_AXI_ACP/ACP_DDR_LOWOCM]

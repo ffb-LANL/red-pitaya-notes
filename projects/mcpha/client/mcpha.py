@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import time
 import struct
@@ -7,6 +8,8 @@ import struct
 from functools import partial
 
 import numpy as np
+
+import matplotlib
 
 from matplotlib.figure import Figure
 
@@ -33,6 +36,11 @@ Ui_LogDisplay, QWidget = loadUiType("mcpha_log.ui")
 Ui_HstDisplay, QWidget = loadUiType("mcpha_hst.ui")
 Ui_OscDisplay, QWidget = loadUiType("mcpha_osc.ui")
 Ui_GenDisplay, QWidget = loadUiType("mcpha_gen.ui")
+
+if sys.platform != "win32":
+    path = "."
+else:
+    path = os.path.expanduser("~")
 
 
 class MCPHA(QMainWindow, Ui_MCPHA):
@@ -90,6 +98,7 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         self.hst1.stop()
         self.hst2.stop()
         self.osc.stop()
+        self.gen.stop()
         self.readTimer.stop()
         self.startTimer.stop()
         self.loop.quit()
@@ -99,6 +108,9 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         self.connectButton.clicked.connect(self.start)
         self.log.print("IO stopped")
         self.idle = True
+
+    def closeEvent(self, event):
+        self.stop()
 
     def start_timeout(self):
         self.log.print("error: connection timeout")
@@ -131,7 +143,7 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         if self.socket.bytesAvailable() < size:
             return False
         else:
-            view[:] = self.socket.read(size)
+            view[:] = np.frombuffer(self.socket.read(size), np.uint8)
             return True
 
     def read_timeout(self):
@@ -278,11 +290,11 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.log = log
         self.number = number
         self.min = 0
-        self.max = 16383
+        self.max = 4095
         self.sum = 0
         self.time = np.uint64([75e8, 0])
         self.factor = 1
-        self.bins = 16384
+        self.bins = 4096
         self.buffer = np.zeros(self.bins, np.uint32)
         if number == 0:
             self.color = "#FFAA00"
@@ -299,6 +311,12 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.ax.grid()
         x = np.arange(self.bins)
         (self.curve,) = self.ax.plot(x, self.buffer, drawstyle="steps-mid", color=self.color)
+        self.roi = [0, 4095]
+        self.line = [None, None]
+        self.active = [False, False]
+        self.releaser = [None, None]
+        self.line[0] = self.ax.axvline(0, picker=True, pickradius=5)
+        self.line[1] = self.ax.axvline(4095, picker=True, pickradius=5)
         # create navigation toolbar
         self.toolbar = NavigationToolbar(self.canvas, None, False)
         self.toolbar.layout().setSpacing(6)
@@ -307,10 +325,10 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.toolbar.removeAction(actions[6])
         self.toolbar.removeAction(actions[7])
         self.logCheck = QCheckBox("log scale")
-        self.logCheck.setChecked(True)
+        self.logCheck.setChecked(False)
         self.binsLabel = QLabel("rebin factor")
         self.binsValue = QComboBox()
-        self.binsValue.addItems(["1", "2", "4", "8", "16"])
+        self.binsValue.addItems(["1", "2", "4", "8"])
         self.binsValue.setEditable(True)
         self.binsValue.lineEdit().setReadOnly(True)
         self.binsValue.lineEdit().setAlignment(Qt.AlignRight)
@@ -329,9 +347,11 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.binsValue.currentIndexChanged.connect(self.set_bins)
         self.thrsCheck.toggled.connect(self.set_thresholds)
         self.startButton.clicked.connect(self.start)
+        self.resetButton.clicked.connect(self.reset)
         self.saveButton.clicked.connect(self.save)
         self.loadButton.clicked.connect(self.load)
         self.canvas.mpl_connect("motion_notify_event", self.on_motion)
+        self.canvas.mpl_connect("pick_event", self.on_pick)
         # update controls
         self.set_thresholds(self.thrsCheck.isChecked())
         self.set_time(self.time[0])
@@ -348,15 +368,24 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         value = (h * 3600000 + m * 60000 + s * 1000) * 125000
         self.sum = 0
         self.time[:] = [value, 0]
-        self.mcpha.reset_hst(self.number)
         self.mcpha.reset_timer(self.number)
         self.mcpha.set_pha_delay(self.number, 100)
         self.mcpha.set_pha_thresholds(self.number, self.min, self.max)
         self.mcpha.set_timer(self.number, value)
-        self.mcpha.set_timer_mode(self.number, 1)
-        self.startButton.setText("Stop")
+        self.resume()
+
+    def pause(self):
+        self.mcpha.set_timer_mode(self.number, 0)
+        self.startButton.setText("Resume")
         self.startButton.clicked.disconnect()
-        self.startButton.clicked.connect(self.stop)
+        self.startButton.clicked.connect(self.resume)
+        self.log.print("timer %d stopped" % (self.number + 1))
+
+    def resume(self):
+        self.mcpha.set_timer_mode(self.number, 1)
+        self.startButton.setText("Pause")
+        self.startButton.clicked.disconnect()
+        self.startButton.clicked.connect(self.pause)
         self.log.print("timer %d started" % (self.number + 1))
 
     def stop(self):
@@ -367,6 +396,19 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.startButton.clicked.disconnect()
         self.startButton.clicked.connect(self.start)
         self.log.print("timer %d stopped" % (self.number + 1))
+
+    def reset(self):
+        if self.mcpha.idle:
+            return
+        self.stop()
+        self.mcpha.reset_hst(self.number)
+        self.mcpha.reset_timer(self.number)
+        self.totalValue.setText("%.2e" % 0)
+        self.instValue.setText("%.2e" % 0)
+        self.avgValue.setText("%.2e" % 0)
+        self.buffer[:] = np.zeros(self.bins, np.uint32)
+        self.update_plot()
+        self.update_roi()
 
     def set_enable(self, value):
         if value:
@@ -406,6 +448,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.curve.set_xdata(x)
         self.curve.set_ydata(y)
         self.set_scale(self.logCheck.isChecked())
+        self.update_roi()
 
     def set_thresholds(self, checked):
         self.minValue.setEnabled(checked)
@@ -415,7 +458,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
             self.max = self.maxValue.value()
         else:
             self.min = 0
-            self.max = 16383
+            self.max = 4095
 
     def set_time(self, value):
         value = value // 125000
@@ -430,6 +473,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.update_rate(value)
         self.update_time(value)
         self.update_plot()
+        self.update_roi()
 
     def update_rate(self, value):
         sum = self.buffer.sum()
@@ -456,38 +500,82 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.ax.autoscale_view(scalex=False, scaley=True)
         self.canvas.draw()
 
+    def update_roi(self):
+        y = self.buffer.reshape(-1, self.factor).sum(-1)
+        x0 = self.roi[0] // self.factor
+        x1 = self.roi[1] // self.factor
+        roi = y[x0 : x1 + 1]
+        y0 = roi[0]
+        y1 = roi[-1]
+        tot = roi.sum()
+        bkg = (x1 + 1 - x0) * (y0 + y1) / 2.0
+        self.roistartValue.setText("%d" % x0)
+        self.roiendValue.setText("%d" % x1)
+        self.roitotValue.setText("%.2e" % tot)
+        self.roibkgValue.setText("%.2e" % bkg)
+        self.line[0].set_xdata([x0, x0])
+        self.line[1].set_xdata([x1, x1])
+        self.canvas.draw_idle()
+
     def on_motion(self, event):
         if event.inaxes != self.ax:
             return
         x = int(event.xdata + 0.5)
-        if x < 0 or x >= self.bins // self.factor:
-            return
+        if x < 0:
+            x = 0
+        if x >= self.bins // self.factor:
+            x = self.bins // self.factor - 1
         y = self.curve.get_ydata(True)[x]
         self.numberValue.setText("%d" % x)
         self.entriesValue.setText("%d" % y)
+        delta = 40
+        if self.active[0]:
+            x0 = x * self.factor
+            if x0 > self.roi[1] - delta:
+                self.roi[0] = self.roi[1] - delta
+            else:
+                self.roi[0] = x0
+            self.update_roi()
+        if self.active[1]:
+            x1 = x * self.factor
+            if x1 < self.roi[0] + delta:
+                self.roi[1] = self.roi[0] + delta
+            else:
+                self.roi[1] = x1
+            self.update_roi()
+
+    def on_pick(self, event):
+        for i in range(2):
+            if event.artist == self.line[i]:
+                self.active[i] = True
+                self.releaser[i] = self.canvas.mpl_connect("button_release_event", partial(self.on_release, i))
+
+    def on_release(self, i, event):
+        self.active[i] = False
+        self.canvas.mpl_disconnect(self.releaser[i])
 
     def save(self):
         try:
-            dialog = QFileDialog(self, "Save hst file", ".", "*.hst")
+            dialog = QFileDialog(self, "Save hst file", path, "*.hst")
             dialog.setDefaultSuffix("hst")
             name = "histogram-%s.hst" % time.strftime("%Y%m%d-%H%M%S")
             dialog.selectFile(name)
             dialog.setAcceptMode(QFileDialog.AcceptSave)
             if dialog.exec() == QDialog.Accepted:
                 name = dialog.selectedFiles()
-                self.buffer.tofile(name[0])
+                np.savetxt(name[0], self.buffer, fmt="%u", newline=os.linesep)
                 self.log.print("histogram %d saved to file %s" % ((self.number + 1), name[0]))
         except:
             self.log.print("error: %s" % sys.exc_info()[1])
 
     def load(self):
         try:
-            dialog = QFileDialog(self, "Load hst file", ".", "*.hst")
+            dialog = QFileDialog(self, "Load hst file", path, "*.hst")
             dialog.setDefaultSuffix("hst")
             dialog.setAcceptMode(QFileDialog.AcceptOpen)
             if dialog.exec() == QDialog.Accepted:
                 name = dialog.selectedFiles()
-                self.buffer[:] = np.fromfile(name[0], np.uint32)
+                self.buffer[:] = np.loadtxt(name[0], np.uint32)
                 self.update_plot()
         except:
             self.log.print("error: %s" % sys.exc_info()[1])
@@ -512,7 +600,7 @@ class OscDisplay(QWidget, Ui_OscDisplay):
         self.plotLayout.addWidget(self.canvas)
         self.ax = self.figure.add_subplot(111)
         self.ax.grid()
-        self.ax.set_ylim(-16500, 16500)
+        self.ax.set_ylim(-4500, 4500)
         x = np.arange(self.tot)
         (self.curve2,) = self.ax.plot(x, self.buffer[1::2], color="#00CCCC")
         (self.curve1,) = self.ax.plot(x, self.buffer[0::2], color="#FFAA00")
@@ -581,8 +669,10 @@ class OscDisplay(QWidget, Ui_OscDisplay):
         if event.inaxes != self.ax:
             return
         x = int(event.xdata + 0.5)
-        if x < 0 or x >= self.tot:
-            return
+        if x < 0:
+            x = 0
+        if x >= self.tot:
+            x = self.tot - 1
         y1 = self.curve1.get_ydata(True)[x]
         y2 = self.curve2.get_ydata(True)[x]
         self.timeValue.setText("%d" % x)
@@ -591,7 +681,7 @@ class OscDisplay(QWidget, Ui_OscDisplay):
 
     def save(self):
         try:
-            dialog = QFileDialog(self, "Save osc file", ".", "*.osc")
+            dialog = QFileDialog(self, "Save osc file", path, "*.osc")
             dialog.setDefaultSuffix("osc")
             name = "oscillogram-%s.osc" % time.strftime("%Y%m%d-%H%M%S")
             dialog.selectFile(name)
@@ -605,7 +695,7 @@ class OscDisplay(QWidget, Ui_OscDisplay):
 
     def load(self):
         try:
-            dialog = QFileDialog(self, "Load osc file", ".", "*.osc")
+            dialog = QFileDialog(self, "Load osc file", path, "*.osc")
             dialog.setDefaultSuffix("osc")
             dialog.setAcceptMode(QFileDialog.AcceptOpen)
             if dialog.exec() == QDialog.Accepted:
@@ -644,7 +734,7 @@ class GenDisplay(QWidget, Ui_GenDisplay):
         self.toolbar.removeAction(actions[6])
         self.toolbar.removeAction(actions[7])
         self.logCheck = QCheckBox("log scale")
-        self.logCheck.setChecked(True)
+        self.logCheck.setChecked(False)
         self.toolbar.addSeparator()
         self.toolbar.addWidget(self.logCheck)
         self.plotLayout.addWidget(self.toolbar)
@@ -665,7 +755,7 @@ class GenDisplay(QWidget, Ui_GenDisplay):
         self.mcpha.set_gen_rise(self.riseValue.value())
         self.mcpha.set_gen_rate(self.rateValue.value() * 1000)
         self.mcpha.set_gen_dist(self.poissonButton.isChecked())
-        for value in np.arange(self.bins) << 32 | self.buffer:
+        for value in np.arange(self.bins, dtype=np.uint64) << 32 | self.buffer:
             self.mcpha.set_gen_bin(value)
         self.mcpha.start_gen()
         self.startButton.setText("Stop")
@@ -700,15 +790,17 @@ class GenDisplay(QWidget, Ui_GenDisplay):
         if event.inaxes != self.ax:
             return
         x = int(event.xdata + 0.5)
-        if x < 0 or x >= self.bins:
-            return
+        if x < 0:
+            x = 0
+        if x >= self.bins:
+            x = self.bins - 1
         y = self.curve.get_ydata(True)[x]
         self.numberValue.setText("%d" % x)
         self.entriesValue.setText("%d" % y)
 
     def load(self):
         try:
-            dialog = QFileDialog(self, "Load gen file", ".", "*.gen")
+            dialog = QFileDialog(self, "Load gen file", path, "*.gen")
             dialog.setDefaultSuffix("gen")
             dialog.setAcceptMode(QFileDialog.AcceptOpen)
             if dialog.exec() == QDialog.Accepted:
@@ -723,6 +815,8 @@ class GenDisplay(QWidget, Ui_GenDisplay):
 
 
 app = QApplication(sys.argv)
+dpi = app.primaryScreen().logicalDotsPerInch()
+matplotlib.rcParams["figure.dpi"] = dpi
 window = MCPHA()
 window.show()
 sys.exit(app.exec_())
