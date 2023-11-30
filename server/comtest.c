@@ -14,7 +14,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define TCP_PORT 1001
+#define TCP_PORT 1002
 
 // Commands
 #define CMD_CONNECT 5
@@ -34,7 +34,7 @@ void signal_handler(int sig)
 
 int main (int argc, char *argv[])
 {
-  int fd, sock_server, sock_client;
+  int fd, sock_server, sock_client,yes=1;
   struct sockaddr_in addr;
   uint64_t command;
   uint8_t code;
@@ -75,19 +75,17 @@ int main (int argc, char *argv[])
       return EXIT_FAILURE;
     }
     if(verbose)printf("new connection, waiting for command\n");
-    while(!interrupted)
+    int result,status=109 << 16;
+    uint32_t IDN=0xb00b;
+    result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
+    if(result >= sizeof(command) )
     {
-        int result,status=109 << 8;
-        uint32_t IDN=0xb00b;
-        result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
-	if(result >= sizeof(command) )
-	{
 	   switch(command >> 60)
 	   {
 	       case CMD_IDN:
 	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
 			   status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
-	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
+	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");interrupted=1;break;}
 	 		   close(sock_client);
 	    	   break;
 	       case CMD_STOP:
@@ -95,12 +93,19 @@ int main (int argc, char *argv[])
 	    	   if(verbose)printf("Exit program\n");
 	    	   return EXIT_SUCCESS;
 	    	 break;
+	       case CMD_CONNECT:
+    	       	 if(verbose)printf("Client connect request\n");
+	    	 break;
+               case 3: //get status
+          	if(verbose>1)printf("Status request\n");
+ 			if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");interrupted=1;break;}
+          	break;
 	       default:
-			 if(verbose)printf("Unexpected command, closing connection, socket = %d\n",sock_client);
-		     close(sock_client);
+		 if(verbose)printf("Unexpected command, closing connection, socket = %d\n",sock_client);
+		 close(sock_client);
              break;
             }
-        }
+        
     }
 
     signal(SIGINT, signal_handler);
