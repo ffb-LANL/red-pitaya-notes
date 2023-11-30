@@ -55,7 +55,13 @@ cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
 module rx_0 {
   source projects/sdr_receiver_122_88/rx.tcl
 } {
-  hub_0/S_AXI ps_0/M_AXI_GP1
+  hub_0/S_AXI ps_0/M_AXI_GP0
 }
 
-assign_bd_address [get_bd_addr_segs [get_bd_intf_pins rx_0/hub_0/S_AXI]]
+# RX 1
+
+module rx_1 {
+  source projects/sdr_receiver_122_88/rx.tcl
+} {
+  hub_0/S_AXI ps_0/M_AXI_GP1
+}

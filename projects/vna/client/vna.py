@@ -10,11 +10,11 @@ import numpy as np
 
 import matplotlib
 
-matplotlib.use("Qt5Agg")
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.ticker import Formatter, FuncFormatter
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 if "PyQt5" in sys.modules:
     from PyQt5.uic import loadUiType
@@ -223,8 +223,8 @@ class FigureTab:
     def update(self, mode):
         start = self.vna.dut.freq[0]
         stop = self.vna.dut.freq[-1]
-        min = np.minimum(start, stop)
-        max = np.maximum(start, stop)
+        min = int(np.minimum(start, stop))
+        max = int(np.maximum(start, stop))
         for i in range(len(self.cursors)):
             value = self.cursors[i]
             self.cursorValues[i].setRange(min, max)
@@ -601,7 +601,7 @@ class VNA(QMainWindow, Ui_VNA):
                 self.socket.readAll()
                 return
             size = self.socket.bytesAvailable()
-            self.progressBar.setValue((self.offset + size) / 16)
+            self.progressBar.setValue((self.offset + size) // 16)
             limit = 16 * self.sweep_size
             if self.offset + size < limit:
                 self.buffer[self.offset : self.offset + size] = self.socket.read(size)
@@ -917,6 +917,8 @@ class VNA(QMainWindow, Ui_VNA):
 
 warnings.filterwarnings("ignore")
 app = QApplication(sys.argv)
+dpi = app.primaryScreen().logicalDotsPerInch()
+matplotlib.rcParams["figure.dpi"] = dpi
 window = VNA()
 window.update_tab()
 window.show()

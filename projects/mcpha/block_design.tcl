@@ -303,7 +303,7 @@ for {set i 0} {$i <= 1} {incr i} {
     SAMPLE_FREQUENCY 31.25
     CLOCK_FREQUENCY 125
     OUTPUT_ROUNDING_MODE Non_Symmetric_Rounding_Up
-    OUTPUT_WIDTH 15
+    OUTPUT_WIDTH 13
     HAS_ARESETN true
   } {
     S_AXIS_DATA comb_${i}/M_AXIS
@@ -522,5 +522,3 @@ cell xilinx.com:ip:xlconcat concat_1 {
 wire gen_0/fifo_0/S_AXIS hub_0/M00_AXIS
 wire hst_0/bram_0/BRAM_PORTA hub_0/B01_BRAM
 wire hst_1/bram_0/BRAM_PORTA hub_0/B02_BRAM
-
-assign_bd_address [get_bd_addr_segs ps_0/S_AXI_ACP/ACP_DDR_LOWOCM]
