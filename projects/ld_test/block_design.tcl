@@ -211,7 +211,7 @@ cell xilinx.com:ip:xlconstant trig_level_slice {
 #}
 
 # Create xlconstant
-cell xilinx.com:ip:xlconstant pre_data_slice{
+cell xilinx.com:ip:xlconstant pre_data_slice {
   CONST_WIDTH 32
   CONST_VAL 512
 }
