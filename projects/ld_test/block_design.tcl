@@ -1,4 +1,4 @@
-#lockin digitizer test 109
+#CMA lockin digitizer test 159
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz pll_0 {
@@ -57,8 +57,8 @@ cell pavel-demin:user:axis_gpio_reader gpio_0 {
 
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
-  CFG_DATA_WIDTH 192
-  STS_DATA_WIDTH 64
+  CFG_DATA_WIDTH 416
+  STS_DATA_WIDTH 288
 } {
   S_AXI ps_0/M_AXI_GP0
   aclk pll_0/clk_out1
@@ -79,7 +79,7 @@ cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
 
 # Create xlslice
 cell pavel-demin:user:port_slicer slice_frequency {
-  DIN_WIDTH 256 DIN_FROM 95 DIN_TO 64
+  DIN_WIDTH 416 DIN_FROM 95 DIN_TO 64
 } {
   Din hub_0/cfg_data
 }
@@ -93,13 +93,13 @@ cell pavel-demin:user:axis_constant phase_0 {
 }
 
 # Create xlconstant
-cell xilinx.com:ip:xlconstant:1.1 const_modulus {
+cell xilinx.com:ip:xlconstant const_modulus {
   CONST_WIDTH 32
   CONST_VAL 15120
 }
 
 # Create dds_compiler
-cell xilinx.com:ip:dds_compiler:6.0 dds_0 {
+cell xilinx.com:ip:dds_compiler dds_0 {
   MODE_OF_OPERATION Rasterized
   MODULUS 15120
   DDS_CLOCK_RATE 125
@@ -140,47 +140,47 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer writer_reset_slice {
-  DIN_WIDTH 192 DIN_FROM 0 DIN_TO 0
+  DIN_WIDTH 416 DIN_FROM 0 DIN_TO 0
 } {
   din hub_0/cfg_data
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer run_slice {
-  DIN_WIDTH 192 DIN_FROM 1 DIN_TO 1
+  DIN_WIDTH 416 DIN_FROM 1 DIN_TO 1
 } {
   din hub_0/cfg_data
 }
 
 # Create xlslice
 cell pavel-demin:user:port_slicer slice_trig_record {
-  DIN_WIDTH 256 DIN_FROM 3 DIN_TO 3
+  DIN_WIDTH 416 DIN_FROM 3 DIN_TO 3
 } {
    din hub_0/cfg_data
 }
 
 # Create port_slicer
 #cell pavel-demin:user:port_slicer trig_polarity_slice {
-#  DIN_WIDTH 192 DIN_FROM 16 DIN_TO 16
+#  DIN_WIDTH 416 DIN_FROM 16 DIN_TO 16
 #} {
 #  din hub_0/cfg_data
 #}
 
 cell xilinx.com:ip:xlconstant trig_polarity_slice {
-  CONST_WIDTH 16
+  CONST_WIDTH 1
   CONST_VAL 1
 }
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer writer_address_slice {
-  DIN_WIDTH 192 DIN_FROM 431 DIN_TO 400
+  DIN_WIDTH 416 DIN_FROM 415 DIN_TO 384
 } {
   din hub_0/cfg_data
 }
 
 # Create port_slicer
 #cell pavel-demin:user:port_slicer trig_mask_slice {
-#  DIN_WIDTH 192 DIN_FROM 383 DIN_TO 368
+#  DIN_WIDTH 416 DIN_FROM 383 DIN_TO 368
 #} {
 #  din hub_0/cfg_data
 #}
@@ -193,7 +193,7 @@ cell xilinx.com:ip:xlconstant trig_mask_slice {
 
 # Create port_slicer
 #cell pavel-demin:user:port_slicer trig_level_slice {
-#  DIN_WIDTH 192 DIN_FROM 367 DIN_TO 352
+#  DIN_WIDTH 416 DIN_FROM 367 DIN_TO 352
 #} {
 #  din hub_0/cfg_data
 #}
@@ -205,7 +205,7 @@ cell xilinx.com:ip:xlconstant trig_level_slice {
 
 # Create port_slicer
 #cell pavel-demin:user:port_slicer pre_data_slice {
-#  DIN_WIDTH 192 DIN_FROM 127 DIN_TO 96
+#  DIN_WIDTH 416 DIN_FROM 127 DIN_TO 96
 #} {
 #  din hub_0/cfg_data
 #}
@@ -218,20 +218,14 @@ cell xilinx.com:ip:xlconstant pre_data_slice {
 
 # Create port_slicer
 cell pavel-demin:user:port_slicer tot_data_slice {
-  DIN_WIDTH 192 DIN_FROM 159 DIN_TO 128
+  DIN_WIDTH 416 DIN_FROM 63 DIN_TO 32
 } {
   din hub_0/cfg_data
 }
 
-# Create port_slicer
-cell pavel-demin:user:port_slicer slice_8 {
-  DIN_WIDTH 192 DIN_FROM 175 DIN_TO 160
-} {
-  din hub_0/cfg_data
-}
 
 # Create axis_trigger
-cell pavel-demin:user:axis_trigger trig_0 {
+cell pavel-demin:user:axis_soft_trigger trig_0 {
   AXIS_TDATA_WIDTH 8
   AXIS_TDATA_SIGNED FALSE
 } {
@@ -239,10 +233,11 @@ cell pavel-demin:user:axis_trigger trig_0 {
   pol_data trig_polarity_slice/dout
   msk_data trig_mask_slice/dout
   lvl_data trig_level_slice/dout
+  soft_trigger slice_trig_record/dout
   aclk pll_0/clk_out1
 }
 
-# Create axis_packetizer
+# Create axis_oscilloscope
 cell pavel-demin:user:axis_oscilloscope scope_0 {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 23
@@ -270,14 +265,29 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   aresetn writer_reset_slice/dout
 }
 
+
+# Create xlconstant
+cell xilinx.com:ip:xlconstant const_ID {
+  CONST_WIDTH 16
+  CONST_VAL 159
+}
+
 # Create xlconcat
-cell xilinx.com:ip:xlconcat concat_0 {
-  NUM_PORTS 2
+cell xilinx.com:ip:xlconcat concat_sts {
+  NUM_PORTS 7
   IN0_WIDTH 32
   IN1_WIDTH 32
+  IN2_WIDTH 16
+  IN3_WIDTH 16
+  IN4_WIDTH 32
+  IN5_WIDTH 128
+  IN6_WITDH 32
 } {
   In0 writer_0/sts_data	
   In1 scope_0/sts_data
+  In2 trig_0/trg_flag
+  In3 const_ID/dout
+  In6 const_modulus/dout
   dout hub_0/sts_data
 }
 
