@@ -36,7 +36,7 @@ int main()
   }
 
   size = 8192*8*sysconf(_SC_PAGESIZE);
-  sprintf(string, "Allocating CMA ram. Size = %u, pagesize = %u\n", size, sysconf(_SC_PAGESIZE));
+  sprintf(string, "Allocating CMA ram. Size = %u, pagesize = %u\n", size, (uint32_t)sysconf(_SC_PAGESIZE));
   if(verbose)perror(string);  
   if(ioctl(fd, CMA_ALLOC, &size) < 0)
   {
