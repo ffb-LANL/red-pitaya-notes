@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-module axis_trigger #
+module axis_soft_trigger #
 (
   parameter integer AXIS_TDATA_WIDTH = 32,
   parameter         AXIS_TDATA_SIGNED = "FALSE"
@@ -13,6 +13,8 @@ module axis_trigger #
   input  wire                        pol_data,
   input  wire [AXIS_TDATA_WIDTH-1:0] msk_data,
   input  wire [AXIS_TDATA_WIDTH-1:0] lvl_data,
+
+  input  wire                        soft_trigger,
 
   output wire                        trg_flag,
 
@@ -28,11 +30,11 @@ module axis_trigger #
   generate
     if(AXIS_TDATA_SIGNED == "TRUE")
     begin : SIGNED
-      assign int_comp_wire = $signed(s_axis_tdata & msk_data) >= $signed(lvl_data);
+      assign int_comp_wire = soft_trigger | ($signed(s_axis_tdata & msk_data) >= $signed(lvl_data));
     end
     else
     begin : UNSIGNED
-      assign int_comp_wire = (s_axis_tdata & msk_data) >= lvl_data;
+      assign int_comp_wire = soft_trigger | ((s_axis_tdata & msk_data) >= lvl_data);
     end
   endgenerate
 
