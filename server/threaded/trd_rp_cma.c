@@ -320,10 +320,12 @@ void *ctrl_handler(void *arg)
         	if(verbose)printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
             break;
           case 9: //read data chunk
+		trigger_pos = *(uint32_t *)(sts + RECORD_START_POS_OFFSET) >> 1;
+		start = (trigger_pos - 1024) & 0x007FFFC0;
           	start_offset= command & 0x3FFFFFFF;
           	end_offset = (command  >> 30)& 0x3FFFFFFF;
-       		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-       		if(verbose)printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
+
+       		if(verbose)printf("Sending data, start = %d, end = %d, trigger pos = %d, strt = %d\n", start_offset,end_offset,trigger_pos,start);
             for(offset=start_offset;offset < end_offset;offset +=packet_size)
         	{
         		 if(send(sock_client, ram + offset, packet_size, 0) < 0){   perror("send");break;}
