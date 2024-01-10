@@ -35,7 +35,7 @@ int main()
     return EXIT_FAILURE;
   }
 
-  size = 8192*8*sysconf(_SC_PAGESIZE);
+  size = 1024*sysconf(_SC_PAGESIZE);
   sprintf(string, "Allocating CMA ram. Size = %u, pagesize = %u\n", size, (uint32_t)sysconf(_SC_PAGESIZE));
   if(verbose)perror(string);  
   if(ioctl(fd, CMA_ALLOC, &size) < 0)
@@ -45,15 +45,20 @@ int main()
   }
   sprintf(string,"test_cma: mapping ram.Size = %u\n", size );
   if(verbose)perror(string);  
-
+  sleep(1);
   ram = mmap(NULL, 1024*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
   if(verbose)perror("test_cma: resetting writer\n"); 
-
+  sleep(1);
   rst = (uint8_t *)(cfg + 0);
-  if(verbose)perror("init_mem_map: setting writer address\n"); 
-  // set writer address
-  *(uint32_t *)(cfg + 48) = size;
 
+
+  if(verbose)perror("init_mem_map: setting writer address\n"); 
+  sleep(1);
+  // set writer address
+  *(uint32_t *)(cfg + 4) = size;
+
+  if(verbose)perror("init_mem_map: setting number of samples\n"); 
+  sleep(1);
   // set number of samples
   *(uint32_t *)(cfg + 8) = 1024 * 1024 - 1;
 
