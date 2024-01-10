@@ -55,7 +55,7 @@ int main()
   if(verbose)perror("init_mem_map: setting writer address\n"); 
   sleep(1);
   // set writer address
-  *(uint32_t *)(cfg + 4) = size;
+  *(uint32_t *)(cfg + 48) = size;
 
   if(verbose)perror("init_mem_map: setting number of samples\n"); 
   sleep(1);
