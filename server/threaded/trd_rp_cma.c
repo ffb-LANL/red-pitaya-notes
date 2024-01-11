@@ -570,7 +570,7 @@ int init_mem_map()
 		return 1;
   	}
 
-  	size = 8192*sysconf(_SC_PAGESIZE);
+  	size = 8192*8*sysconf(_SC_PAGESIZE);
 
 	if(verbose)printf("init_mem_map: allocating CMA ram. Size = %u\n",size);  
 
@@ -583,7 +583,7 @@ int init_mem_map()
 	
 	if(verbose)printf("init_mem_map: mapping ram. Size = %u\n",size);  
 
-  	ram = mmap(NULL, 8192*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  	ram = mmap(NULL,8192*8*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	
 	if(verbose)printf("init_mem_map: resetting writer\n");  	
 
