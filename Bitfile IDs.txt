@@ -18,17 +18,18 @@ CFG map:
 3-3     SOFT TRIGGER
 4-4     TRX RESET 
 7-7     OUTPUT SWITCH FWD/REV
-32-63   RECORD_LENGTH | tot_data
-64-95   FREQUENCY WORD
-96-127  DECIMATION
-128-134 LED
-144-159 OUTPUT SCALER
-160-319 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
-224-255 DDS DELAY
-320-351 TRIGGER DELAY 
-352-367 TRIGGER LEVEL
-368-383 trig_mask
-400-431	writer_address
+32-63   +4 RECORD_LENGTH | tot_data
+64-95   +8 FREQUENCY WORD
+96-127  +12 DECIMATION
+128-134 +16 LED
+144-159 +18 OUTPUT SCALER
+160-319 +20 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
+224-255 +28 DDS DELAY
+320-351 +40 TRIGGER DELAY 
+352-367 +44 TRIGGER LEVEL
+368-383 +46 trig_mask
+384-415	+48 writer_address
+416-447	+52 pre-trigger data
 
 STS map:
 0-31	writer_0/sts_data 
