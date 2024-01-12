@@ -18,7 +18,9 @@ On Red Pitaya:
 Command to program FPPA with bitfile: cat adc_recorder_test_122.bit > /dev/xdevcfg 
 Command to record ADC waveform into a file: adc-recorder-test > data.txt 
 
-
+cd /opt/tmp
+cat /opt/adc_recorder_test_122.bit > /dev/xdevcfg 
+/opt/tmp/adc-recorder-test > data.txt 
 
 
 
