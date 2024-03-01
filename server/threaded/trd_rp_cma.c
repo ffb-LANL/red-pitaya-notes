@@ -69,7 +69,7 @@ double temperature_scale,temperature;
 int temperature_raw, temperature_offset;
 int init_temperature_scale();
 int start_VISA();
-int verbose=0;
+int verbose=0,fscfrtn;
 
 void *rx_handler(void *arg);
 void *tx_handler(void *arg);
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
 	  if (argv[1][0]=='v' ) verbose = 1;
 	  if (argv[1][0]=='V' ) verbose = 2;
   }
-  if(verbose)printf("MAIN: Starting\n");
+  if(verbose)printf("MAIN: Starting. Verbose level = %d\n", verbose);
 
   if(init_mem_map())
   {
@@ -229,7 +229,7 @@ void *ctrl_handler(void *arg)
 	uint64_t command;
 	uint32_t selector;
 	ssize_t result;
-	uint32_t start, offset;
+	uint32_t start, end, offset, ram_offset;
 	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096;
 	FILE *fp;
 	uint32_t IDN=0xdead;
@@ -279,7 +279,7 @@ void *ctrl_handler(void *arg)
           	    perror("device open");
           		break;
           	}
-          	fscanf(fp,"%d", &temperature_raw);
+          	fscfrtn=fscanf(fp,"%d", &temperature_raw);
           	fclose(fp);
           	temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
            	if(send(sock_client, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
@@ -321,17 +321,21 @@ void *ctrl_handler(void *arg)
             break;
           case 9: //read data chunk
 		trigger_pos = *(uint32_t *)(sts + RECORD_START_POS_OFFSET) >> 1;
-		start = (trigger_pos - 1024) & 0x007FFFC0;
+
           	start_offset= command & 0x3FFFFFFF;
           	end_offset = (command  >> 30)& 0x3FFFFFFF;
-
-       		if(verbose)printf("Sending data, start = %d, end = %d, trigger pos = %d, strt = %d\n", start_offset,end_offset,trigger_pos,start);
-            for(offset=start_offset;offset < end_offset;offset +=packet_size)
+		start = start_offset; 
+		end = end_offset;
+       		if(verbose)printf("Send data command, start_of = %d, end_of = %d, trigger pos = %d, start = %d, end = %d\n", start_offset,end_offset,trigger_pos,start,end);
+            for(offset=start;offset < end;offset +=packet_size)
         	{
-        		 if(send(sock_client, ram + offset, packet_size, 0) < 0){   perror("send");break;}
-        		 if(verbose > 1) if((offset-start_offset)%(packet_size*128)==0)printf("Offset %d\n",offset);
+			 ram_offset = offset & 0x0FFFFFFC; 
+			 if(verbose > 1) if(offset%(packet_size*256)==0)printf("Offset %d, ram_offset %d\n",offset,ram_offset);
+			 if(verbose && (ram_offset + packet_size >= 0x0FFFFFFF) ) printf("RAM offset overflow, %d\n",ram_offset + packet_size);
+        		 if(send(sock_client, ram + ram_offset, packet_size, 0) < 0){   perror("send");break;}
+
         	}
-        	if(verbose)printf("Last offset %d\n",offset);
+        	if(verbose)printf("Last offset %d, ram_offset %d\n",offset,ram_offset );
         	config=*((uint32_t *)(cfg + 0));
         	if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
             break;
@@ -521,19 +525,19 @@ int init_temperature_scale()
 		perror("device open");
 		return 1;
 	}
-	fscanf(fp,"%d", &temperature_offset);
+	fscfrtn=fscanf(fp,"%d", &temperature_offset);
 	fclose(fp);
 	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_scale", "r")) == NULL){
 	    perror("device open");
 	    return 1;
 	}
-	fscanf(fp,"%lf", &temperature_scale);
+	fscfrtn=fscanf(fp,"%lf", &temperature_scale);
 	fclose(fp);
 	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "r")) == NULL){
 	    perror("device open");
 	    return 1;
 	}
-	fscanf(fp,"%d", &temperature_raw);
+	fscfrtn=fscanf(fp,"%d", &temperature_raw);
 	fclose(fp);
 	temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
 	if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
@@ -570,7 +574,7 @@ int init_mem_map()
 		return 1;
   	}
 
-  	size = 8192*8*sysconf(_SC_PAGESIZE);
+  	size = 8192*8*sysconf(_SC_PAGESIZE)+8192;
 
 	if(verbose)printf("init_mem_map: allocating CMA ram. Size = %u\n",size);  
 
