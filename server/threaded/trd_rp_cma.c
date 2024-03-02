@@ -229,7 +229,7 @@ void *ctrl_handler(void *arg)
 	uint64_t command;
 	uint32_t selector;
 	ssize_t result;
-	uint32_t start, end, offset, ram_offset;
+	uint32_t start, end, offset, ram_offset, tot, pre;
 	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096;
 	FILE *fp;
 	uint32_t IDN=0xdead;
@@ -285,13 +285,15 @@ void *ctrl_handler(void *arg)
            	if(send(sock_client, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
           	break;
           case 6:  // arm
-           	samples = command & 0xFFFFFFFF;
+		tot = command & 0x3FFFFFFF;
+		pre = 	(command  >> 30)& 0x3FFFFFFF;
 		/* reset oscilloscope and ram writer */
 		*rst &= ~1;
 		*rst |= 1;
 		/* set total number of samples (up to 8 * 1024 * 1024 - 1) */
-		*(uint32_t *)(cfg + RECORD_LENGTH_OFFSET) = samples;
-           	 if(verbose)printf("Entering normal mode. Samples = %d\n", samples);
+		*(uint32_t *)(cfg + RECORD_LENGTH_OFFSET) = tot;
+		*(uint32_t *)(cfg + 52) = pre;
+           	 if(verbose)printf("Entering normal mode. Total samples = %d, Pre samples = %d\n", tot,pre);
 		  /* start oscilloscope */
 		*rst |= 2;
 		*rst &= ~2;
@@ -322,19 +324,29 @@ void *ctrl_handler(void *arg)
           case 9: //read data chunk
 		trigger_pos = *(uint32_t *)(sts + RECORD_START_POS_OFFSET) >> 1;
 
-          	start_offset= command & 0x3FFFFFFF;
-          	end_offset = (command  >> 30)& 0x3FFFFFFF;
-		start = start_offset; 
-		end = end_offset;
+          	start = command & 0x3FFFFFFF;
+          	// end_offset = (command  >> 30)& 0x3FFFFFFF;
+		tot = 	(command  >> 30)& 0x3FFFFFFF;
+		// start = start_offset; 
+		// end = end_offset;
        		if(verbose)printf("Send data command, start_of = %d, end_of = %d, trigger pos = %d, start = %d, end = %d\n", start_offset,end_offset,trigger_pos,start,end);
-            for(offset=start;offset < end;offset +=packet_size)
+           /* for(offset=start;offset < end;offset +=packet_size)
         	{
 			 ram_offset = offset & 0x0FFFFFFC; 
 			 if(verbose > 1) if(offset%(packet_size*256)==0)printf("Offset %d, ram_offset %d\n",offset,ram_offset);
 			 if(verbose && (ram_offset + packet_size >= 0x0FFFFFFF) ) printf("RAM offset overflow, %d\n",ram_offset + packet_size);
         		 if(send(sock_client, ram + ram_offset, packet_size, 0) < 0){   perror("send");break;}
 
-        	}
+        	} */
+		if(start+tot <= 0x3FFFFFFF)
+		{
+			  if(send(sock_client, ram + start * 4, tot * 4, MSG_NOSIGNAL) < 0) break;
+		}		
+		else
+		{ 
+			  if(send(sock_client, ram + start * 4, (0x3FFFFFFF - start) * 4, MSG_NOSIGNAL) < 0) break;
+			  if(send(sock_client, ram, (start + tot - 0x3FFFFFFF) * 4, MSG_NOSIGNAL) < 0) break;
+		}
         	if(verbose)printf("Last offset %d, ram_offset %d\n",offset,ram_offset );
         	config=*((uint32_t *)(cfg + 0));
         	if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
