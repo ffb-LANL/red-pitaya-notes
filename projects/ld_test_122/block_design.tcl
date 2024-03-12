@@ -1,4 +1,4 @@
-#122_16 CMA lockin digitizer test 169
+#CMA 122_16 lockin digitizer test 169
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz pll_0 {
@@ -69,7 +69,7 @@ cell pavel-demin:user:axi_hub hub_0 {
 
 # Create axis_red_pitaya_adc
 cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
-  ADC_DATA_WIDTH 14
+  ADC_DATA_WIDTH 16
 } {
   aclk pll_0/clk_out1
   adc_dat_a adc_dat_a_i
@@ -79,7 +79,7 @@ cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
 
 # Create xlslice
 cell pavel-demin:user:port_slicer slice_frequency {
-  DIN_WIDTH 448 DIN_FROM 95 DIN_TO 64
+  DIN_WIDTH 416 DIN_FROM 95 DIN_TO 64
 } {
   Din hub_0/cfg_data
 }
@@ -168,7 +168,7 @@ cell pavel-demin:user:port_slicer slice_trig_record {
 
 cell xilinx.com:ip:xlconstant trig_polarity_slice {
   CONST_WIDTH 1
-  CONST_VAL 1
+  CONST_VAL 0
 }
 
 # Create port_slicer
@@ -211,7 +211,6 @@ cell pavel-demin:user:port_slicer pre_data_slice {
 }
 
 
-
 # Create port_slicer
 cell pavel-demin:user:port_slicer tot_data_slice {
   DIN_WIDTH 448 DIN_FROM 63 DIN_TO 32
@@ -248,8 +247,8 @@ cell pavel-demin:user:axis_oscilloscope scope_0 {
 }
 
 # Create xlconstant
-cell xilinx.com:ip:xlconstant buffer_size {
-  CONST_WIDTH 32
+cell xilinx.com:ip:xlconstant const_ram_size {
+  CONST_WIDTH 21
   CONST_VAL 2097151
 }
 
@@ -262,8 +261,8 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
 } {
   S_AXIS scope_0/M_AXIS
   M_AXI ps_0/S_AXI_ACP
-  cfg_data buffer_size/dout
   min_addr writer_address_slice/dout
+  cfg_data const_ram_size/dout
   aclk pll_0/clk_out1
   aresetn writer_reset_slice/dout
 }
