@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
   volatile uint8_t *rst;
   volatile void *cfg, *sts, *ram;
   uint32_t start, offset, size,pre_samples=8192,tot_samples=1024 * 1024;
-  int32_t value;
+  uint32_t value;
 
   if (argc >=2 ) {
 	uint32_t tmp = atoi(argv[1]);
@@ -99,8 +99,8 @@ int main(int argc, char *argv[])
   for(i = 0; i < tot_samples; ++i)
   {
     offset = ((start + i) & 0x007FFFFF) * 4;
-    value = *(int32_t *)(ram + offset);
-    printf("%10d\n", value);
+    value = *(uint32_t *)(ram + offset);
+    printf("%10u\n", value);
   }
 
   return EXIT_SUCCESS;
