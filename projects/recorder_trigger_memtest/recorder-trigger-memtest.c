@@ -92,8 +92,8 @@ int main(int argc, char *argv[])
     usleep(1000);
   }
 
-  start = *(uint32_t *)(sts + 4) >> 1;
-  printf("%10u\n", start
+  start = *(uint32_t *)(sts + 4) ;
+  printf("%10u\n", start);
   start = *(uint32_t *)(sts + 0) >> 1;
   printf("%10u\n", start);
   start = (start - pre_samples) & 0x007FFFC0;
