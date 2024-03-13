@@ -110,7 +110,7 @@ cell xilinx.com:ip:dds_compiler dds_0 {
   DSP48_USE Maximal
   HAS_TREADY true
   Has_ARESETn true
-  Has_Phase_Out false
+  Has_Phase_Out true
 } {
   S_AXIS_PHASE phase_0/M_AXIS
   aclk pll_0/clk_out1
@@ -267,6 +267,15 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   aresetn writer_reset_slice/dout
 }
 
+# Create axis_snapshot
+cell pavel-demin:user:axis_snapshot phase_snap_0 {
+  AXIS_TDATA_WIDTH 32
+} {
+  S_AXIS dds_0/M_AXIS_PHASE
+  aclk pll_0/clk_out1
+  trig_flag trig_0/trg_flag
+  aresetn writer_reset_slice/dout
+}
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_ID {
@@ -289,6 +298,7 @@ cell xilinx.com:ip:xlconcat concat_sts {
   In1 scope_0/sts_data
   In2 trig_0/trg_flag
   In3 const_ID/dout
+  In4 phase_snap_0/data
   In6 const_modulus/dout
   dout hub_0/sts_data
 }
