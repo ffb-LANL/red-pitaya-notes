@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
   for(i = 0; i < tot_samples; ++i)
   {
     offset = ((start + i) & 0x007FFFFF) * 4;
-    value = *(int16_t *)(ram + offset);
+    value = *(int32_t *)(ram + offset);
     printf("%10d\n", value);
   }
 

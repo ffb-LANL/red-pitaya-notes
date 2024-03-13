@@ -152,8 +152,10 @@ cell pavel-demin:user:axis_trigger trig_0 {
   aclk pll_0/clk_out1
 }
 
-# Create axis_counter
-cell pavel-demin:user:axis_counter cntr_1 {} {
+# Create axis_inf_counter
+cell pavel-demin:user:axis_inf_counter inf_cntr_1 {
+  AXIS_TDATA_WIDTH 32
+} {
   aclk pll_0/clk_out1
   aresetn slice_0/dout
 }
@@ -164,7 +166,7 @@ cell pavel-demin:user:axis_oscilloscope scope_0 {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 23
 } {
-  S_AXIS cntr_1/M_AXIS
+  S_AXIS inf_cntr_1/M_AXIS
   run_flag slice_1/dout
   trg_flag trig_0/trg_flag
   pre_data slice_6/dout
