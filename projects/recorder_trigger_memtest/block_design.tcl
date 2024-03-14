@@ -156,6 +156,8 @@ cell pavel-demin:user:axis_trigger trig_0 {
 cell pavel-demin:user:axis_inf_counter inf_cntr_1 {
   AXIS_TDATA_WIDTH 32
 } {
+  run_flag slice_1/dout
+  trg_flag trig_0/trg_flag
   aclk pll_0/clk_out1
   aresetn slice_0/dout
 }
