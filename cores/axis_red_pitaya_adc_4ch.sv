@@ -12,6 +12,7 @@ module axis_red_pitaya_adc_4ch #
   input  logic adc_clk_23,  // ADC B clock
   input  logic aresetn,
 
+
   // input logic adc_clk_p_i,
   // input logic adc_clk_n_i,
   // input logic adc_clk_p_i2,
@@ -20,6 +21,8 @@ module axis_red_pitaya_adc_4ch #
   input logic adc_buf_clk01,
   input logic adc_buf_clk23,
   input logic idelay_ctrl_clk,
+  input logic idelay_ctrl_rst,
+  output logic idelay_ctrl_rdy,
 
   // output logic adc_clk_buf,
   // output logic adc_clk_buf2,
@@ -52,12 +55,16 @@ logic signed [3:0][13:0]     adc_dat, adc_dat_r;
 // 4: CH3 falling edge data  5: CH3 rising edge data
 // 6: CH4 falling edge data  7: CH4 rising edge data
 
+logic idly_rdy;
+assign idelay_ctrl_rdy = idly_rdy;
+
 // delay input ADC signals
 logic [4*7-1:0] idly_rst ;
 logic [4*7-1:0] idly_ce  ;
 logic [4*7-1:0] idly_inc ;
 logic [4*7-1:0] [5-1:0] idly_cnt ;
 logic [4-1:0] [14-1:0] adc_dat_raw;
+
 
 // diferential clock input
 // IBUFDS i_clk_01 (.I (adc_clk_p_i), .IB (adc_clk_n_i), .O (adc_clk_in[0]));  // differential clock input
@@ -71,7 +78,7 @@ logic [4-1:0] [14-1:0] adc_dat_raw;
 IDELAYCTRL i_idelayctrl (
   .RDY(idly_rdy),   // 1-bit output: Ready output
   .REFCLK(idelay_ctrl_clk), // 1-bit input: Reference clock input
-  .RST(!aresetn)   // 1-bit input: Active high reset input
+  .RST(idelay_ctrl_rst)   // 1-bit input: Active high reset input
 );
 
 genvar GV;
@@ -89,7 +96,8 @@ for (GVC = 0; GVC < 4; GVC = GVC + 1) begin : channels
    IDELAYE2 #(
       .DELAY_SRC("IDATAIN"),           // Delay input (IDATAIN, DATAIN)
       .HIGH_PERFORMANCE_MODE("TRUE"),  // Reduced jitter ("TRUE"), Reduced power ("FALSE")
-      .IDELAY_TYPE("VARIABLE"),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
+//      .IDELAY_TYPE("VARIABLE"),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
+      .IDELAY_TYPE("FIXED"),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
       .IDELAY_VALUE(4),                // Input delay tap setting (0-31)
       .PIPE_SEL("FALSE"),              // Select pipelined mode, FALSE, TRUE
       .REFCLK_FREQUENCY(200.0),        // IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
