@@ -11,9 +11,12 @@ LD_LIBRARY_PATH =
 NAME = led_blinker
 PART = xc7z010clg400-1
 PROC = ps7_cortexa9_0
+CFG_DIR = cfg
 
 FILES = $(wildcard cores/*.v)
 CORES = $(FILES:.v=)
+FILES_SV = $(wildcard cores/*.sv)
+CORES_SV = $(FILES_SV:.sv=)
 
 VIVADO = vivado -nolog -nojournal -mode batch
 XSCT = xsct
@@ -43,6 +46,8 @@ RTL8188_URL = https://github.com/lwfinger/rtl8188eu/archive/v5.2.2.4.tar.gz
 all: tmp/$(NAME).bit boot.bin uImage devicetree.dtb
 
 cores: $(addprefix tmp/, $(CORES))
+
+cores_sv: $(addprefix tmp/, $(CORES_SV))
 
 xpr: tmp/$(NAME).xpr
 
@@ -112,9 +117,13 @@ tmp/cores/%: cores/%.v
 	mkdir -p $(@D)
 	$(VIVADO) -source scripts/core.tcl -tclargs $* $(PART)
 
+tmp/cores/%: cores/%.sv
+	mkdir -p $(@D)
+	$(VIVADO) -source scripts/core_sv.tcl -tclargs $* $(PART)
+
 tmp/%.xpr: projects/% projects/$(NAME)/block_design.tcl $(addprefix tmp/, $(CORES))
 	mkdir -p $(@D)
-	$(VIVADO) -source scripts/project.tcl -tclargs $* $(PART)
+	$(VIVADO) -source scripts/project.tcl -tclargs $* $(PART) $(CFG_DIR)
 
 tmp/%.xsa: tmp/%.xpr
 	mkdir -p $(@D)
