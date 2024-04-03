@@ -69,7 +69,7 @@ cell xilinx.com:ip:proc_sys_reset rst_0 {} {
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
   CFG_DATA_WIDTH 192
-  STS_DATA_WIDTH 64
+  STS_DATA_WIDTH 96
 } {
   S_AXI ps_0/M_AXI_GP0
   aclk pll_0/clk_out1
@@ -77,13 +77,18 @@ cell pavel-demin:user:axi_hub hub_0 {
 }
 
 # Create port_slicer
-cell pavel-demin:user:port_slicer slice_0 {
+cell pavel-demin:user:port_slicer slice_start {
   DIN_WIDTH 192 DIN_FROM 0 DIN_TO 0
 } {
   din hub_0/cfg_data
 }
 
-
+# Create port_slicer
+cell pavel-demin:user:port_slicer slice_idly_rst {
+  DIN_WIDTH 192 DIN_FROM 1 DIN_TO 1
+} {
+  din hub_0/cfg_data
+}
 
 # Create axis_red_pitaya_adc_4ch
 cell pavel-demin:user:axis_red_pitaya_adc_4ch adc_0 {
@@ -93,6 +98,7 @@ cell pavel-demin:user:axis_red_pitaya_adc_4ch adc_0 {
   adc_buf_clk01    i_clk_01/IBUF_OUT
   adc_buf_clk23    i_clk_23/IBUF_OUT
   idelay_ctrl_clk pll_0/clk_out2
+  idelay_ctrl_rst  slice_idly_rst/dout
   adc_dat_i adc_dat_i
   aresetn rst_0/peripheral_aresetn
 }
@@ -106,16 +112,18 @@ cell pavel-demin:user:axis_fifo fifo_0 {
   S_AXIS adc_0/M_AXIS
   M_AXIS hub_0/S00_AXIS
   aclk pll_0/clk_out1
-  aresetn slice_0/dout
+  aresetn slice_start/dout
 }
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_0 {
-  NUM_PORTS 2
+  NUM_PORTS 3
   IN0_WIDTH 32
   IN1_WIDTH 32
+  IN2_WIDTH 32
 } {
   In0 fifo_0/read_count
   In1 fifo_0/write_count
+  In2 adc_0/idelay_ctrl_rdy
   dout hub_0/sts_data
-}
+ }
