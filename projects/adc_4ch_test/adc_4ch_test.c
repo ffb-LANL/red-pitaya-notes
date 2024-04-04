@@ -38,16 +38,16 @@ int main()
   
   rst = (uint8_t *)(cfg + 0);
 
-  read_count = 1 & *(uint32_t *)(sts + 8);
-  printf("%5d\n ",read_count);
+  read_count =  *(uint32_t *)(sts + 8);
+  printf("%x\n ",read_count);
  // reset idly_ctrl
   *rst |= 2;
   usleep(2);
   *rst &= ~2;
   usleep(10);
 
-  read_count = 1 & *(uint32_t *)(sts + 8);
-  printf("%5d\n ",read_count);
+  read_count =  *(uint32_t *)(sts + 8);
+  printf("%x\n ",read_count);
 
   // reset fifo and filters
   *rst &= ~1;

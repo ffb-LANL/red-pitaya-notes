@@ -90,6 +90,93 @@ cell pavel-demin:user:port_slicer slice_idly_rst {
   din hub_0/cfg_data
 }
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant const_1 {
+  CONST_WIDTH 1
+  CONST_VAL 1
+}
+
+# Create proc_sys_reset
+cell xilinx.com:ip:proc_sys_reset rst_1 {} {
+  ext_reset_in const_0/dout
+  dcm_locked const_1/dout
+  slowest_sync_clk ps_0/fclk_clk0
+}
+
+# Create spi_cfg_4adc
+cell pavel-demin:user:spi_cfg_4adc cfg_adc_0 {
+} {
+  aclk ps_0/fclk_clk0
+  aresetn rst_1/peripheral_aresetn
+}
+
+
+# Create spi_cfg_4adc
+cell pavel-demin:user:spi_master spi_0 {
+} {
+  aclk ps_0/fclk_clk0
+  aresetn rst_1/peripheral_aresetn
+  spi_cs_o         spi_csa_o
+  spi_cs_o         spi_csb_o
+  spi_clk_o        spi_clk_o
+  spi_mosi_o       spi_mosi_o
+  spi_start_i      cfg_adc_0/spi_start_o   
+  dat_wr_h_i       cfg_adc_0/spi_adr    
+  dat_wr_l_i       cfg_adc_0/spi_dat     
+  cfg_rw_i         cfg_adc_0/spi_rw     
+  cfg_cs_act_i     cfg_adc_0/spi_cs_sel 
+  cfg_h_lng_i      cfg_adc_0/spi_h_lng  
+  cfg_l_lng_i      cfg_adc_0/spi_l_lng  
+  cfg_clk_presc_i  cfg_adc_0/spi_clk_pre 
+  cfg_clk_wr_edg_i cfg_adc_0/spi_wr_edg  
+  cfg_clk_rd_edg_i cfg_adc_0/spi_rd_edg  
+  cfg_clk_idle_i   cfg_adc_0/spi_clk_idle
+  sts_spi_busy_o   cfg_adc_0/spi_busy    
+}  
+
+# Create c_counter_binary
+cell xilinx.com:ip:c_counter_binary cntr_0 {
+  Output_Width 32
+} {
+  CLK ps_0/fclk_clk0
+}
+
+# Create c_counter_binary
+cell xilinx.com:ip:c_counter_binary cntr_1 {
+  Output_Width 32
+} {
+  CLK pll_0/clk_out1
+}
+
+
+# Create port_slicer
+cell pavel-demin:user:port_slicer slice_0 {
+  DIN_WIDTH 32 DIN_FROM 26 DIN_TO 26
+} {
+  din cntr_0/Q
+
+}
+
+
+# Create port_slicer
+cell pavel-demin:user:port_slicer slice_1 {
+  DIN_WIDTH 32 DIN_FROM 26 DIN_TO 26
+} {
+  din cntr_1/Q
+}
+
+# Create xlconcat
+cell xilinx.com:ip:xlconcat concat_1 {
+  NUM_PORTS 2
+  IN0_WIDTH 1
+  IN1_WIDTH 1
+} {
+  In0 slice_0/dout
+  In1 slice_1/dout
+  dout led_o
+ }
+
+
 # Create axis_red_pitaya_adc_4ch
 cell pavel-demin:user:axis_red_pitaya_adc_4ch adc_0 {
 } {
@@ -117,13 +204,19 @@ cell pavel-demin:user:axis_fifo fifo_0 {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_0 {
-  NUM_PORTS 3
+  NUM_PORTS 6
   IN0_WIDTH 32
   IN1_WIDTH 32
-  IN2_WIDTH 32
+  IN2_WIDTH 1
+  IN3_WIDTH 1
+  IN4_WIDTH 3
+  IN5_WIDTH 1
 } {
   In0 fifo_0/read_count
   In1 fifo_0/write_count
   In2 adc_0/idelay_ctrl_rdy
+  In3 cfg_adc_0/spi_done_o
+  In4 cfg_adc_0/spi_state_o
+  In5 rst_1/peripheral_aresetn
   dout hub_0/sts_data
  }
