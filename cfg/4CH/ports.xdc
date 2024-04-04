@@ -61,6 +61,16 @@ set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports adc_clk_n_i2]
 set_property PACKAGE_PIN N20 [get_ports adc_clk_p_i2]
 set_property PACKAGE_PIN P20 [get_ports adc_clk_n_i2]
 
+# SPI interface
+set_property IOSTANDARD  LVCMOS18 [get_ports spi_*_o]
+set_property SLEW        FAST     [get_ports spi_*_o]
+set_property DRIVE       8        [get_ports spi_*_o]
+
+set_property PACKAGE_PIN P15      [get_ports spi_csa_o]
+set_property PACKAGE_PIN P16      [get_ports spi_csb_o]
+set_property PACKAGE_PIN P18      [get_ports spi_clk_o]
+set_property PACKAGE_PIN N17      [get_ports spi_mosi_o]
+
 
 ### XADC
 
@@ -142,12 +152,12 @@ set_property DRIVE 4 [get_ports {led_o[*]}]
 
 set_property PACKAGE_PIN F16 [get_ports {led_o[0]}]
 set_property PACKAGE_PIN F17 [get_ports {led_o[1]}]
-set_property PACKAGE_PIN G15 [get_ports {led_o[2]}]
-set_property PACKAGE_PIN H15 [get_ports {led_o[3]}]
-set_property PACKAGE_PIN K14 [get_ports {led_o[4]}]
-set_property PACKAGE_PIN G14 [get_ports {led_o[5]}]
-set_property PACKAGE_PIN J15 [get_ports {led_o[6]}]
-set_property PACKAGE_PIN J14 [get_ports {led_o[7]}]
+set_property PACKAGE_PIN G19 [get_ports {led_o[2]}]
+set_property PACKAGE_PIN G15 [get_ports {led_o[3]}]
+set_property PACKAGE_PIN G14 [get_ports {led_o[4]}]
+set_property PACKAGE_PIN F20 [get_ports {led_o[5]}]
+set_property PACKAGE_PIN G20 [get_ports {led_o[6]}]
+set_property PACKAGE_PIN H20 [get_ports {led_o[7]}]
 
 create_clock -period 8.000 -name adc_clk_01_buf [get_ports {adc_clk_p_i}]
 create_clock -period 8.000 -name adc_clk_23_buf [get_ports {adc_clk_p_i2}]
