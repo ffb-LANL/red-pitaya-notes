@@ -57,3 +57,8 @@
     };
   };
 };
+
+&clkc {
+	fclk-enable = <0x1>;
+ 	ps-clk-frequency = <33333333>;
+};
