@@ -23,11 +23,10 @@ cell xilinx.com:ip:clk_wiz pll_0 {
 # Create processing_system7
 cell xilinx.com:ip:processing_system7 ps_0 {
   PCW_IMPORT_BOARD_PRESET cfg/red_pitaya.xml
-  PCW_USE_S_AXI_ACP 1
-  PCW_USE_DEFAULT_ACP_USER_VAL 1
+  PCW_USE_S_AXI_HP0 1
 } {
   M_AXI_GP0_ACLK pll_0/clk_out1
-  S_AXI_ACP_ACLK pll_0/clk_out1
+  S_AXI_HP0_ACLK pll_0/clk_out1
 }
 
 # Create all required interconnections
@@ -260,7 +259,7 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   FIFO_WRITE_DEPTH 1024
 } {
   S_AXIS scope_0/M_AXIS
-  M_AXI ps_0/S_AXI_ACP
+  M_AXI ps_0/S_AXI_HP0
   min_addr writer_address_slice/dout
   cfg_data const_ram_size/dout
   aclk pll_0/clk_out1
