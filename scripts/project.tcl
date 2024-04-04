@@ -119,7 +119,7 @@ add_files -norecurse $wrapper
 
 set_property TOP system_wrapper [current_fileset]
 
-set files [glob -nocomplain projects/$project_name/*.v projects/$project_name/*.sv]
+set files [glob -nocomplain cfg/*.mem projects/$project_name/*.v projects/$project_name/*.sv]
 if {[llength $files] > 0} {
   add_files -norecurse $files
 }
@@ -132,6 +132,6 @@ if {[llength $files] > 0} {
 set_property VERILOG_DEFINE {TOOL_VIVADO} [current_fileset]
 
 set_property STRATEGY Flow_PerfOptimized_high [get_runs synth_1]
-set_property STRATEGY Performance_NetDelay_high [get_runs impl_1]
+set_property STRATEGY Performance_ExploreWithRemap [get_runs impl_1]
 
 close_project

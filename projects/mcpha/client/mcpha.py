@@ -44,6 +44,8 @@ else:
 
 
 class MCPHA(QMainWindow, Ui_MCPHA):
+    rates = {0: 1, 1: 4, 2: 8, 3: 16, 4: 32, 5: 64}
+
     def __init__(self):
         super(MCPHA, self).__init__()
         self.setupUi(self)
@@ -67,9 +69,17 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         self.tabWidget.addTab(self.gen, "Pulse generator")
         # configure controls
         self.connectButton.clicked.connect(self.start)
+        self.syncCheck.toggled.connect(self.set_sync)
         self.neg1Check.toggled.connect(partial(self.set_negator, 0))
         self.neg2Check.toggled.connect(partial(self.set_negator, 1))
-        self.rateValue.valueChanged.connect(self.set_rate)
+        self.rateValue.addItems(map(str, MCPHA.rates.values()))
+        self.rateValue.setEditable(True)
+        self.rateValue.lineEdit().setReadOnly(True)
+        self.rateValue.lineEdit().setAlignment(Qt.AlignRight)
+        for i in range(self.rateValue.count()):
+            self.rateValue.setItemData(i, Qt.AlignRight, Qt.TextAlignmentRole)
+        self.rateValue.setCurrentIndex(1)
+        self.rateValue.currentIndexChanged.connect(self.set_rate)
         # address validator
         rx = QRegExp("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])|rp-[0-9A-Fa-f]{6}\.local$")
         self.addrValue.setValidator(QRegExpValidator(rx, self.addrValue))
@@ -128,7 +138,7 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         self.waiting = [False for i in range(3)]
         self.reset = 0
         self.state = 0
-        self.set_rate(self.rateValue.value())
+        self.set_rate(self.rateValue.currentIndex())
         self.set_negator(0, self.neg1Check.isChecked())
         self.set_negator(1, self.neg2Check.isChecked())
 
@@ -168,13 +178,13 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         if self.waiting[0]:
             self.command(12, 0, 0)
             if self.read_data(self.hst1.buffer):
-                self.hst1.update(self.timers[0])
+                self.hst1.update(self.timers[0], False)
             else:
                 return
         if self.waiting[1]:
             self.command(12, 1, 0)
             if self.read_data(self.hst2.buffer):
-                self.hst2.update(self.timers[1])
+                self.hst2.update(self.timers[1], self.syncCheck.isChecked())
             else:
                 return
         if self.waiting[2] and not self.status[8] & 1:
@@ -187,16 +197,16 @@ class MCPHA(QMainWindow, Ui_MCPHA):
                 return
 
     def reset_hst(self, number):
-        if number == 0:
-            self.reset |= 1
+        if self.syncCheck.isChecked():
+            self.reset |= 3
         else:
-            self.reset |= 2
+            self.reset |= 1 << number
 
     def reset_timer(self, number):
-        if number == 0:
-            self.reset |= 4
+        if self.syncCheck.isChecked():
+            self.reset |= 12
         else:
-            self.reset |= 8
+            self.reset |= 4 << number
 
     def reset_osc(self):
         self.reset |= 16
@@ -209,25 +219,50 @@ class MCPHA(QMainWindow, Ui_MCPHA):
         self.reset &= ~32
         self.waiting[2] = False
 
-    def set_rate(self, value):
-        self.command(4, 0, value)
+    def set_sync(self, value):
+        enabled = not value
+        self.hst2.set_enabled(enabled)
+        self.hst2.startButton.setEnabled(enabled)
+        self.hst2.resetButton.setEnabled(enabled)
+
+    def set_rate(self, index):
+        self.command(4, 0, MCPHA.rates[index])
 
     def set_negator(self, number, value):
         self.command(5, number, value)
 
     def set_pha_delay(self, number, value):
-        self.command(6, number, value)
+        if self.syncCheck.isChecked():
+            self.command(6, 0, value)
+            self.command(6, 1, value)
+        else:
+            self.command(6, number, value)
 
     def set_pha_thresholds(self, number, min, max):
-        self.command(7, number, min)
-        self.command(8, number, max)
+        if self.syncCheck.isChecked():
+            self.command(7, 0, min)
+            self.command(8, 0, max)
+            self.command(7, 1, min)
+            self.command(8, 1, max)
+        else:
+            self.command(7, number, min)
+            self.command(8, number, max)
 
     def set_timer(self, number, value):
-        self.command(9, number, value)
+        if self.syncCheck.isChecked():
+            self.command(9, 0, value)
+            self.command(9, 1, value)
+        else:
+            self.command(9, number, value)
 
     def set_timer_mode(self, number, value):
-        self.command(10, number, value)
-        self.waiting[number] = value
+        if self.syncCheck.isChecked():
+            self.command(10, 2, value)
+            self.waiting[0] = value
+            self.waiting[1] = value
+        else:
+            self.command(10, number, value)
+            self.waiting[number] = value
 
     def set_trg_source(self, number):
         self.command(13, number, 0)
@@ -309,6 +344,8 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.plotLayout.addWidget(self.canvas)
         self.ax = self.figure.add_subplot(111)
         self.ax.grid()
+        self.ax.set_ylabel("counts")
+        self.ax.set_xlabel("channel number")
         x = np.arange(self.bins)
         (self.curve,) = self.ax.plot(x, self.buffer, drawstyle="steps-mid", color=self.color)
         self.roi = [0, 4095]
@@ -361,7 +398,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         if self.mcpha.idle:
             return
         self.set_thresholds(self.thrsCheck.isChecked())
-        self.set_enable(False)
+        self.set_enabled(False)
         h = self.hoursValue.value()
         m = self.minutesValue.value()
         s = self.secondsValue.value()
@@ -390,7 +427,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
 
     def stop(self):
         self.mcpha.set_timer_mode(self.number, 0)
-        self.set_enable(True)
+        self.set_enabled(True)
         self.set_time(self.time[0])
         self.startButton.setText("Start")
         self.startButton.clicked.disconnect()
@@ -410,7 +447,7 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.update_plot()
         self.update_roi()
 
-    def set_enable(self, value):
+    def set_enabled(self, value):
         if value:
             self.set_thresholds(self.thrsCheck.isChecked())
         else:
@@ -469,9 +506,10 @@ class HstDisplay(QWidget, Ui_HstDisplay):
         self.minutesValue.setValue(int(m))
         self.secondsValue.setValue(s)
 
-    def update(self, value):
+    def update(self, value, sync):
         self.update_rate(value)
-        self.update_time(value)
+        if not sync:
+            self.update_time(value)
         self.update_plot()
         self.update_roi()
 
@@ -601,9 +639,14 @@ class OscDisplay(QWidget, Ui_OscDisplay):
         self.ax = self.figure.add_subplot(111)
         self.ax.grid()
         self.ax.set_ylim(-4500, 4500)
+        self.ax.set_xlabel("sample number")
+        self.ax.set_ylabel("ADC units")
         x = np.arange(self.tot)
         (self.curve2,) = self.ax.plot(x, self.buffer[1::2], color="#00CCCC")
         (self.curve1,) = self.ax.plot(x, self.buffer[0::2], color="#FFAA00")
+        self.line = [None, None]
+        self.line[0] = self.ax.axvline(self.pre, linestyle="dotted")
+        self.line[1] = self.ax.axhline(self.levelValue.value(), linestyle="dotted")
         self.canvas.draw()
         # create navigation toolbar
         self.toolbar = NavigationToolbar(self.canvas, None, False)
@@ -631,7 +674,7 @@ class OscDisplay(QWidget, Ui_OscDisplay):
         self.autoButton.toggled.connect(self.mcpha.set_trg_mode)
         self.ch2Button.toggled.connect(self.mcpha.set_trg_source)
         self.fallingButton.toggled.connect(self.mcpha.set_trg_slope)
-        self.levelValue.valueChanged.connect(self.mcpha.set_trg_level)
+        self.levelValue.valueChanged.connect(self.set_trg_level)
         self.startButton.clicked.connect(self.start)
         self.saveButton.clicked.connect(self.save)
         self.loadButton.clicked.connect(self.load)
@@ -664,6 +707,11 @@ class OscDisplay(QWidget, Ui_OscDisplay):
         self.curve1.set_ydata(self.buffer[0::2])
         self.curve2.set_ydata(self.buffer[1::2])
         self.canvas.draw()
+
+    def set_trg_level(self, value):
+        self.line[1].set_ydata([value, value])
+        self.canvas.draw()
+        self.mcpha.set_trg_level(value)
 
     def on_motion(self, event):
         if event.inaxes != self.ax:
@@ -715,6 +763,7 @@ class GenDisplay(QWidget, Ui_GenDisplay):
         self.log = log
         self.bins = 4096
         self.buffer = np.zeros(self.bins, np.uint32)
+        self.buffer[2047] = 1
         # create figure
         self.figure = Figure()
         if sys.platform != "win32":
@@ -724,6 +773,8 @@ class GenDisplay(QWidget, Ui_GenDisplay):
         self.plotLayout.addWidget(self.canvas)
         self.ax = self.figure.add_subplot(111)
         self.ax.grid()
+        self.ax.set_ylabel("counts")
+        self.ax.set_xlabel("channel number")
         x = np.arange(self.bins)
         (self.curve,) = self.ax.plot(x, self.buffer, drawstyle="steps-mid", color="#FFAA00")
         # create navigation toolbar

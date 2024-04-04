@@ -38,12 +38,8 @@ module axis_ram_reader #
   input  wire                        m_axis_tready
 );
 
-  function integer clogb2 (input integer value);
-    for(clogb2 = 0; value > 0; clogb2 = clogb2 + 1) value = value >> 1;
-  endfunction
-
-  localparam integer ADDR_SIZE = clogb2(AXI_DATA_WIDTH / 8 - 1);
-  localparam integer COUNT_WIDTH = clogb2(FIFO_WRITE_DEPTH - 1) + 1;
+  localparam integer ADDR_SIZE = $clog2(AXI_DATA_WIDTH / 8);
+  localparam integer COUNT_WIDTH = $clog2(FIFO_WRITE_DEPTH) + 1;
 
   reg int_arvalid_reg, int_rvalid_reg;
   reg [ADDR_WIDTH-1:0] int_addr_reg;
@@ -120,7 +116,7 @@ module axis_ram_reader #
   assign m_axi_arlen = 4'd15;
   assign m_axi_arsize = ADDR_SIZE;
   assign m_axi_arburst = 2'b01;
-  assign m_axi_arcache = 4'b0110;
+  assign m_axi_arcache = 4'b1111;
 
   assign m_axi_rready = 1'b1;
 

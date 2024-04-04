@@ -1,8 +1,5 @@
 alpine_url=http://dl-cdn.alpinelinux.org/alpine/v3.18
 
-uboot_tar=alpine-uboot-3.18.4-armv7.tar.gz
-uboot_url=$alpine_url/releases/armv7/$uboot_tar
-
 tools_tar=apk-tools-static-2.14.0-r2.apk
 tools_url=$alpine_url/main/armv7/$tools_tar
 
@@ -10,13 +7,12 @@ firmware_tar=linux-firmware-other-20230515-r6.apk
 firmware_url=$alpine_url/main/armv7/$firmware_tar
 
 linux_dir=tmp/linux-6.1
-linux_ver=6.1.55-xilinx
+linux_ver=6.1.76-xilinx
 
 modules_dir=alpine-modloop/lib/modules/$linux_ver
 
 passwd=changeme
 
-test -f $uboot_tar || curl -L $uboot_url -o $uboot_tar
 test -f $tools_tar || curl -L $tools_url -o $tools_tar
 
 test -f $firmware_tar || curl -L $firmware_url -o $firmware_tar
@@ -27,25 +23,8 @@ do
   test -f $tar || curl -L $url -o $tar
 done
 
-mkdir alpine-uboot
-tar -zxf $uboot_tar --directory=alpine-uboot
-
 mkdir alpine-apk
 tar -zxf $tools_tar --directory=alpine-apk --warning=no-unknown-keyword
-
-mkdir alpine-initramfs
-cd alpine-initramfs
-
-gzip -dc ../alpine-uboot/boot/initramfs-lts | cpio -id
-rm -rf etc/modprobe.d
-rm -rf lib/firmware
-rm -rf lib/modules
-rm -rf var
-find . | sort | cpio --quiet -o -H newc | gzip -9 > ../initrd.gz
-
-cd ..
-
-mkimage -A arm -T ramdisk -C gzip -d initrd.gz uInitrd
 
 mkdir -p $modules_dir/kernel
 
@@ -64,7 +43,7 @@ done
 
 mksquashfs alpine-modloop/lib modloop -b 1048576 -comp xz -Xdict-size 100%
 
-rm -rf alpine-uboot alpine-initramfs initrd.gz alpine-modloop
+rm -rf alpine-modloop
 
 root_dir=alpine-root
 
@@ -81,20 +60,16 @@ ln -s /media/mmcblk0p1/cache $root_dir/etc/apk/cache
 cp -r alpine/etc $root_dir/
 cp -r alpine/apps $root_dir/media/mmcblk0p1/
 
-for project in common_tools led_blinker sdr_receiver sdr_receiver_hpsdr sdr_receiver_wide sdr_transceiver sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha pulsed_nmr vna playground
-do
-  mkdir -p $root_dir/media/mmcblk0p1/apps/$project
-  cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp -r projects/$project/app/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp tmp/$project.bit $root_dir/media/mmcblk0p1/apps/$project/
-done
+projects="common_tools led_blinker mcpha playground pulsed_nmr sdr_receiver sdr_receiver_hpsdr sdr_receiver_wide sdr_transceiver sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr vna"
 
-for project in led_blinker_122_88 sdr_receiver_122_88 sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 pulsed_nmr_122_88 vna_122_88
+projects_122_88="led_blinker_122_88 pulsed_nmr_122_88 sdr_receiver_122_88 sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 vna_122_88"
+
+for p in $projects $projects_122_88
 do
-  mkdir -p $root_dir/media/mmcblk0p1/apps/$project
-  cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp -r projects/$project/app/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp tmp/$project.bit $root_dir/media/mmcblk0p1/apps/$project/
+  mkdir -p $root_dir/media/mmcblk0p1/apps/$p
+  cp -r projects/$p/server/* $root_dir/media/mmcblk0p1/apps/$p/
+  cp -r projects/$p/app/* $root_dir/media/mmcblk0p1/apps/$p/
+  cp tmp/$p.bit $root_dir/media/mmcblk0p1/apps/$p/
 done
 
 cp -r alpine-apk/sbin $root_dir/
@@ -107,12 +82,10 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add openssh u-boot-tools ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix
+apk add openssh u-boot-tools ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix
 
 rc-update add bootmisc boot
 rc-update add hostname boot
-rc-update add hwdrivers boot
-rc-update add modloop boot
 rc-update add swclock boot
 rc-update add sysctl boot
 rc-update add syslog boot
@@ -125,6 +98,8 @@ rc-update add savecache shutdown
 rc-update add devfs sysinit
 rc-update add dmesg sysinit
 rc-update add mdev sysinit
+rc-update add hwdrivers sysinit
+rc-update add modloop sysinit
 
 rc-update add avahi-daemon default
 rc-update add chronyd default
@@ -146,7 +121,6 @@ sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
 
 echo root:$passwd | chpasswd
 
-setup-hostname red-pitaya
 hostname red-pitaya
 
 sed -i 's/^# LBU_MEDIA=.*/LBU_MEDIA=mmcblk0p1/' etc/lbu/lbu.conf
@@ -191,16 +165,10 @@ tar -zxf \$wsprd_tar --strip-components=1 --directory=\$wsprd_dir
 rm \$wsprd_tar
 make -C \$wsprd_dir
 
-for project in server common_tools sdr_receiver_hpsdr sdr_receiver_wide sdr_transceiver sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha pulsed_nmr vna playground
+for p in server $projects $projects_122_88
 do
-  make -C /media/mmcblk0p1/apps/\$project clean
-  make -C /media/mmcblk0p1/apps/\$project
-done
-
-for project in sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 pulsed_nmr_122_88 vna_122_88
-do
-  make -C /media/mmcblk0p1/apps/\$project clean
-  make -C /media/mmcblk0p1/apps/\$project
+  make -C /media/mmcblk0p1/apps/\$p clean
+  make -C /media/mmcblk0p1/apps/\$p
 done
 
 EOF_CHROOT
@@ -215,6 +183,6 @@ hostname -F /etc/hostname
 
 rm -rf $root_dir alpine-apk
 
-zip -r red-pitaya-alpine-3.18-armv7-`date +%Y%m%d`.zip apps boot.bin cache devicetree.dtb modloop red-pitaya.apkovl.tar.gz uEnv.txt uImage uInitrd wifi
+zip -r red-pitaya-alpine-3.18-armv7-`date +%Y%m%d`.zip apps boot.bin cache modloop red-pitaya.apkovl.tar.gz wifi
 
-rm -rf apps cache modloop red-pitaya.apkovl.tar.gz uInitrd wifi
+rm -rf apps cache modloop red-pitaya.apkovl.tar.gz wifi
