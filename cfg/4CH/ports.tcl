@@ -17,6 +17,13 @@ create_bd_port -dir I -type clk -freq_hz 125000000 adc_clk_n_i2
 set_property CONFIG.FREQ_HZ 125000000 [get_bd_ports adc_clk_p_i2]
 set_property CONFIG.FREQ_HZ 125000000 [get_bd_ports adc_clk_n_i2]
 
+### SPI interface
+
+create_bd_port -dir O spi_csa_o
+create_bd_port -dir O spi_csb_o
+create_bd_port -dir O spi_clk_o
+create_bd_port -dir O spi_mosi_o
+
 ### XADC
 
 create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vp_Vn
