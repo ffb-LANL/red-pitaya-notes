@@ -67,4 +67,5 @@
   <set param="PCW::MIO::MIO[37]::SLEW" value="fast" />
   <set param="PCW::MIO::MIO[38]::SLEW" value="fast" />
   <set param="PCW::MIO::MIO[39]::SLEW" value="fast" />
+  <set param="PCW::FPGA0::PERIPHERAL::FREQMHZ" value="125" />
 </project>
