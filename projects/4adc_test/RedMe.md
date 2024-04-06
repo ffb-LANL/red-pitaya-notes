@@ -1,0 +1,1 @@
+make NAME=adc_4ch_test PART=xc7z020clg400-1 CFG_DIR=cfg/4CH bit
