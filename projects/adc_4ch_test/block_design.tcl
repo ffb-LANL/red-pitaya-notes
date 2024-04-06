@@ -177,7 +177,7 @@ cell xilinx.com:ip:xlconcat concat_1 {
  }
 
 
-# Create axis_red_pitaya_adc_4ch
+# Create axis_red_pitaya_4adc
 cell pavel-demin:user:axis_red_pitaya_adc_4ch adc_0 {
 } {
   aclk pll_0/clk_out1

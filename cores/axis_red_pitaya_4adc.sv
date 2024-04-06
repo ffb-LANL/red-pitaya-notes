@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-module axis_red_pitaya_adc_4ch #
+module axis_red_pitaya_4adc #
 (
 )
 (
