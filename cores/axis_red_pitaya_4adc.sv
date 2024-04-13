@@ -3,6 +3,8 @@
 
 module axis_red_pitaya_4adc #
 (
+   parameter IDELAY_TYPE = "FIXED",
+   parameter integer IDELAY_VALUE = 4
 )
 (
 
@@ -27,6 +29,12 @@ module axis_red_pitaya_4adc #
   // output logic adc_clk_buf,
   // output logic adc_clk_buf2,
 
+
+    // Slave side
+  input wire [4*7-1:0] s_axis_tdata,
+  input wire           s_axis_tvalid,
+  output logic         s_axis_tready,
+  
 
   // Master side
   output wire        m_axis_tvalid,
@@ -55,6 +63,8 @@ logic signed [3:0][13:0]     adc_dat, adc_dat_r;
 // 4: CH3 falling edge data  5: CH3 rising edge data
 // 6: CH4 falling edge data  7: CH4 rising edge data
 
+assign s_axis_tready = 1'b1;
+
 logic idly_rdy;
 assign idelay_ctrl_rdy = idly_rdy;
 
@@ -64,6 +74,9 @@ logic [4*7-1:0] idly_ce  ;
 logic [4*7-1:0] idly_inc ;
 logic [4*7-1:0] [5-1:0] idly_cnt ;
 logic [4-1:0] [14-1:0] adc_dat_raw;
+
+assign idly_rst = 28'b0;
+assign idly_inc = 28'b1;
 
 
 // diferential clock input
@@ -96,9 +109,8 @@ for (GVC = 0; GVC < 4; GVC = GVC + 1) begin : channels
    IDELAYE2 #(
       .DELAY_SRC("IDATAIN"),           // Delay input (IDATAIN, DATAIN)
       .HIGH_PERFORMANCE_MODE("TRUE"),  // Reduced jitter ("TRUE"), Reduced power ("FALSE")
-//      .IDELAY_TYPE("VARIABLE"),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
-      .IDELAY_TYPE("FIXED"),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
-      .IDELAY_VALUE(8),                // Input delay tap setting (0-31)
+      .IDELAY_TYPE(IDELAY_TYPE),        // FIXED, VARIABLE, VAR_LOAD, VAR_LOAD_PIPE
+      .IDELAY_VALUE(IDELAY_VALUE),                // Input delay tap setting (0-31)
       .PIPE_SEL("FALSE"),              // Select pipelined mode, FALSE, TRUE
       .REFCLK_FREQUENCY(200.0),        // IDELAYCTRL clock input frequency in MHz (190.0-210.0, 290.0-310.0).
       .SIGNAL_PATTERN("DATA")          // DATA, CLOCK input signal
@@ -106,7 +118,7 @@ for (GVC = 0; GVC < 4; GVC = GVC + 1) begin : channels
    i_dly (
       .CNTVALUEOUT  ( idly_cnt[GV+GVC*7]    ),  // 5-bit output: Counter value output
       .DATAOUT      ( adc_dat_idly          ),  // 1-bit output: Delayed data output
-      .C            ( adc_clk_in[GVC/2]     ),  // 1-bit input: Clock input
+      .C            ( aclk                  ),  // 1-bit input: Clock input
       .CE           ( idly_ce[GV+GVC*7]     ),  // 1-bit input: Active high enable increment/decrement input
       .CINVCTRL     ( 1'b0                  ),  // 1-bit input: Dynamic clock inversion input
       .CNTVALUEIN   ( 5'h0                  ),  // 5-bit input: Counter value input
@@ -126,29 +138,34 @@ end
 endgenerate
 
 always @(posedge aclk) begin
-  adc_dat_r[0] <= {adc_dat_raw[0][14-1], ~adc_dat_raw[0][14-2:0]};
-  adc_dat_r[1] <= {adc_dat_raw[1][14-1], ~adc_dat_raw[1][14-2:0]};
+  adc_dat_r[0] <= adc_dat_raw[0]; 
+  adc_dat_r[1] <= adc_dat_raw[1]; 
 
   adc_dat  [0] <= adc_dat_r[0];
   adc_dat  [1] <= adc_dat_r[1];
 end
 
 always @(posedge aclk) begin
-  adc_dat_r[2] <= {adc_dat_raw[2][14-1], ~adc_dat_raw[2][14-2:0]};
-  adc_dat_r[3] <= {adc_dat_raw[3][14-1], ~adc_dat_raw[3][14-2:0]};
+  adc_dat_r[2] <= adc_dat_raw[2]; 
+  adc_dat_r[3] <= adc_dat_raw[3]; 
 
   adc_dat  [2] <= adc_dat_r[2];
   adc_dat  [3] <= adc_dat_r[3];
 end
+
+always @(posedge aclk) begin
+  idly_ce <= ( s_axis_tvalid & aresetn ) ? s_axis_tdata : 28'b0;
+end
+  
 
   assign adc_csn = 1'b1;
 
   assign m_axis_tvalid = 1'b1;
 
   assign m_axis_tdata = {
-    {(3){adc_dat[3][13]}}, adc_dat[3][12:0],
-    {(3){adc_dat[2][13]}}, adc_dat[2][12:0],
-    {(3){adc_dat[1][13]}}, adc_dat[1][12:0],
-    {(3){adc_dat[0][13]}}, adc_dat[0][12:0]};
+     2'b0, adc_dat[3][13:0],
+     2'b0,adc_dat[2][13:0],
+     2'b0,adc_dat[1][13:0],
+     2'b0,adc_dat[0][13:0]};
 
 endmodule
