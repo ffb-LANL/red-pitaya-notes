@@ -103,8 +103,10 @@ cell xilinx.com:ip:proc_sys_reset rst_1 {} {
   slowest_sync_clk ps_0/fclk_clk0
 }
 
-# Create spi_cfg_4adc
+# Create spi_cfg_4adc 90 deg clock delay, normal format
 cell pavel-demin:user:spi_cfg_4adc cfg_adc_0 {
+   TIMING 16'b0101
+   FORMAT 16'b111000
 } {
   aclk ps_0/fclk_clk0
   aresetn rst_1/peripheral_aresetn
@@ -154,7 +156,6 @@ cell pavel-demin:user:port_slicer slice_0 {
   DIN_WIDTH 32 DIN_FROM 26 DIN_TO 26
 } {
   din cntr_0/Q
-
 }
 
 
@@ -179,6 +180,8 @@ cell xilinx.com:ip:xlconcat concat_1 {
 
 # Create axis_red_pitaya_4adc
 cell pavel-demin:user:axis_red_pitaya_4adc adc_0 {
+   IDELAY_TYPE "VARIABLE"
+   IDELAY_VALUE 0
 } {
   aclk pll_0/clk_out1
   adc_clk_23 pll_1/clk_out1
@@ -188,13 +191,14 @@ cell pavel-demin:user:axis_red_pitaya_4adc adc_0 {
   idelay_ctrl_rst  slice_idly_rst/dout
   adc_dat_i adc_dat_i
   aresetn rst_0/peripheral_aresetn
+  S_AXIS hub_0/M00_AXIS
 }
 
 # Create axis_fifo
 cell pavel-demin:user:axis_fifo fifo_0 {
   S_AXIS_TDATA_WIDTH 64
   M_AXIS_TDATA_WIDTH 32
-  WRITE_DEPTH 16384
+  WRITE_DEPTH 65536
 } {
   S_AXIS adc_0/M_AXIS
   M_AXIS hub_0/S00_AXIS
