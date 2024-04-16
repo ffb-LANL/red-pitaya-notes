@@ -11,6 +11,9 @@
     gpios = <&gpio0 54 0>;
     capture-clear;
   };
+  memory@0 {
+    reg = <0x0 0x10000000>;
+  };
 };
 
 &i2c0 {

@@ -5,6 +5,6 @@
 
 / {
   chosen {
-    bootargs = "console=ttyPS0,115200 earlycon earlyprintk root=/dev/mmcblk0p2 ro rootfstype=ext4 rootwait cma=292M";
+    bootargs = "console=ttyPS0,115200 earlycon earlyprintk root=/dev/mmcblk0p2 ro rootfstype=ext4 rootwait cma=1M";
   };
 };
