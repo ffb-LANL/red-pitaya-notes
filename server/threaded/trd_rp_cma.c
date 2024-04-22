@@ -424,7 +424,7 @@ void *rx_handler(void *arg)
 	{
 		result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 		selector = command >> 60;
-		if(verbose)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
+		if(verbose > 1)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
 	    if( result < sizeof(command)) break;
 	    switch(selector)
 	    {
@@ -486,7 +486,7 @@ void *tx_handler(void *arg)
 	{
 		result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 		selector = command >> 60;
-		if(verbose)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
+		if(verbose >1)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
 	    if( result < sizeof(command)) break;
 	    switch(selector)
 	    {
