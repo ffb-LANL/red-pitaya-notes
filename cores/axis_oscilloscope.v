@@ -18,6 +18,8 @@ module axis_oscilloscope #
   input  wire [CNTR_WIDTH-1:0]       tot_data,
 
   output wire [CNTR_WIDTH:0]         sts_data,
+  output wire                        complete,
+  output wire                        triggered,
 
   // Slave side
   input  wire [AXIS_TDATA_WIDTH-1:0] s_axis_tdata,
@@ -25,6 +27,7 @@ module axis_oscilloscope #
   output wire                        s_axis_tready,
 
   // Master side
+  input  wire                        m_axis_tready,
   output wire [AXIS_TDATA_WIDTH-1:0] m_axis_tdata,
   output wire                        m_axis_tvalid
 );
@@ -84,8 +87,10 @@ module axis_oscilloscope #
   end
 
   assign sts_data = {int_addr_reg, int_run_reg};
+  assign complete = !int_run_reg;
+  assign triggered = int_trg_reg;
 
-  assign s_axis_tready = 1'b1;
+  assign s_axis_tready = m_axis_tready;
 
   assign m_axis_tdata = s_axis_tdata;
   assign m_axis_tvalid = int_run_reg & s_axis_tvalid;
