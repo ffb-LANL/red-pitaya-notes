@@ -3,8 +3,8 @@
 
 module axis_inf_counter #
 (
-  parameter integer AXIS_TDATA_WIDTH = 32,
-  parameter integer CNTR_WIDTH = 32
+  parameter integer AXIS_TDATA_WIDTH = 64,
+  parameter integer CNTR_WIDTH = 63
 )
 (
   // System signals
@@ -23,6 +23,7 @@ module axis_inf_counter #
   reg [CNTR_WIDTH-1:0] int_cntr_reg, int_cntr_next;
   reg int_run_reg, int_run_next;
   reg int_trg_reg, int_trg_next;
+  reg int_rdy_reg, int_rdy_next;
 
   always @(posedge aclk)
   begin
@@ -31,12 +32,14 @@ module axis_inf_counter #
       int_cntr_reg <= {(CNTR_WIDTH){1'b0}};
       int_run_reg <= 1'b0;
       int_trg_reg <= 1'b0;
+      int_rdy_reg <= 1'b0;
     end
     else
     begin
       int_cntr_reg <= int_cntr_next;
       int_run_reg <= int_run_next;
       int_trg_reg <= int_trg_next;
+      int_rdy_reg <= int_rdy_next;
     end
   end
 
@@ -46,6 +49,7 @@ module axis_inf_counter #
        int_cntr_next = int_cntr_reg;
        int_run_next = int_run_reg;
        int_trg_next = int_trg_reg;
+       int_rdy_next = int_rdy_reg;
 
        if(~int_run_reg & run_flag)
        begin
@@ -61,6 +65,7 @@ module axis_inf_counter #
        if( int_run_reg )
        begin
           int_cntr_next = int_cntr_reg + 1'b1;
+	  int_rdy_next = m_axis_tready;
        end
 
        if(int_trg_reg)
@@ -71,7 +76,7 @@ module axis_inf_counter #
      end
   end
 
-  assign m_axis_tdata = int_trg_reg?{(CNTR_WIDTH){1'b0}}:int_cntr_reg;
+  assign m_axis_tdata = int_trg_reg? {(AXIS_TDATA_WIDTH){1'b0}}:{int_rdy_reg,int_cntr_reg[CNTR_WIDTH-1:0]};
   assign m_axis_tvalid = 1'b1;
 
 endmodule
