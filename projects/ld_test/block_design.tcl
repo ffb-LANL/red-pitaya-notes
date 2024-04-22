@@ -1,4 +1,4 @@
-#CMA lockin digitizer test 159
+#lockin digitizer test 159, minus CMA
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz pll_0 {
@@ -23,11 +23,10 @@ cell xilinx.com:ip:clk_wiz pll_0 {
 # Create processing_system7
 cell xilinx.com:ip:processing_system7 ps_0 {
   PCW_IMPORT_BOARD_PRESET cfg/red_pitaya.xml
-  PCW_USE_S_AXI_ACP 1
-  PCW_USE_DEFAULT_ACP_USER_VAL 1
+  PCW_USE_S_AXI_HP0 1
 } {
   M_AXI_GP0_ACLK pll_0/clk_out1
-  S_AXI_ACP_ACLK pll_0/clk_out1
+  S_AXI_HP0_ACLK pll_0/clk_out1
 }
 
 # Create all required interconnections
@@ -48,10 +47,13 @@ cell xilinx.com:ip:proc_sys_reset rst_0 {} {
 }
 
 # Create axis_gpio_reader
-cell pavel-demin:user:axis_gpio_reader gpio_0 {
+cell pavel-demin:user:axis_gpio_reader_writer gpio_0 {
   AXIS_TDATA_WIDTH 8
+  GPIO_IN_DATA_WIDTH 1
+  GPIO_OUT_DATA_WIDTH 1
 } {
-  gpio_data exp_p_tri_io
+  gpio_data_in exp_p_tri_io
+  gpio_data_out exp_n_tri_io
   aclk pll_0/clk_out1
 }
 
@@ -171,12 +173,6 @@ cell xilinx.com:ip:xlconstant trig_polarity_slice {
   CONST_VAL 0
 }
 
-# Create port_slicer
-cell pavel-demin:user:port_slicer writer_address_slice {
-  DIN_WIDTH 448 DIN_FROM 415 DIN_TO 384
-} {
-  din hub_0/cfg_data
-}
 
 # Create port_slicer
 #cell pavel-demin:user:port_slicer trig_mask_slice {
@@ -225,6 +221,7 @@ cell pavel-demin:user:axis_soft_trigger trig_0 {
   AXIS_TDATA_SIGNED FALSE
 } {
   S_AXIS gpio_0/M_AXIS
+  trg_flag gpio_0/data
   pol_data trig_polarity_slice/dout
   msk_data trig_mask_slice/dout
   lvl_data trig_level_slice/dout
@@ -252,6 +249,12 @@ cell xilinx.com:ip:xlconstant const_ram_size {
   CONST_VAL 2097151
 }
 
+# Create xlconstant
+cell xilinx.com:ip:xlconstant writer_address_start {
+  CONST_WIDTH 32
+  CONST_VAL 268435456
+}
+
 # Create axis_ram_writer
 cell pavel-demin:user:axis_ram_writer writer_0 {
   ADDR_WIDTH 21
@@ -260,8 +263,8 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   FIFO_WRITE_DEPTH 1024
 } {
   S_AXIS scope_0/M_AXIS
-  M_AXI ps_0/S_AXI_ACP
-  min_addr writer_address_slice/dout
+  M_AXI ps_0/S_AXI_HP0
+  min_addr writer_address_start/dout
   cfg_data const_ram_size/dout
   aclk pll_0/clk_out1
   aresetn writer_reset_slice/dout
@@ -285,21 +288,24 @@ cell xilinx.com:ip:xlconstant const_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_sts {
-  NUM_PORTS 7
+  NUM_PORTS 9
   IN0_WIDTH 32
   IN1_WIDTH 32
-  IN2_WIDTH 16
-  IN3_WIDTH 16
-  IN4_WIDTH 32
-  IN5_WIDTH 128
-  IN6_WITDH 32
+  IN2_WIDTH 1
+  IN3_WIDTH 1
+  IN4_WIDTH 14 
+  IN5_WIDTH 16
+  IN6_WIDTH 32
+  IN7_WIDTH 128
+  IN8_WITDH 32
 } {
   In0 writer_0/sts_data	
   In1 scope_0/sts_data
-  In2 trig_0/trg_flag
-  In3 const_ID/dout
-  In4 phase_snap_0/data
-  In6 const_modulus/dout
+  In2 scope_0/triggered
+  In3 scope_0/complete
+  In5 const_ID/dout
+  In6 phase_snap_0/data
+  In8 const_modulus/dout
   dout hub_0/sts_data
 }
 
