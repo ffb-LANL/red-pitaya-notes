@@ -163,9 +163,9 @@ end
   assign m_axis_tvalid = 1'b1;
 
   assign m_axis_tdata = {
-     2'b0, adc_dat[3][13:0],
-     2'b0,adc_dat[2][13:0],
-     2'b0,adc_dat[1][13:0],
-     2'b0,adc_dat[0][13:0]};
+     {3{adc_dat[3][13]}},~adc_dat[3][12:0],
+     {3{adc_dat[2][13]}},~adc_dat[2][12:0],
+     {3{adc_dat[1][13]}},~adc_dat[1][12:0],
+     {3{adc_dat[0][13]}},~adc_dat[0][12:0]};
 
 endmodule
