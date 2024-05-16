@@ -11,6 +11,9 @@ fast digitizer delayed 111
 level_trigger 112
 single channel lockin 113
 slow dual channel lockin 114
+dual channel lockin 2024 159
+dual channel lockin 122.88 2024 169
+4adc recorder 157
 
 CFG map:
 0-0     PKTZR RESET | writer_reset
@@ -19,10 +22,10 @@ CFG map:
 4-4     TRX RESET 
 7-7     OUTPUT SWITCH FWD/REV
 32-63   +4 RECORD_LENGTH | tot_data
-64-95   +8 FREQUENCY WORD
+64-95   +8 FREQUENCY_0 WORD
 96-127  +12 DECIMATION
-128-134 +16 LED
-144-159 +18 OUTPUT SCALER
+128-143 +16 OUTPUT SCALER 0
+144-159 +18 LED
 160-319 +20 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
 224-255 +28 DDS DELAY
 320-351 +40 TRIGGER DELAY 
@@ -30,12 +33,16 @@ CFG map:
 368-383 +46 trig_mask
 384-415	+48 writer_address
 416-447	+52 pre-trigger data
+448-479 +56 FREQUENCY_1 WORD
+480-495 +60 OUTPUT SCALER 1
 
 STS map:
 0-31	writer_0/sts_data 
-32-63   pktzr_0/trigger_pos | scope_0/sts_data
-64-65	pktzr_0/complete
-80-95	const_ID
-96-127	phase_snap
-128-255	value_xy
-256-287 const_modulus
+32-63   +4 pktzr_0/trigger_pos | scope_0/sts_data
+64-65	+8 pktzr_0/complete
+80-95	+10 const_ID
+96-127	+12  phase_snap_0
+128-255	+16 value_xy
+256-287 +32 const_modulus
+288-319	+36 phase_snap_1
+320-575	+40 values_xy (x0 (32 bits),y0(32 bits),x1...y4)
