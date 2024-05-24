@@ -228,7 +228,7 @@ void *ctrl_handler(void *arg)
 	int stop=0,samples,i;
 	uint64_t command;
 	uint32_t selector;
-	ssize_t result;
+	ssize_t result,ret;
 	off_t offset;
 	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096,tot, pre;
 	FILE *fp;
@@ -246,7 +246,7 @@ void *ctrl_handler(void *arg)
 		result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 		selector = command >> 60;
 		if(verbose >1)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
-	    if( result < sizeof(command)) break;
+	    if( result < sizeof(command))if(verbose){printf("Recv less then expected %d bytes, breaking\n",sizeof(command)); break;}
 	    switch(selector)
 	    {  case 0:
 	    	     mask = command & 0xFFFF;
@@ -270,9 +270,11 @@ void *ctrl_handler(void *arg)
             break;
           case 3: //get status
           	offset = command & 0xFFFFFFFF;
+		if(verbose>1)printf("Status inqury. ");
           	status=*((uint32_t *)(sts + offset));
-          	if(verbose>1)printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 			if(send(sock_client, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
+          	if(verbose>1)printf("STS Offset =%u, Status = %u",(uint32_t)offset, status);
+		if((ret=send(sock_client, sts + offset, sizeof(status), 0)) < 0){   perror("staus send");break;}
+		if(verbose>1)printf("Status response: %d bytes sent.\n",ret);
           	break;
           case 4: //get temperature
           	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "r")) == NULL){
@@ -305,7 +307,7 @@ void *ctrl_handler(void *arg)
                    *rst |= 2;
                    *rst &= ~2;
 
-           	if(verbose){sleep(1);printf("Armed, cfg %d,writer %d, osciloscope %d, flags %d\n", *(uint8_t *)(cfg + 0),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));}
+           	if(verbose){printf("Armed, cfg %d,writer %d, osciloscope %d, flags %d\n", *(uint8_t *)(cfg + 0),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));}
            	break;
           case 7: //software trigger
               //trigger
@@ -313,7 +315,7 @@ void *ctrl_handler(void *arg)
                *rst |= 8;
 		usleep(10);
                *rst &= ~ 8;
-               if(verbose)printf("After trigger, cfg %d,  writer %d,  osciloscope %d, flags %d\n",*((uint32_t *)(cfg + 0)),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
+               if(verbose)printf(" After trigger, cfg %d,  writer %d,  osciloscope %d, flags %d\n",*((uint32_t *)(cfg + 0)),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
           	break;
           case 8: //read from start of buffer
            	samples = command & 0xFFFFFFFF;
@@ -407,6 +409,10 @@ void *ctrl_handler(void *arg)
                   printf("\n");
           	}
               break;
+	      default:
+				
+			 if(verbose)printf("Unexpected command %d  in control loop, payload %ld, socket = %d\n",selector, command,sock_client);
+             break;
 	    }
 	}
 	if(verbose)printf("Stopping CTRL thread, sock_client=%d, recv result = %d\n",sock_client,result);
