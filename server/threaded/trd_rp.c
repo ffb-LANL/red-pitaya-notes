@@ -50,7 +50,7 @@
 #define CMD_STOP 2
 #define CMD_IDN 1
 
-void *cfg, *ram, *sts;
+void *cfg, *ram, *sts, *hub;
 void *rx_data,*tx_data;
 int init_mem_map();
 int clean_up();
@@ -171,13 +171,14 @@ int main(int argc, char *argv[])
 	     switch(command >> 60)
 	     {
 	       case CMD_IDN:
-	    	   if(verbose)printf("MAIN: IDN query %d, socket=%d\n",CMD_IDN,sock_client);
-	          	status=*((uint32_t *)(sts + 8));
-	          	if(verbose)printf("Status = %u\n", status);
-	          	status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
-	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
-	 		   close(sock_client);
-	    	   break;
+	    	  if(verbose)printf("MAIN: IDN query %d, socket=%d\n",CMD_IDN,sock_client);
+	          status=*((uint32_t *)(sts + 8));
+	          if(verbose)printf("Status = %u\n", status);
+	          status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
+	 	  if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
+	    	  if(verbose)printf("Closing socket=%d\n",sock_client);
+	 	  close(sock_client);
+	    	  break;
 	       case CMD_CONNECT:
                  if(verbose)printf("MAIN: Connect command %d\n",CMD_CONNECT);
 	    	 if((selector = command & 0x3)<3)
@@ -227,7 +228,7 @@ void *ctrl_handler(void *arg)
 	int sock_client = sock_thread[0];
 	int stop=0,samples,i;
 	uint64_t command;
-	uint32_t selector;
+	uint32_t selector,addr;
 	ssize_t result,ret;
 	off_t offset;
 	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096,tot, pre;
@@ -377,12 +378,13 @@ void *ctrl_handler(void *arg)
           	if(verbose)printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
           	*((uint32_t *)(cfg + offset)) = status;
  			break;
-          case 13: // read RX FIFO
-          	samples = command & 0xFFFFFFFF;
+          case 13: // read from hub
+           	samples = command >> 28 & 0xffffff;
+                addr = command & 0xfffffff;
           	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
           	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
           	//memcpy(buffer, rx_data, samples);
-          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)rx_data);
+          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)(hub+addr));
           	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
               if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
           	if(verbose){
@@ -396,15 +398,16 @@ void *ctrl_handler(void *arg)
           case 14: //read calibration
         	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
               		break;
-          case 15: //Write TX FIFO
-           	samples = command & 0xFFFFFFFF;
-           	if(verbose)printf("Writing %d u32 words\n",samples);
+          case 15: //Write to hub
+           	samples = command >> 28 & 0xffffff;
+                addr = command & 0xfffffff;
+           	if(verbose)printf("Writing %d u32 words to hub address %x\n",samples, addr+ 0x40000000);
            	if(recv(sock_client, buffer, samples*4, MSG_WAITALL) < 0) break;
-          	for(i = 0; i < samples; ++i) ((uint32_t *)tx_data)[i]=buffer[i];
+          	for(i = 0; i < samples; ++i) ((uint32_t *)(hub+addr))[i]=buffer[i];
           	//memcpy( tx_data, buffer,samples);
           	if(verbose){
           		printf("First words in TX buffer=");
-                      		for (int i=0;i<15;++i)
+                      		for (int i=0;i<31;++i)
                       			printf("%d, ",buffer[i] );
                   printf("\n");
           	}
@@ -584,6 +587,7 @@ int init_mem_map()
 	  }
   	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
 	sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x41000000);
+	hub = mmap(NULL, 32768*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
 	ram = mmap(NULL,RAM_LENGTH , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
 	tx_data = rx_data = mmap(NULL, 32*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x42000000);
         close(fd);

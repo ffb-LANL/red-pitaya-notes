@@ -26,7 +26,7 @@ CFG map:
 96-127  +12 DECIMATION
 128-143 +16 OUTPUT SCALER 0
 144-159 +18 LED
-160-319 +20 I-V CFG (total_sweeps[16]:ramp[16]:width[16]:unused[16]:threshold[32]:waveform_length[32]:pulse_length[32])
+160-319 +20 I-V CFG (total_sweeps[16]: +22 ramp[16]:+24 width[16]: +26 unused[16]: +28 threshold[32]:+32 waveform_length[16]:+36 pulse_length[32])
 224-255 +28 DDS DELAY
 320-351 +40 TRIGGER DELAY 
 352-367 +44 TRIGGER LEVEL
