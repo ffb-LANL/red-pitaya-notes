@@ -21,13 +21,12 @@
 #define READ_SIZE  0x00004000
 #define WRITE_DATA 0x40040000
 #define WRITE_SIZE 0x0040000
+#define MAX_SAMPLES 0x1FFFFFF
 
 //#define RAM_START 0x1E000000
 #define VISA_PORT 5000
 #define TCP_PORT 1002
 #define SYSTEM_CALL_MAX 2
-#define PKTZR_RESET_FLAG 1
-#define WRITER_ENABLE_FLAG 2
 #define UPDATE_CIC_FLAG 4
 #define TRIGGER_RECORD_FLAG 8
 #define RX_TX_RESET 16
@@ -51,7 +50,7 @@
 #define CMD_STOP 2
 #define CMD_IDN 1
 
-void *cfg, *ram, *sts;
+void *cfg, *ram, *sts, *hub;
 void *rx_data,*tx_data;
 int init_mem_map();
 int clean_up();
@@ -68,7 +67,7 @@ double temperature_scale,temperature;
 int temperature_raw, temperature_offset;
 int init_temperature_scale();
 int start_VISA();
-int verbose=0;
+int verbose=0,fscfrtn;
 
 void *rx_handler(void *arg);
 void *tx_handler(void *arg);
@@ -154,41 +153,43 @@ int main(int argc, char *argv[])
 
   listen(sockServer, 1024);
   signal(SIGINT, signal_handler);
-  start_VISA();
+
   read_calibration(&calibration);
 
   while(!interrupted) {
 	  int result, selector;
-	  if(verbose)printf("waiting for client\n");
+	  if(verbose)printf("MAIN: waiting for client\n");
 	  if((sock_client = accept(sockServer, NULL, NULL)) < 0)
       {
           perror("accept");
           return 1;
       }
-	  if(verbose)printf("new connection, waiting for command\n");
+	  if(verbose)printf("MAIN: new connection, waiting for command\n");
 	  result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 	  if(result >= sizeof(command) )
 	  {
 	     switch(command >> 60)
 	     {
 	       case CMD_IDN:
-	    	   if(verbose)printf("MAIN: IDN query, socket=%d\n",sock_client);
-	          	status=*((uint32_t *)(sts + 8));
-	          	if(verbose)printf("Status = %u\n", status);
-	          	status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
-	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
-	 		   close(sock_client);
-	    	   break;
+	    	  if(verbose)printf("MAIN: IDN query %d, socket=%d\n",CMD_IDN,sock_client);
+	          status=*((uint32_t *)(sts + 8));
+	          if(verbose)printf("Status = %u\n", status);
+	          status = ( status & 0xffff0000 ) | (IDN & 0x0000ffff );
+	 	  if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
+	    	  if(verbose)printf("Closing socket=%d\n",sock_client);
+	 	  close(sock_client);
+	    	  break;
 	       case CMD_CONNECT:
+                 if(verbose)printf("MAIN: Connect command %d\n",CMD_CONNECT);
 	    	 if((selector = command & 0x3)<3)
-	    	 {
+	    	 {  
 	    	   if(sock_thread[selector] > -1)
 	    	   {
 	    	      	int ret;
-	    	       	if(verbose)printf("MAIN: closing thread connection sock=%d\n",sock_thread[selector]);
+	    	       	if(verbose)printf("MAIN: closing old thread connection thread=%d, selector = %d\n",sock_thread[selector],selector);
 	    	        ret=shutdown(sock_thread[selector],SHUT_RDWR);
 	    	        while(sock_thread[selector] > -1) usleep(1000);
-	    	        if(verbose)printf("MAIN: shutdown ret = %d, command = %llx, now sock=%d\n",ret,command,sock_thread[selector]);
+	    	        if(verbose)printf("MAIN: thread shutdown ret = %d, command = x%llx, now sock=%d, selector = %d\n",ret,command,sock_thread[selector],selector);
 	    	   }
 	   	       sock_thread[selector] = sock_client;
 	    	   if(pthread_create(&thread, NULL, handler[selector], NULL) < 0)
@@ -197,6 +198,7 @@ int main(int argc, char *argv[])
 	    		    return EXIT_FAILURE;
 	    	   }
 	    	   pthread_detach(thread);
+	    	   if(verbose)printf("MAIN: Created and detached new thread = %d, selector = %d\n",sock_thread[selector],selector);
 	    	 }
 	    	 break;
 	       case CMD_STOP:
@@ -206,7 +208,7 @@ int main(int argc, char *argv[])
 	    	   return 0;
 	    	 break;
 	       default:
-			 if(verbose)printf("Unexpected command, closing connection, socket = %d\n",sock_client);
+			 if(verbose)printf("Unexpected command %d, closing connection, socket = %d\n",command >> 60,sock_client);
 		     close(sock_client);
              break;
 	     }
@@ -226,14 +228,17 @@ void *ctrl_handler(void *arg)
 	int sock_client = sock_thread[0];
 	int stop=0,samples,i;
 	uint64_t command;
-	uint32_t selector;
-	ssize_t result;
+	uint32_t selector,addr;
+	ssize_t result,ret;
 	off_t offset;
-	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096;
+	uint32_t status, trigger_pos, start_offset, end_offset, config,packet_size=4096,tot, pre;
 	FILE *fp;
 	uint32_t IDN=0xdead;
 	uint16_t mask;
 	uint32_t buffer[WRITE_SIZE/4];
+	volatile uint8_t *rst;
+	rst = (uint8_t *)(cfg + 0);
+
 	 // char *system_call[] ={"cat /root/d.bit > /dev/xdevcfg","cat /root/fd.bit > /dev/xdevcfg"};
 
 	if(verbose)printf("CTRL THREAD started: !stop = %d, sock_client = %d\n", !stop,sock_client);
@@ -241,8 +246,8 @@ void *ctrl_handler(void *arg)
 	{
 		result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 		selector = command >> 60;
-		if(verbose)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
-	    if( result < sizeof(command)) break;
+		if(verbose >1)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
+	    if( result < sizeof(command))if(verbose){printf("Recv less then expected %d bytes, breaking\n",sizeof(command)); break;}
 	    switch(selector)
 	    {  case 0:
 	    	     mask = command & 0xFFFF;
@@ -261,17 +266,19 @@ void *ctrl_handler(void *arg)
 	 		   if(send(sock_client, &status, sizeof(status), 0) < 0){   perror("send");break;}
 	    	   break;
 	      case CMD_STOP:
-            stop = 1;
-            if(verbose)printf("Stopping CTRL thread,!stop = %d, sock_client = %d\n", !stop,sock_client);
+                    stop = 1;
+                    if(verbose)printf("Command %d. Stopping CTRL thread,!stop = %d, sock_client = %d\n", selector,!stop,sock_client);
             break;
           case 3: //get status
           	offset = command & 0xFFFFFFFF;
+		if(verbose>1)printf("Status inqury. ");
           	status=*((uint32_t *)(sts + offset));
-          	if(verbose>1)printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 			if(send(sock_client, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
+          	if(verbose>1)printf("STS Offset =%u, Status = %u",(uint32_t)offset, status);
+		if((ret=send(sock_client, sts + offset, sizeof(status), 0)) < 0){   perror("staus send");break;}
+		if(verbose>1)printf("Status response: %d bytes sent.\n",ret);
           	break;
           case 4: //get temperature
-          	if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_raw", "r")) == NULL){
+          	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "r")) == NULL){
           	    perror("device open");
           		break;
           	}
@@ -281,21 +288,35 @@ void *ctrl_handler(void *arg)
            	if(send(sock_client, &temperature, sizeof(temperature), 0) < 0){   perror("send");break;}
           	break;
           case 6:  // arm
-           	samples = command & 0xFFFFFFFF;
-           	// reset writer and packetizer
-           	  *((uint32_t *)(cfg + 0)) &= ~ ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG | TRIGGER_RECORD_FLAG) ;
-           	  // set number of samples
-           	  *((uint32_t *)(cfg + RECORD_LENGTH_OFFSET)) = samples;
-           	 if(verbose)printf("Entering normal mode. Samples = %d\n", samples);
+		tot = (command & (RAM_LENGTH-1))-1;
+		pre = 	((command  >> 30)& (RAM_LENGTH-1));
+           	 if(verbose)printf("Arm command 6. Samples = %d, Pre samples = %d\n", tot,pre);
+           	if(verbose)printf("Pre-arm, writer %d, osciloscope %d, flags %d\n", *((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
+                /*Software trig OFF
+		*rst &= ~ 8;
+		/* reset oscilloscope and ram writer */
+		*rst &= ~1;
+		*rst |= 1;
+		/* set total number of samples (up to RAM_LENGTH/sample size) */
+		if(verbose)printf("Samples = %d to cfg + %d\n", tot,RECORD_LENGTH_OFFSET);
+		*(uint32_t *)(cfg + RECORD_LENGTH_OFFSET) = tot;
+		if(verbose)printf("Pre samples = %d to cfg + %d\n", pre,52);
+		*(uint32_t *)(cfg + 52) = pre;
+		if(verbose)printf("Staring osciloscope\n");
 
-           	  // enter normal mode
-           	 *((uint32_t *)(cfg + 0)) |= ( WRITER_ENABLE_FLAG | PKTZR_RESET_FLAG );
-           	if(verbose)printf("Armed, status %d\n", *((uint32_t *)(cfg + 0)));
+                   /* start oscilloscope */
+                   *rst |= 2;
+                   *rst &= ~2;
+
+           	if(verbose){printf("Armed, cfg %d,writer %d, osciloscope %d, flags %d\n", *(uint8_t *)(cfg + 0),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));}
            	break;
           case 7: //software trigger
               //trigger
-               *((uint32_t *)(cfg + 0)) |= TRIGGER_RECORD_FLAG;
-               if(verbose)printf("Software trigger, status %d\n",*((uint32_t *)(cfg + 0)));
+               if(verbose)printf("Software trigger command 7, writer %d,  osciloscope %d, flags %d\n",*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
+               *rst |= 8;
+		usleep(10);
+               *rst &= ~ 8;
+               if(verbose)printf(" After trigger, cfg %d,  writer %d,  osciloscope %d, flags %d\n",*((uint32_t *)(cfg + 0)),*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
           	break;
           case 8: //read from start of buffer
            	samples = command & 0xFFFFFFFF;
@@ -314,24 +335,42 @@ void *ctrl_handler(void *arg)
         	if(verbose)printf("Start pos = %d, Last offset = %d, Start off = %d, end off = %d, writer sts = %d, config = %x\n",trigger_pos,offset, start_offset, end_offset,*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
             break;
           case 9: //read data chunk
-          	start_offset= command & 0x3FFFFFFF;
+          	start_offset= command & (RAM_LENGTH-1);
+                tot = (command  >> 30)& (RAM_LENGTH-1);
           	end_offset = (command  >> 30)& 0x3FFFFFFF;
        		trigger_pos=*((uint32_t *)(sts + RECORD_START_POS_OFFSET));
-       		if(verbose)printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
-            for(offset=start_offset;offset < end_offset;offset +=packet_size)
-        	{
-        		 if(send(sock_client, ram + offset, packet_size, 0) < 0){   perror("send");break;}
-        		 if(verbose > 1) if((offset-start_offset)%(packet_size*128)==0)printf("Offset %d\n",offset);
-        	}
+       		if(verbose) {
+		   uint32_t start,pre_samples,tot_samples;
+                   printf("Command 9: read data chunk\n",start);
+                  if(verbose)printf("Writer %d,  osciloscope %d, flags %d\n",*((uint32_t *)(sts + 0)),*((uint32_t *)(sts + 4)),*((uint16_t *)(sts + 8)));
+                   start = *(uint32_t *)(sts + 4) >> 1;
+                   printf("Trigger position %d\n",start);
+                   pre_samples = *(uint32_t *)(cfg + 52);
+                   tot_samples =  *(uint32_t *)(cfg + 16);
+                   printf("Trigger position minus pre, warped %d. Start+tot %d, max %d\n",start-pre_samples,start+-pre_samples+tot_samples,MAX_SAMPLES );
+                   printf("Sending data, start = %d, end = %d, trigger pos = %d\n", start_offset,end_offset,trigger_pos);
+                }
+                if(start_offset+tot <= (RAM_LENGTH-1))
+		{
+			  if(send(sock_client, ram + start_offset, tot, MSG_NOSIGNAL) < 0) break;
+			  if(verbose)printf("Sent one chunk: %d bytes starting from %d\n", tot, start_offset);
+		}
+                else
+		{ 
+			  if(send(sock_client, ram + start_offset, ((RAM_LENGTH) - start_offset), MSG_NOSIGNAL) < 0) break;
+			  if(send(sock_client, ram, (start_offset + tot - (RAM_LENGTH)), MSG_NOSIGNAL) < 0) break;
+	                  if(verbose)printf("Sent two chunks: %d bytes starting from %d, then %d bytes starting from %d\n", ((RAM_LENGTH-1) - start_offset), start_offset, (start_offset + tot - (RAM_LENGTH-1)),0);
+		}
+ 
         	if(verbose)printf("Last offset %d\n",offset);
         	config=*((uint32_t *)(cfg + 0));
-        	if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + WRITER_STS_OFFSET)),config);
+        	if(verbose)printf("writer sts = %d, config = %x\n",*((uint32_t *)(sts + 0)),config);
             break;
           case 11: //get config
           	 offset = command & 0xFFFFFFFF;
           	 status=*((uint32_t *)(cfg + offset));
-          	 if(verbose)printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 			 if(send(sock_client, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
+          	 if(verbose > 1)printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
+ 	         if(send(sock_client, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
           	 break;
           case 12: //set config
           	offset = (command >> 32)& 0xFF;
@@ -339,12 +378,13 @@ void *ctrl_handler(void *arg)
           	if(verbose)printf("Set CFG Offset =%u, State = %u\n",(uint32_t)offset, status);
           	*((uint32_t *)(cfg + offset)) = status;
  			break;
-          case 13: // read RX FIFO
-          	samples = command & 0xFFFFFFFF;
+          case 13: // read from hub
+           	samples = command >> 28 & 0xffffff;
+                addr = command & 0xfffffff;
           	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
           	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
           	//memcpy(buffer, rx_data, samples);
-          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)rx_data);
+          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)(hub+addr));
           	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
               if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
           	if(verbose){
@@ -358,19 +398,24 @@ void *ctrl_handler(void *arg)
           case 14: //read calibration
         	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
               		break;
-          case 15: //Write TX FIFO
-           	samples = command & 0xFFFFFFFF;
-           	if(verbose)printf("Writing %d u32 words\n",samples);
+          case 15: //Write to hub
+           	samples = command >> 28 & 0xffffff;
+                addr = command & 0xfffffff;
+           	if(verbose)printf("Writing %d u32 words to hub address %x\n",samples, addr+ 0x40000000);
            	if(recv(sock_client, buffer, samples*4, MSG_WAITALL) < 0) break;
-          	for(i = 0; i < samples; ++i) ((uint32_t *)tx_data)[i]=buffer[i];
+          	for(i = 0; i < samples; ++i) ((uint32_t *)(hub+addr))[i]=buffer[i];
           	//memcpy( tx_data, buffer,samples);
           	if(verbose){
           		printf("First words in TX buffer=");
-                      		for (int i=0;i<15;++i)
+                      		for (int i=0;i<31;++i)
                       			printf("%d, ",buffer[i] );
                   printf("\n");
           	}
               break;
+	      default:
+				
+			 if(verbose)printf("Unexpected command %d  in control loop, payload %ld, socket = %d\n",selector, command,sock_client);
+             break;
 	    }
 	}
 	if(verbose)printf("Stopping CTRL thread, sock_client=%d, recv result = %d\n",sock_client,result);
@@ -509,23 +554,23 @@ void *tx_handler(void *arg)
 int init_temperature_scale()
 {
 	FILE *fp;
-	if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_offset", "r")) == NULL){
+	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_offset", "r")) == NULL){
 		perror("device open");
 		return 1;
 	}
-	fscanf(fp,"%d", &temperature_offset);
+	fscfrtn=fscanf(fp,"%d", &temperature_offset);
 	fclose(fp);
-	if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_scale", "r")) == NULL){
+	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_scale", "r")) == NULL){
 	    perror("device open");
 	    return 1;
 	}
-	fscanf(fp,"%lf", &temperature_scale);
+	fscfrtn=fscanf(fp,"%lf", &temperature_scale);
 	fclose(fp);
-	if((fp = fopen("/sys/bus/iio/devices/iio\:device0/in_temp0_raw", "r")) == NULL){
+	if((fp = fopen("/sys/bus/iio/devices/iio:device0/in_temp0_raw", "r")) == NULL){
 	    perror("device open");
 	    return 1;
 	}
-	fscanf(fp,"%d", &temperature_raw);
+	fscfrtn=fscanf(fp,"%d", &temperature_raw);
 	fclose(fp);
 	temperature=temperature_scale/1000*(temperature_raw+temperature_offset);
 	if(verbose)printf("Temperature scale = %lf, offset = %d, raw = %d\nTemperature = %lf\n", temperature_scale, temperature_offset, temperature_raw, temperature);
@@ -538,14 +583,15 @@ int init_mem_map()
 	if((fd = open("/dev/mem", O_RDWR)) < 0)
 	  {
 	    perror("open mem");
-	    return 1;
+	    return EXIT_FAILURE;
 	  }
-	  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
-	  ram = mmap(NULL,RAM_LENGTH , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
-	  sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40001000);
-	  rx_data = mmap(NULL, 64*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, READ_DATA);
-	  tx_data = mmap(NULL, WRITE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, WRITE_DATA);
-	return 0;
+  	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
+	sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x41000000);
+	hub = mmap(NULL, 32768*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
+	ram = mmap(NULL,RAM_LENGTH , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
+	tx_data = rx_data = mmap(NULL, 32*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x42000000);
+        close(fd);
+	return EXIT_SUCCESS;
 }
 
 void signal_handler(int sig)
@@ -597,72 +643,4 @@ int read_calibration(rp_calib_params_t * calib_params)
 			    calib_params->be_ch2_dc_offs
        	); }
 	  return 0;
-}
-
-void *VISA_hndlr(void *arg)
-{}
-void *VISA_server(void *arg)
-{
-	char *VISA_IDN="*IDN?";
-	char VISA_BUFF[128];
-	struct sockaddr_in addr;
-	  int sockServer,sock_client,yes = 1;
-	  if((sockServer = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-	  {
-	    perror("socket");
-	    return EXIT_FAILURE;
-	  }
-	  setsockopt(sockServer, SOL_SOCKET, SO_REUSEADDR, (void *)&yes , sizeof(yes));
-	  /* setup listening address */
-	  memset(&addr, 0, sizeof(addr));
-	  addr.sin_family = AF_INET;
-	  addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	  addr.sin_port = htons(VISA_PORT);
-	  if(bind(sockServer, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-	  {
-	    perror("bind");
-	    return EXIT_FAILURE;
-	  }
-	  listen(sockServer, 1024);
-	  while(!interrupted) {
-	 	  int result, idn_size=strlen(VISA_IDN),ignore=0;
-	 	  if(verbose)printf("waiting for VISA client\n");
-	 	  memset(VISA_BUFF,0,127);
-	 	  if((sock_client = accept(sockServer, NULL, NULL)) < 0)
-	       {
-	           perror("accept");
-	           return 1;
-	       }
-	 	  if(verbose)printf("new VISA connection, waiting for command\n");
-	 	  result = recv(sock_client, VISA_BUFF, idn_size, MSG_WAITALL);
-	 	  if(result >= idn_size )
-	 	  {
-	 		  ignore=0;
-	 		  for(int i=0;i<idn_size;i++)
-	 			  if(VISA_BUFF[i]!=VISA_IDN[i])ignore=1;
-	 		  if(!ignore) {
-	 			  uint32_t status;
-	 			 status=*((uint32_t *)(sts + 8));
-	 		 	  memset(VISA_BUFF,0,127);
-                  sprintf(VISA_BUFF,"MagLab,Red Pitaya,%d,1.1\n",status);
-        	 	  if(verbose)printf("IDN request. Sending responce: %s\n",VISA_BUFF);
-
-	 			 if(send(sock_client,VISA_BUFF, strlen(VISA_BUFF), 0) < 0);
-	 		  }
-	 		   close(sock_client);
-
-	 		  }
-	 	  }
-}
-void *(*VISA_handler_ptr)(void *);
-int start_VISA(){
-	  pthread_t thread;
-	  VISA_handler_ptr = VISA_handler;
-	   if(pthread_create(&thread, NULL, VISA_handler, NULL) < 0)
-	   {
-		    perror("pthread_create");
-		    return EXIT_FAILURE;
-	   }
-	   pthread_detach(thread);
-	   return 0;
 }

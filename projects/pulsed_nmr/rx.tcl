@@ -49,12 +49,6 @@ cell xilinx.com:ip:dds_compiler dds_0 {
   aresetn slice_1/dout
 }
 
-# Create axis_lfsr
-cell pavel-demin:user:axis_lfsr lfsr_0 {} {
-  aclk /pll_0/clk_out1
-  aresetn /rst_0/peripheral_aresetn
-}
-
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_0
 
@@ -78,19 +72,14 @@ for {set i 0} {$i <= 3} {incr i} {
     din /adc_0/m_axis_tdata
   }
 
-  # Create xbip_dsp48_macro
-  cell xilinx.com:ip:xbip_dsp48_macro mult_$i {
-    INSTRUCTION1 RNDSIMPLE(A*B+CARRYIN)
-    A_WIDTH.VALUE_SRC USER
-    B_WIDTH.VALUE_SRC USER
-    OUTPUT_PROPERTIES User_Defined
+  # Create dsp48
+  cell pavel-demin:user:dsp48 mult_$i {
     A_WIDTH 24
     B_WIDTH 14
-    P_WIDTH 25
+    P_WIDTH 24
   } {
     A dds_slice_[expr $i % 2]/dout
     B adc_slice_$i/dout
-    CARRYIN lfsr_0/m_axis_tdata
     CLK /pll_0/clk_out1
   }
 
@@ -136,10 +125,10 @@ cell  xilinx.com:ip:axis_combiner comb_0 {
   TDATA_NUM_BYTES 4
   NUM_SI 4
 } {
-  S00_AXIS cic_3/M_AXIS_DATA
-  S01_AXIS cic_2/M_AXIS_DATA
-  S02_AXIS cic_1/M_AXIS_DATA
-  S03_AXIS cic_0/M_AXIS_DATA
+  S00_AXIS cic_0/M_AXIS_DATA
+  S01_AXIS cic_1/M_AXIS_DATA
+  S02_AXIS cic_2/M_AXIS_DATA
+  S03_AXIS cic_3/M_AXIS_DATA
   aclk /pll_0/clk_out1
   aresetn /rst_0/peripheral_aresetn
 }
@@ -211,53 +200,26 @@ cell pavel-demin:user:axis_validator vldtr_0 {
   aclk /pll_0/clk_out1
 }
 
-# Create fifo_generator
-cell xilinx.com:ip:fifo_generator fifo_generator_0 {
-  PERFORMANCE_OPTIONS First_Word_Fall_Through
-  INPUT_DATA_WIDTH 128
-  INPUT_DEPTH 4096
-  OUTPUT_DATA_WIDTH 32
-  OUTPUT_DEPTH 16384
-  READ_DATA_COUNT true
-  READ_DATA_COUNT_WIDTH 15
-} {
-  clk /pll_0/clk_out1
-  srst slice_0/dout
-}
-
 # Create axis_fifo
 cell pavel-demin:user:axis_fifo fifo_0 {
   S_AXIS_TDATA_WIDTH 128
   M_AXIS_TDATA_WIDTH 32
+  WRITE_DEPTH 4096
+  ALWAYS_READY TRUE
 } {
   S_AXIS vldtr_0/M_AXIS
-  FIFO_READ fifo_generator_0/FIFO_READ
-  FIFO_WRITE fifo_generator_0/FIFO_WRITE
   aclk /pll_0/clk_out1
+  aresetn slice_0/dout
 }
 
-# Create axi_axis_reader
-cell pavel-demin:user:axi_axis_reader reader_0 {
-  AXI_DATA_WIDTH 32
-} {
-  S_AXIS fifo_0/M_AXIS
-  aclk /pll_0/clk_out1
-  aresetn /rst_0/peripheral_aresetn
-}
-
-# Create xbip_dsp48_macro
-cell xilinx.com:ip:xbip_dsp48_macro mult_4 {
-  INSTRUCTION1 RNDSIMPLE(A*B+CARRYIN)
-  A_WIDTH.VALUE_SRC USER
-  B_WIDTH.VALUE_SRC USER
-  OUTPUT_PROPERTIES User_Defined
+# Create dsp48
+cell pavel-demin:user:dsp48 mult_4 {
   A_WIDTH 24
   B_WIDTH 16
-  P_WIDTH 15
+  P_WIDTH 14
 } {
   A dds_slice_0/dout
   B slice_4/dout
-  CARRYIN lfsr_0/m_axis_tdata
   CLK /pll_0/clk_out1
 }
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Start custom RP instrument
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/bin/bash -c "/opt/start_rp.sh"
+
+[Install]
+WantedBy=multi-user.target
