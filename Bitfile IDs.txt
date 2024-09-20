@@ -1,8 +1,10 @@
 lockin digitizer 101
 digitizer 102
 lockin_sweep 103
-current-voltage 104
-slow_iv 105
+current-voltage 2023 104
+current-voltage 2024 154
+slow_iv 2023 105
+slow_iv 2024 155
 fast digitizer 107
 synchronous lockin 108
 dual channel lockin 109
@@ -10,7 +12,8 @@ dual channel lockin 109
 fast digitizer delayed 111
 level_trigger 112
 single channel lockin 113
-slow dual channel lockin 114
+slow dual channel lockin 2023 114
+slow dual channel lockin 2024 164
 dual channel lockin 2024 159
 dual channel lockin 122.88 2024 169
 4adc recorder 157

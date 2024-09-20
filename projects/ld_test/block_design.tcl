@@ -386,4 +386,3 @@ cell xilinx.com:ip:xlconcat concat_sts {
   dout hub_0/sts_data
 }
 
-assign_bd_address [get_bd_addr_segs ps_0/S_AXI_ACP/ACP_DDR_LOWOCM]
