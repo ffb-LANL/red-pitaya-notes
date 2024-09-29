@@ -1,0 +1,24 @@
+Red Piatya setup steps:
+- extract and write image from base_img_24.zip to microiSD 
+- copy custom boot.bin to microSD
+- boot red pitaya with misroSD
+- copy trd_rp, ld_7010.bit, iv_7010.bit, slow_ld_7010.bit, slow_iv_7010.bit, digitizer_7010.bit, trd_rp to /opt folder on red pitaya
+  e.g.:
+    pscp  trd_rp root@192.168.1.100:/opt/
+NOTE: for Zynq 7020 models use *_7020.bit instead 
+
+- to program  Red Pitaya logic with particular bit file, login to Red Pitaya and issue a command e.g.:
+    cat /opt/ld.bit > /dev/xdevcfg
+- to start server issue command:
+    chmod a+x /opt/trd_rp
+    trd_rp &
+
+Auto-start configuration setup:
+- copy and edit start_rp.sh to /opt
+- copy start_rp.service to /etc/systemd/system/
+- enable startup service: 
+    chmod a+x /opt/start_rp.sh
+    systemctl enable --now start_rp.service
+   
+Change Red Pitaya IP address:
+- edit /etc/dhcpcd.conf eth0 section static ip_address entry 
