@@ -1,4 +1,4 @@
-#slow current-voltage cir. 2024  155
+#current-voltage cir. 2024  154
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz pll_0 {
@@ -158,23 +158,12 @@ cell xilinx.com:ip:xlslice slice_delay {
   din hub_0/cfg_data
 }
 
-# create filter
-module filter_0 {
-  source projects/low_pass/filter_NO_FIR_16.tcl
-} {
-  s_axis adc_0/M_AXIS
-  cfg hub_0/cfg_data
-  aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
-}
-
-
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster bcast_ADC {
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
  } {
-  S_AXIS filter_0/M_AXIS
+  S_AXIS adc_0/M_AXIS
   aclk pll_0/clk_out1
   aresetn writer_reset_slice/dout
 }
@@ -229,6 +218,38 @@ cell pavel-demin:user:axis_variable rate_0 {
   aresetn writer_reset_slice/dout
 }
 
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster bcast_rate {
+  S_TDATA_NUM_BYTES 2
+  M_TDATA_NUM_BYTES 2
+ } {
+  S_AXIS rate_0/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn writer_reset_slice/dout
+}
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_0 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 3
+  SAMPLE_RATE_CHANGES Programmable
+  MINIMUM_RATE 8
+  MAXIMUM_RATE 6250
+  FIXED_OR_INITIAL_RATE 64
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 16
+  HAS_ARESETN true
+  USE_XTREME_DSP_SLICE true
+} {
+  S_AXIS_DATA unblock/m_axis
+  S_AXIS_CONFIG bcast_rate/m01_axis
+  aclk pll_0/clk_out1
+  aresetn writer_reset_slice/dout
+}
 
 # Create pulse delay
 cell pavel-demin:user:pulse_delay pulse_delay {
@@ -247,7 +268,7 @@ cell pavel-demin:user:axis_pulse_pattern pulse_pattern {
     BRAM_ADDR_WIDTH 16
 } {
   cfg_data slice_measure_pulse/Dout
-  s_axis unblock/m_axis
+  s_axis cic_0/m_axis_data
   bram waveform_bram/BRAM_PORTB
   trg_flag pulse_delay/delayed_pulse
   aclk pll_0/clk_out1
@@ -273,11 +294,18 @@ cell xilinx.com:ip:cic_compiler interpol  {
   HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA pulse_pattern/M_AXIS
-  S_AXIS_CONFIG rate_0/M_AXIS
+  S_AXIS_CONFIG bcast_rate/m00_axis
   aclk pll_0/clk_out1
   aresetn writer_reset_slice/dout
 }
 
+# Create axis_constant
+cell pavel-demin:user:axis_constant measure_result_0 {
+  AXIS_TDATA_WIDTH 32
+} {
+  cfg_data pulse_pattern/sts_data
+  aclk pll_0/clk_out1
+}
 
 # Create axis_packetizer
 cell pavel-demin:user:axis_oscilloscope scope_0 {
@@ -359,7 +387,7 @@ cell pavel-demin:user:axis_fifo fifo_0 {
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_ID {
   CONST_WIDTH 16
-  CONST_VAL 155
+  CONST_VAL 154
 }
 
 
