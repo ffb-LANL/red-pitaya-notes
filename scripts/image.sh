@@ -12,7 +12,7 @@ dd if=/dev/zero of=$image bs=1M count=$size
 
 device=`losetup -f`
 
-losetup $device $image
+losetup $device --partscan $image
 
 sh $script $device
 
