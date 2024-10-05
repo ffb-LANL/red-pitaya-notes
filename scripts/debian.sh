@@ -88,6 +88,7 @@ apt-get -y install openssh-server ca-certificates chrony fake-hwclock \
   iw iptables dhcpcd-base ntfs-3g libubootenv-tool
 
 systemctl enable dhcpcd
+systemctl enable start_rp
 
 systemctl disable hostapd
 systemctl disable dnsmasq
