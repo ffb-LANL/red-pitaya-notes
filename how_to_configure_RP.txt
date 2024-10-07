@@ -1,3 +1,5 @@
+Use VIVADO version 2023.1
+
 Red Piatya setup steps:
 - extract and write image from base_img_24.zip to microiSD 
 - copy custom boot.bin to microSD
