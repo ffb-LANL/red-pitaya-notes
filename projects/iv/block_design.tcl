@@ -349,13 +349,6 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   aresetn writer_reset_slice/dout
 }
 
-# Create axis_zeroer
-cell pavel-demin:user:axis_zeroer zeroer_DAC {
-  AXIS_TDATA_WIDTH 32
-} {
-  S_AXIS interpol/m_axis_data
-  aclk pll_0/clk_out1
-}
 
 # Create axis_red_pitaya_dac
 cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
@@ -363,7 +356,7 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
   ddr_clk pll_0/clk_out2
   wrt_clk pll_0/clk_out3
   locked pll_0/locked
-  S_AXIS zeroer_DAC/M_AXIS
+  S_AXIS interpol/m_axis_data
   dac_clk dac_clk_o
   dac_rst dac_rst_o
   dac_sel dac_sel_o
