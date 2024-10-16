@@ -247,7 +247,7 @@ void *ctrl_handler(void *arg)
 		result = recv(sock_client, (char *)&command, sizeof(command), MSG_WAITALL);
 		selector = command >> 60;
 		if(verbose >1)printf("Thread: sock_client = %d, recv result = %d, command(u) = %llx, selector = %d\n", sock_client, result,command,selector);
-	    if( result < sizeof(command))if(verbose){printf("Recv less then expected %d bytes, breaking\n",sizeof(command)); break;}
+	    if( result < sizeof(command)){if(verbose)printf("Recv less then expected %d bytes, breaking\n",sizeof(command)); break;}
 	    switch(selector)
 	    {  case 0:
 	    	     mask = command & 0xFFFF;
