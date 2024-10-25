@@ -24,3 +24,12 @@ Auto-start configuration setup:
    
 Change Red Pitaya IP address:
 - edit /etc/dhcpcd.conf eth0 section static ip_address entry 
+
+
+Compile on RP example: 
+gcc trd_rp.c -o trd_rp
+
+Cross compile for RP on VM box example:
+arm-linux-gnueabihf-gcc -O3 -march=armv7-a -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard -D_GNU_SOURCE trd_rp.c -o trd_rp
+
+
