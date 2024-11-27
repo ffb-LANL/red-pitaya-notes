@@ -152,12 +152,15 @@ cell pavel-demin:user:axis_soft_trigger trig_0 {
 
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster bcast_0 {
+  NUM_MI 4
   S_TDATA_NUM_BYTES.VALUE_SRC USER
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 2
   M00_TDATA_REMAP {tdata[15:0]}
   M01_TDATA_REMAP {tdata[31:16]}
+  M02_TDATA_REMAP {tdata[15:0]}
+  M03_TDATA_REMAP {tdata[31:16]}
 } {
   S_AXIS adc_0/M_AXIS
   aclk pll_0/clk_out1
@@ -354,6 +357,114 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {
   s_axis dds_0/M_AXIS_DATA
 }
 
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_2 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 6
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M02_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_3 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 6
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M03_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_4 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 6
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 512
+  MAXIMUM_RATE 512
+  FIXED_OR_INITIAL_RATE 512
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 32
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA cic_2/M_AXIS_DATA
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_5 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 6
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 512
+  MAXIMUM_RATE 512
+  FIXED_OR_INITIAL_RATE 512
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 32
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA cic_3/M_AXIS_DATA
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner comb_xy {
+  NUM_SI 2
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 4
+} {
+  S00_AXIS cic_4/M_AXIS_DATA
+  S01_AXIS cic_5/M_AXIS_DATA
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+  }
+
+#create value
+cell pavel-demin:user:axis_value value_xy {
+AXIS_TDATA_WIDTH 64
+} {
+  s_axis comb_xy/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_ID {
@@ -380,6 +491,7 @@ cell xilinx.com:ip:xlconcat concat_sts {
   In2 scope_0/triggered
   In3 scope_0/complete
   In5 const_ID/dout
+  In7 value_xy/data
   In8 const_modulus/dout
   dout hub_0/sts_data
 }
