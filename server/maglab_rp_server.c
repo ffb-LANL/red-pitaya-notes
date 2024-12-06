@@ -377,10 +377,25 @@ void *ctrl_handler(void *arg)
           	}
               break;
 
-          case 14: //read calibration
-		  if(verbose)printf("Read calibration. Sending %d bytes\n",sizeof(calibration));
-        	  if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
-              		break;
+          case 14: //read-write calibration
+		  switch(command & 0x3) {
+		    case 0:
+		         if(verbose)printf("Read calibration. Sending %d bytes\n",sizeof(calibration));
+        	         if(send(sock_client, &calibration, sizeof(calibration), 0) < 0){   perror("send");break;}
+		         break;
+		    case 1:
+			if(verbose)printf("Write calibration. Receiving %d bytes\n",sizeof(calibration));
+			if(recv(sock_client, &calibration, sizeof(calibration), MSG_WAITALL) < 0) { perror("rec calibration");break;}	
+			rp_CalibrationWriteParams(calibration,false);			
+		        break;
+		    case 2:
+			if(verbose)printf("Reset to factory calibration\n");
+			rp_CalibrationFactoryReset(true);
+                        // rp_CalibInit();
+                        calibration = rp_GetCalibrationSettings();
+			break;
+		}
+                break;
           case 15: //Write to hub
            	samples = command >> 28 & 0xffffff;
                 addr = command & 0xfffffff;
