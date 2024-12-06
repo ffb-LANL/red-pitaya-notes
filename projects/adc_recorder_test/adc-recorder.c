@@ -7,6 +7,8 @@
 #include <sys/ioctl.h>
 
 #define CMA_ALLOC _IOWR('Z', 0, uint32_t)
+#define RAM_START  0x10000000
+#define RAM_LENGTH 0x10000000
 
 int main()
 {
@@ -24,30 +26,14 @@ int main()
     perror("open");
     return EXIT_FAILURE;
   }
-  if(verbose)perror("test_cma: mapping cfg sts\n");
+  if(verbose)perror("mapping cfg sts\n");
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x40000000);
-
+  ram = mmap(NULL,RAM_LENGTH , PROT_READ|PROT_WRITE, MAP_SHARED, fd, RAM_START);
   close(fd);
-  if(verbose)perror("test_cma: oppening CMA\n");
-  if((fd = open("/dev/cma", O_RDWR)) < 0)
-  {
-    perror("open");
-    return EXIT_FAILURE;
-  }
-
+  
   size = 8192*8*sysconf(_SC_PAGESIZE);
-  sprintf(string, "Allocating CMA ram. Size = %u, pagesize = %u\n", size, (uint32_t)sysconf(_SC_PAGESIZE));
-  if(verbose)perror(string);  
-  if(ioctl(fd, CMA_ALLOC, &size) < 0)
-  {
-    perror("ioctl");
-    return EXIT_FAILURE;
-  }
-  sprintf(string,"test_cma: mapping ram.Size = %u\n", size );
-  if(verbose)perror(string);  
-  sleep(1);
-  ram = mmap(NULL, 1024*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-  if(verbose)perror("test_cma: resetting writer\n"); 
+  
+  if(verbose)perror(" resetting writer\n"); 
   sleep(1);
   rst = (uint8_t *)(cfg + 0);
 
@@ -55,12 +41,11 @@ int main()
   if(verbose)perror("init_mem_map: setting writer address\n"); 
   sleep(1);
   // set writer address
-  *(uint32_t *)(cfg + 48) = size;
 
   if(verbose)perror("init_mem_map: setting number of samples\n"); 
   sleep(1);
   // set number of samples
-  *(uint32_t *)(cfg + 8) = 1024 * 1024 - 1;
+  *(uint32_t *)(cfg + 8) = 4096- 1;
 
   // reset writer
   *rst &= ~4;
@@ -81,7 +66,7 @@ int main()
   sleep(1);
 
   // print IN1 and IN2 samples
-  for(i = 0; i < 1024 * 1024; ++i)
+  for(i = 0; i < 1024 ; ++i)
   {
     value[0] = ram[2 * i + 0];
     value[1] = ram[2 * i + 1];
