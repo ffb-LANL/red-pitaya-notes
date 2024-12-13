@@ -1,0 +1,1 @@
+make NAME=digitizer_4adc PART=xc7z020clg400-1 CFG_DIR=cfg/4CH bit
