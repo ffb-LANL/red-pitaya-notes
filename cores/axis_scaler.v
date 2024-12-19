@@ -10,7 +10,7 @@ module axis_scaler #
   input  wire                        aclk,
   input  wire                        aresetn,
 
-  input  wire signed  [AXIS_TDATA_WIDTH-1:0]   cfg_data,
+  input  wire signed  [AXIS_TDATA_WIDTH*2-1:0]   cfg_data,
 
     // Slave side
   input wire signed [AXIS_TDATA_WIDTH-1:0] s_axis_tdata,
@@ -29,6 +29,11 @@ reg signed [AXIS_TDATA_WIDTH-1:0] s_axis_tdata_reg,s_axis_tdata_next;
 
 reg [AXIS_TDATA_WIDTH*2-1:0] int_data_reg, int_data_next;
 
+wire signed [AXIS_TDATA_WIDTH-1:0] scale, offset;
+
+assign scale = cfg_data[AXIS_TDATA_WIDTH-1:0];
+
+assign offset = cfg_data[AXIS_TDATA_WIDTH*2-1:AXIS_TDATA_WIDTH];
 
 wire multiply = s_axis_tvalid & m_axis_tready;
 
@@ -47,7 +52,7 @@ always @(posedge aclk)
 					begin
 						s_axis_tdata_reg <= s_axis_tdata;
 						s_axis_tdata_next <= s_axis_tdata_reg;
- 						int_data_reg <= s_axis_tdata_next*cfg_data;
+ 						int_data_reg <= (s_axis_tdata_next-offset)*scale;
         					int_data_next <= int_data_reg; 
     					end
 			end

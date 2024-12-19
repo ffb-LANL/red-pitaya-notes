@@ -17,6 +17,7 @@ slow dual channel lockin 2024 164
 dual channel lockin 2024 159
 dual channel lockin 122.88 2024 169
 4adc recorder 157
+4adc digitizer 158
 
 CFG map:
 0-0     PKTZR RESET | writer_reset
@@ -27,7 +28,7 @@ CFG map:
 32-63   +4 RECORD_LENGTH | tot_data
 64-95   +8 FREQUENCY_0 WORD
 96-127  +12 DECIMATION
-128-143 +16 OUTPUT SCALER 0
+128-143 +16 unused
 144-159 +18 LED
 160-319 +20 I-V CFG (total_sweeps[16]: +22 ramp[16]:+24 width[16]: +26 unused[16]: +28 threshold[32]:+32 waveform_length[16]:+36 pulse_length[32])
 224-255 +28 DDS DELAY
@@ -37,7 +38,11 @@ CFG map:
 384-415	+48 writer_address
 416-447	+52 pre-trigger data
 448-479 +56 FREQUENCY_1 WORD
-480-495 +60 OUTPUT SCALER 1
+480-495 +60 OUTPUT SCALER 0
+496-511 +62 OUTPUT OFFSET 0
+512-527 +64 OUTPUT SCALER 1
+528-543 +66 OUTPUT OFFSET 1
+
 
 STS map:
 0-31	writer_0/sts_data 
