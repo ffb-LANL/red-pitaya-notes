@@ -40,4 +40,19 @@ for (int i = 0; i<calib_params.fast_dac_count_x1;i++)
 	{
 		printf("OUT%d 1V scale = %f, value = %d, offset = %d, gain = %f\n",i,calib_params.fast_dac_x1[i].baseScale,calib_params.fast_dac_x1[i].calibValue,calib_params.fast_dac_x1[i].offset,calib_params.fast_dac_x1[i].gainCalc);
 	}
+
+rp_calib_params_t def_calib = rp_GetDefaultCalibrationSettings();
+printf("\nDefailt calibration\n");
+rp_CalibPrint(&def_calib);
+
+    // Read calibration direct from eeprom
+    uint8_t *data = NULL;
+    uint16_t size;
+    rp_calib_params_t eeprom_calib;
+    rp_CalibGetEEPROM(&data,&size,true);
+    // Convert bytes to rp_calib_params_t
+    rp_CalibConvertEEPROM(data,size,&eeprom_calib);
+    printf("\nFactory Calibration read directly. Data size = %d\n",size);
+    rp_CalibPrint(&eeprom_calib);
+
 }
