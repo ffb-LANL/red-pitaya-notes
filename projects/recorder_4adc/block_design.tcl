@@ -84,7 +84,7 @@ cell pavel-demin:user:axis_gpio_reader_writer gpio_0 {
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
   CFG_DATA_WIDTH 448
-  STS_DATA_WIDTH 288
+  STS_DATA_WIDTH 320
 } {
   S_AXI ps_0/M_AXI_GP0
   aclk pll_0/clk_out1
@@ -278,13 +278,30 @@ cell pavel-demin:user:axis_inf_counter inf_cntr_1 {
   aresetn writer_reset_slice/dout
 }
 
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster bcast_0 {
+  NUM_MI 5
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  M_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 8
+  M_TDATA_NUM_BYTES 8
+  M00_TDATA_REMAP {tdata[63:0]}
+  M01_TDATA_REMAP {48'b0,tdata[15:0]}
+  M02_TDATA_REMAP {48'b0,tdata[31:16]}
+  M03_TDATA_REMAP {48'b0,tdata[47:32]}
+  M04_TDATA_REMAP {48'b0,tdata[63:48]}
+} {
+  S_AXIS adc_0/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create axis_packetizer
 cell pavel-demin:user:axis_oscilloscope scope_0 {
   AXIS_TDATA_WIDTH 64
   CNTR_WIDTH 25
 } {
-  S_AXIS adc_0/M_AXIS
+  S_AXIS bcast_0/M00_AXIS
   run_flag run_slice/dout
   trg_flag trig_0/trg_flag
   pre_data pre_data_slice/dout
@@ -326,10 +343,124 @@ cell xilinx.com:ip:xlconstant const_ID {
   CONST_VAL 157
 }
 
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_dc0_0 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 3
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M01_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_dc0_1 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 3
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M02_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_dc0_2 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 3
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M03_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# Create cic_compiler
+cell xilinx.com:ip:cic_compiler cic_dc0_3 {
+  INPUT_DATA_WIDTH.VALUE_SRC USER
+  FILTER_TYPE Decimation
+  NUMBER_OF_STAGES 3
+  SAMPLE_RATE_CHANGES Fixed
+  MINIMUM_RATE 8192
+  MAXIMUM_RATE 8192
+  FIXED_OR_INITIAL_RATE 8192
+  INPUT_SAMPLE_FREQUENCY 125
+  CLOCK_FREQUENCY 125
+  INPUT_DATA_WIDTH 14
+  QUANTIZATION Truncation
+  OUTPUT_DATA_WIDTH 32
+  USE_XTREME_DSP_SLICE false
+  HAS_ARESETN true
+} {
+  S_AXIS_DATA bcast_0/M04_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner comb_dc {
+  NUM_SI 4
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 4
+} {
+  S00_AXIS cic_dc0_0/M_AXIS_DATA
+  S01_AXIS cic_dc0_1/M_AXIS_DATA
+  S02_AXIS cic_dc0_2/M_AXIS_DATA
+  S03_AXIS cic_dc0_3/M_AXIS_DATA
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+  }
+
+#create value
+cell pavel-demin:user:axis_value value_dc {
+AXIS_TDATA_WIDTH 128
+} {
+  s_axis comb_dc/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_0 {
-  NUM_PORTS 7
+  NUM_PORTS 9
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
@@ -337,6 +468,8 @@ cell xilinx.com:ip:xlconcat concat_0 {
   IN4_WIDTH 1 
   IN5_WIDTH 13
   IN6_WIDTH 16
+  IN7_WIDTH 32
+  IN8_WIDTH 128
 } {
   In0 writer_0/sts_data
   In1 scope_0/sts_data
@@ -344,5 +477,6 @@ cell xilinx.com:ip:xlconcat concat_0 {
   In3 scope_0/complete
   In4 writer_reset_slice/dout
   In6 const_ID/dout
+  In8 value_dc/data
   dout hub_0/sts_data
 }
