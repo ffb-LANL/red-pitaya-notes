@@ -386,6 +386,11 @@ void *ctrl_handler(void *arg)
 		    case 1:
 			if(verbose)printf("Write calibration. Receiving %d bytes\n",sizeof(calibration));
 			if(recv(sock_client, &calibration, sizeof(calibration), MSG_WAITALL) < 0) { perror("rec calibration");break;}	
+			if(verbose) for (int i = 0; i<calibration.fast_adc_count_1_1;i++) 
+			{
+				printf("IN%d 1V scale = %f, value = %d, offset = %d, gain = %f\n",i,calibration.fast_adc_1_1[i].baseScale,calibration.fast_adc_1_1[i].calibValue,calibration.fast_adc_1_1[i].offset,calibration.fast_adc_1_1[i].gainCalc);
+				printf("IN%d Filter aa = %d, bb = %d, pp= %d, kk = %d\n",i,calibration.fast_adc_filter_1_1[i].aa,calibration.fast_adc_filter_1_1[i].bb,calibration.fast_adc_filter_1_1[i].pp,calibration.fast_adc_filter_1_1[i].kk);
+			}
 			rp_CalibrationWriteParams(calibration,false);			
 		        break;
 		    case 2:
