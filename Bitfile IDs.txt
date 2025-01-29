@@ -1,5 +1,5 @@
 lockin digitizer 101
-digitizer 102
+digitizer 102 152
 lockin_sweep 103
 current-voltage 2023 104
 current-voltage 2024 154
