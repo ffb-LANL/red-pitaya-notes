@@ -59,7 +59,7 @@ cell pavel-demin:user:axis_gpio_reader_writer gpio_0 {
 
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
-  CFG_DATA_WIDTH 512
+  CFG_DATA_WIDTH 544
   STS_DATA_WIDTH 320
 } {
   S_AXI ps_0/M_AXI_GP0
@@ -215,14 +215,14 @@ cell pavel-demin:user:axis_lfsr lfsr_1 {} {
 
 # Create xlslice
 cell pavel-demin:user:port_slicer scale_factor_0 {
-  DIN_WIDTH 496 DIN_FROM 143 DIN_TO 128
+  DIN_WIDTH 544 DIN_FROM 511 DIN_TO 480
 } {
   Din hub_0/cfg_data
 }
 
 # Create xlslice
 cell pavel-demin:user:port_slicer scale_factor_1 {
-  DIN_WIDTH 496 DIN_FROM 495 DIN_TO 480
+  DIN_WIDTH 544 DIN_FROM 543 DIN_TO 512
 } {
   Din hub_0/cfg_data
 }
