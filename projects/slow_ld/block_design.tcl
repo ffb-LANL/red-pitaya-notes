@@ -1,4 +1,4 @@
-#lockin digitizer test 164, minus CMA
+#slow lockin digitizer 164
 
 # Create clk_wiz
 cell xilinx.com:ip:clk_wiz pll_0 {
@@ -59,7 +59,7 @@ cell pavel-demin:user:axis_gpio_reader_writer gpio_0 {
 
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
-  CFG_DATA_WIDTH 512
+  CFG_DATA_WIDTH 544
   STS_DATA_WIDTH 320
 } {
   S_AXI ps_0/M_AXI_GP0
@@ -78,6 +78,21 @@ cell pavel-demin:user:axis_red_pitaya_adc adc_0 {
   adc_dat_b adc_dat_b_i
   adc_csn adc_csn_o
 }
+
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster bcast_ADC {
+  NUM_MI 3
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 4
+  M00_TDATA_REMAP 16'b0,tdata[15:0]
+  M01_TDATA_REMAP 16'b0,tdata[31:16]
+  M02_TDATA_REMAP tdata[31:0]
+ } {
+  S_AXIS  adc_0/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
 
 # Create xlslice
 cell pavel-demin:user:port_slicer slice_frequency_0 {
@@ -154,16 +169,60 @@ cell xilinx.com:ip:dds_compiler dds_1 {
   aresetn rst_0/peripheral_aresetn
 }
 
+
+# Create axis_broadcaster
+cell xilinx.com:ip:axis_broadcaster bcast_DDS {
+  NUM_MI 3
+  S_TDATA_NUM_BYTES 4
+  M_TDATA_NUM_BYTES 4
+  M00_TDATA_REMAP tdata[31:0]
+  M01_TDATA_REMAP tdata[31:0]
+  M02_TDATA_REMAP 16'b0,tdata[15:0]
+ } {
+  S_AXIS  dds_0/M_AXIS_DATA
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# create delay
+#cell pavel-demin:user:axis_fixed_delay delay_dds_0 { 
+# DEPTH 14
+#} {
+#  s_axis bcast_DDS/M00_AXIS
+#  aclk pll_0/clk_out1
+#}
+
+# create delay
+#cell pavel-demin:user:axis_fixed_delay delay_dds_1 { 
+# DEPTH 14
+#} {
+#  s_axis bcast_DDS/M01_AXIS
+#  aclk pll_0/clk_out1
+#}
+
+# Create axis_lfsr
+cell pavel-demin:user:axis_lfsr lfsr_0 {} {
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+# Create axis_lfsr
+cell pavel-demin:user:axis_lfsr lfsr_1 {} {
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
 # Create xlslice
 cell pavel-demin:user:port_slicer scale_factor_0 {
-  DIN_WIDTH 496 DIN_FROM 143 DIN_TO 128
+  DIN_WIDTH 544 DIN_FROM 511 DIN_TO 480
 } {
   Din hub_0/cfg_data
 }
 
 # Create xlslice
 cell pavel-demin:user:port_slicer scale_factor_1 {
-  DIN_WIDTH 496 DIN_FROM 495 DIN_TO 480
+  DIN_WIDTH 544 DIN_FROM 543 DIN_TO 512
 } {
   Din hub_0/cfg_data
 }
@@ -172,7 +231,7 @@ cell pavel-demin:user:port_slicer scale_factor_1 {
 cell pavel-demin:user:axis_scaler scaler_0 {
   AXIS_TDATA_WIDTH 14
 } {
-  S_AXIS dds_0/M_AXIS_DATA
+  S_AXIS bcast_DDS/M02_AXIS
   cfg_data scale_factor_0/Dout
   aclk pll_0/clk_out1
   aresetn rst_0/peripheral_aresetn
@@ -297,18 +356,18 @@ cell pavel-demin:user:axis_soft_trigger trig_0 {
 module filter_4 {
   source projects/low_pass/cic_filter_16_fixed.tcl
 } {
-  s_axis adc_0/M_AXIS
+  s_axis bcast_ADC/M02_AXIS
   aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
+  aresetn rst_0/peripheral_aresetn
 }
+
 
 # Create axis_oscilloscope
 cell pavel-demin:user:axis_oscilloscope scope_0 {
   AXIS_TDATA_WIDTH 32
   CNTR_WIDTH 26
 } {
-  S_AXIS filter_4/M_AXIS
-  s_axis_tvalid filter_4/m_axis_tvalid
+  S_AXIS   filter_4/M_AXIS  
   run_flag run_slice/dout
   trg_flag trig_0/trg_flag
   pre_data pre_data_slice/dout
@@ -344,23 +403,13 @@ cell pavel-demin:user:axis_ram_writer writer_0 {
   aresetn writer_reset_slice/dout
 }
 
-
-# Create axis_trig_sync
-cell pavel-demin:user:axis_trig_sync trig_sync {
-} {
-  sync filter_4/m_axis_tvalid
-  aclk pll_0/clk_out1
-  pulse trig_0/trg_flag
-  aresetn writer_reset_slice/dout
-}
-
 # Create axis_snapshot
 cell pavel-demin:user:axis_snapshot phase_snap_0 {
   AXIS_TDATA_WIDTH 32
 } {
   S_AXIS dds_0/M_AXIS_PHASE
   aclk pll_0/clk_out1
-  trig_flag trig_sync/delayed_pulse
+  trig_flag trig_0/trg_flag
   aresetn writer_reset_slice/dout
 }
 
@@ -370,10 +419,86 @@ cell pavel-demin:user:axis_snapshot phase_snap_1 {
 } {
   S_AXIS dds_1/M_AXIS_PHASE
   aclk pll_0/clk_out1
-  trig_flag trig_sync/delayed_pulse
+  trig_flag trig_0/trg_flag
   aresetn writer_reset_slice/dout
 }
 
+# Create cmpy
+cell xilinx.com:ip:cmpy mult_0 {
+  FLOWCONTROL Blocking
+  APORTWIDTH.VALUE_SRC USER
+  BPORTWIDTH.VALUE_SRC USER
+  APORTWIDTH 14
+  BPORTWIDTH 14
+  ROUNDMODE Random_Rounding
+  OUTPUTWIDTH 28
+} {
+  S_AXIS_A bcast_ADC/M00_AXIS
+  s_axis_b bcast_DDS/M00_AXIS
+  S_AXIS_CTRL lfsr_0/M_AXIS
+  aclk pll_0/clk_out1
+}
+
+
+# Create cmpy
+cell xilinx.com:ip:cmpy mult_1 {
+  FLOWCONTROL Blocking
+  APORTWIDTH.VALUE_SRC USER
+  BPORTWIDTH.VALUE_SRC USER
+  APORTWIDTH 14
+  BPORTWIDTH 14
+  ROUNDMODE Random_Rounding
+  OUTPUTWIDTH 28
+} {
+  S_AXIS_A bcast_ADC/M01_AXIS
+  s_axis_b bcast_DDS/M01_AXIS
+  S_AXIS_CTRL lfsr_1/M_AXIS
+  aclk pll_0/clk_out1
+}
+
+# create filter
+module filter_xy_0 {
+  source projects/low_pass/filter_xy.tcl
+} {
+  s_axis mult_0/M_AXIS_DOUT
+  cfg hub_0/cfg_data
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+# create filter
+module filter_xy_1 {
+  source projects/low_pass/filter_xy_reversed.tcl
+} {
+  s_axis mult_1/M_AXIS_DOUT
+  cfg hub_0/cfg_data
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
+
+
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner comb_xy {
+  NUM_SI 4
+  TDATA_NUM_BYTES.VALUE_SRC USER
+  TDATA_NUM_BYTES 4
+} {
+  S00_AXIS filter_xy_0/M_AXIS_x
+  S01_AXIS filter_xy_0/M_AXIS_y
+  S02_AXIS filter_xy_1/M_AXIS_x
+  S03_AXIS filter_xy_1/M_AXIS_y
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+  }
+
+#create value
+cell pavel-demin:user:axis_value value_xy {
+AXIS_TDATA_WIDTH 128
+} {
+  s_axis comb_xy/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn rst_0/peripheral_aresetn
+}
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_ID {
@@ -401,6 +526,7 @@ cell xilinx.com:ip:xlconcat concat_sts {
   In3 scope_0/complete
   In5 const_ID/dout
   In6 phase_snap_0/data
+  In7 value_xy/data
   In8 const_modulus/dout
   In9 phase_snap_1/data
   dout hub_0/sts_data
