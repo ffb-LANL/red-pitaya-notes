@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-module axis_delay #
+module axis_fixed_delay #
 (
   parameter integer AXIS_TDATA_WIDTH = 32,
   parameter integer DEPTH = 32
