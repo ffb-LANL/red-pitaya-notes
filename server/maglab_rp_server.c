@@ -162,8 +162,9 @@ int main(int argc, char *argv[])
 	 	  close(sock_client);
 	    	  break;
 	       case CMD_CONNECT:
-                 if(verbose)printf("MAIN: Connect command %d\n",CMD_CONNECT);
-	    	 if((selector = command & 0x3)<3)
+		 selector = command & 0x3;
+                 if(verbose)printf("MAIN: Connect command %d, selector = %d\n",CMD_CONNECT,selector);
+	    	 if(selector<3)
 	    	 {  
 	    	   if(sock_thread[selector] > -1)
 	    	   {
