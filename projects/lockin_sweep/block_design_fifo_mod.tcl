@@ -72,7 +72,7 @@ cell xilinx.com:ip:xlslice slice_0 {
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
   CFG_DATA_WIDTH 256
-  STS_DATA_WIDTH 512
+  STS_DATA_WIDTH 256
 } {
   S_AXI ps_0/M_AXI_GP0
   aclk pll_0/clk_out1
@@ -122,15 +122,15 @@ cell xilinx.com:ip:axis_subset_converter subset_ADC_A {
 
 
 # Create axis_fifo
-cell xilinx.com:ip:axis_data_fifo fifo_f {
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-  HAS_WR_DATA_COUNT 1
-  FIFO_DEPTH 8192
+cell pavel-demin:user:axis_fifo fifo_f {
+  S_AXIS_TDATA_WIDTH 32
+  M_AXIS_TDATA_WIDTH 32
+  WRITE_DEPTH 8192
+  ALWAYS_READY FALSE
 } {
   S_AXIS hub_0/M00_AXIS
-  s_axis_aclk /pll_0/clk_out1
-  s_axis_aresetn slice_trx_reset/dout
+  aclk /pll_0/clk_out1
+  aresetn slice_trx_reset/dout
 }
 
 # Create xlslice
@@ -302,43 +302,42 @@ cell pavel-demin:user:axis_decimator dcmtr_f {
   aresetn slice_trx_reset/dout
 }
 
-# Create axis_fifo
-cell xilinx.com:ip:axis_data_fifo fifo_x {
-  FIFO_DEPTH 16384
+# Create axis_combiner
+cell  xilinx.com:ip:axis_combiner comb_xyf {
+  NUM_SI 3
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
-  HAS_WR_DATA_COUNT 1
 } {
-  S_AXIS filter_xy/M_AXIS_x
-  s_axis_aclk pll_0/clk_out1
-  s_axis_aresetn slice_trx_reset/dout
-  M_AXIS hub_0/S00_AXIS
+  S02_AXIS dcmtr_f/M_AXIS
+  S00_AXIS filter_xy/M_AXIS_x
+  S01_AXIS filter_xy/M_AXIS_y
+  aclk pll_0/clk_out1
+  aresetn slice_trx_reset/dout
+  }
+
+
+# Create axis_dwidth_converter
+cell xilinx.com:ip:axis_dwidth_converter conv_xyf {
+  S_TDATA_NUM_BYTES.VALUE_SRC USER
+  S_TDATA_NUM_BYTES 12
+  M_TDATA_NUM_BYTES 4
+} {
+  S_AXIS comb_xyf/M_AXIS
+  aclk pll_0/clk_out1
+  aresetn slice_trx_reset/dout
 }
 
 # Create axis_fifo
-cell xilinx.com:ip:axis_data_fifo fifo_y {
-  FIFO_DEPTH 16384
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-  HAS_WR_DATA_COUNT 1
+cell pavel-demin:user:axis_fifo fifo_xyf {
+  S_AXIS_TDATA_WIDTH 32
+  M_AXIS_TDATA_WIDTH 32
+  WRITE_DEPTH 16384
+  ALWAYS_READY FALSE
 } {
-  S_AXIS filter_xy/M_AXIS_y
-  s_axis_aclk pll_0/clk_out1
-  s_axis_aresetn slice_trx_reset/dout
+  S_AXIS conv_xyf/m_axis
+  aclk pll_0/clk_out1
+  aresetn slice_trx_reset/dout
   M_AXIS hub_0/S01_AXIS
-}
-
-# Create axis_fifo
-cell xilinx.com:ip:axis_data_fifo fifo_fout {
-  FIFO_DEPTH 16384
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-  HAS_WR_DATA_COUNT 1
-} {
-  S_AXIS dcmtr_f/M_AXIS
-  s_axis_aclk pll_0/clk_out1
-  s_axis_aresetn slice_trx_reset/dout
-  M_AXIS hub_0/S02_AXIS
 }
 
 
@@ -350,7 +349,7 @@ cell xilinx.com:ip:xlconstant const_lockin_sweep_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_status {
-  NUM_PORTS 10
+  NUM_PORTS 7
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 16
@@ -358,16 +357,10 @@ cell xilinx.com:ip:xlconcat concat_status {
   IN4_WIDTH 96
   IN5_WIDTH 32
   IN6_WIDTH 32
-  IN7_WIDTH 32
-  IN8_WIDTH 32
-  IN9_WIDTH 32
 } {
   IN3 const_lockin_sweep_ID/dout
-  In5 fifo_x/axis_wr_data_count
-  In6 fifo_f/axis_wr_data_count
-  In7 fifo_y/axis_wr_data_count
-  In8 fifo_fout/axis_wr_data_count
-  In9 concat_interpol/Dout
+  In5 fifo_xyf/read_count
+  In6 fifo_f/write_count
   dout hub_0/sts_data
 }
 
