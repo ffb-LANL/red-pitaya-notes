@@ -367,7 +367,7 @@ void *ctrl_handler(void *arg)
           	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
           	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
           	//memcpy(buffer, rx_data, samples);
-          	for(i = 0; i < samples; ++i) buffer[i] = *((uint32_t *)(hub+addr));
+          	for(i = 0; i < samples; ++i) buffer[i] = ((uint32_t *)(hub+addr))[i];
           	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
               if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
           	if(verbose){
