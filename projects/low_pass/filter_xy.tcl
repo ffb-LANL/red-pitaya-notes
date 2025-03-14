@@ -1,10 +1,4 @@
 #Filter
-create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 s_axis
-create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_x
-create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_y
-create_bd_pin -dir I -type rst aresetn
-create_bd_pin -dir I -type clk aclk
-create_bd_pin -dir I -type data -from 255 -to 0 cfg
 
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster bcast_two {
@@ -15,16 +9,14 @@ cell xilinx.com:ip:axis_broadcaster bcast_two {
   M00_TDATA_REMAP {tdata[31:0]}
   M01_TDATA_REMAP {tdata[63:32]}
 } {
-  S_AXIS s_axis
-  aclk aclk
-  aresetn aresetn
+  aclk /pll_0/clk_out1
+  aresetn /slice_trx_reset/dout
 }
 
 # Create xlslice
 cell xilinx.com:ip:xlslice slice_decimate {
   DIN_WIDTH 256 DIN_FROM 127 DIN_TO 96
 } {
-  Din cfg
 }
 
 # Create cic_compiler
@@ -43,8 +35,8 @@ cell xilinx.com:ip:cic_compiler cic_filter_x0 {
   HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA bcast_two/M00_AXIS
-  aclk aclk
-  aresetn aresetn
+  aclk /pll_0/clk_out1
+  aresetn /slice_trx_reset/dout
 }
 
 
@@ -55,9 +47,8 @@ module cic_filter_x1 {
 } {
   s_axis cic_filter_x0/m_axis_data
   cfg slice_decimate/Dout
-  M_AXIS m_axis_x
-  aclk aclk
-  aresetn aresetn 
+  aclk /pll_0/clk_out1
+  aresetn /slice_trx_reset/dout
 }
 
 # Create cic_compiler
@@ -76,8 +67,8 @@ cell xilinx.com:ip:cic_compiler cic_filter_y0 {
   HAS_DOUT_TREADY true
 } {
   S_AXIS_DATA bcast_two/M01_AXIS
-  aclk aclk
-  aresetn aresetn
+  aclk /pll_0/clk_out1
+  aresetn /slice_trx_reset/dout
 }
 
 # create filter
@@ -86,7 +77,6 @@ module cic_filter_y1 {
 } {
   s_axis cic_filter_y0/m_axis_data
   cfg slice_decimate/Dout
-  M_AXIS m_axis_y
-  aclk aclk
-  aresetn aresetn 
+  aclk /pll_0/clk_out1
+  aresetn /slice_trx_reset/dout
 }
