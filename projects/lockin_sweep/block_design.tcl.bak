@@ -71,7 +71,7 @@ cell xilinx.com:ip:xlslice slice_0 {
 
 # Create axi_hub
 cell pavel-demin:user:axi_hub hub_0 {
-  CFG_DATA_WIDTH 512
+  CFG_DATA_WIDTH 256
   STS_DATA_WIDTH 512
 } {
   S_AXI ps_0/M_AXI_GP0
@@ -165,91 +165,12 @@ cell pavel-demin:user:axis_interpolator inter_f {
 
 # Create axis_broadcaster
 cell xilinx.com:ip:axis_broadcaster bcast_f {
-  NUM_MI 3
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
  } {
   S_AXIS inter_f/m_axis
   aclk pll_0/clk_out1
   aresetn slice_trx_reset/dout
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer writer_reset_slice {
-  DIN_WIDTH 496 DIN_FROM 0 DIN_TO 0
-} {
-  din hub_0/cfg_data
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer run_slice {
-  DIN_WIDTH 496 DIN_FROM 1 DIN_TO 1
-} {
-  din hub_0/cfg_data
-}
-
-# Create xlslice
-cell pavel-demin:user:port_slicer slice_trig_record {
-  DIN_WIDTH 496 DIN_FROM 3 DIN_TO 3
-} {
-   din hub_0/cfg_data
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer pre_data_slice {
-  DIN_WIDTH 496 DIN_FROM 447 DIN_TO 416
-} {
-  din hub_0/cfg_data
-}
-
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer tot_data_slice {
-  DIN_WIDTH 496 DIN_FROM 63 DIN_TO 32
-} {
-  din hub_0/cfg_data
-}
-
-
-# Create axis_oscilloscope
-cell pavel-demin:user:axis_oscilloscope scope_0 {
-  AXIS_TDATA_WIDTH 32
-  CNTR_WIDTH 26
-} {
-  S_AXIS   bcast_f/M02_AXIS
-  run_flag run_slice/dout
-  trg_flag slice_trig_record/dout
-  pre_data pre_data_slice/dout
-  tot_data tot_data_slice/dout
-  aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
-}
-
-# Create xlconstant
-cell xilinx.com:ip:xlconstant const_ram_size {
-  CONST_WIDTH 21
-  CONST_VAL 2097151
-}
-
-# Create xlconstant
-cell xilinx.com:ip:xlconstant writer_address_start {
-  CONST_WIDTH 32
-  CONST_VAL 268435456
-}
-
-# Create axis_ram_writer
-cell pavel-demin:user:axis_ram_writer writer_0 {
-  ADDR_WIDTH 21
-  AXI_ID_WIDTH 3
-  AXIS_TDATA_WIDTH 32
-  FIFO_WRITE_DEPTH 1024
-} {
-  S_AXIS scope_0/M_AXIS
-  M_AXI ps_0/S_AXI_HP0
-  min_addr writer_address_start/dout
-  cfg_data const_ram_size/dout
-  aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
 }
 
 
@@ -352,6 +273,15 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
   dac_dat dac_dat_o
 }
 
+# create filter
+module filter_xy {
+  source projects/low_pass/filter_xy.tcl
+} {
+  s_axis mult_0/M_AXIS_DOUT
+  cfg hub_0/cfg_data
+  aclk pll_0/clk_out1
+  aresetn slice_trx_reset/dout
+}
 
 # create delay
 cell pavel-demin:user:axis_fixed_delay delay_f { 
@@ -379,6 +309,7 @@ cell xilinx.com:ip:axis_data_fifo fifo_x {
   TDATA_NUM_BYTES 4
   HAS_WR_DATA_COUNT 1
 } {
+  S_AXIS filter_xy/M_AXIS_x
   s_axis_aclk pll_0/clk_out1
   s_axis_aresetn slice_trx_reset/dout
   M_AXIS hub_0/S00_AXIS
@@ -391,21 +322,11 @@ cell xilinx.com:ip:axis_data_fifo fifo_y {
   TDATA_NUM_BYTES 4
   HAS_WR_DATA_COUNT 1
 } {
+  S_AXIS filter_xy/M_AXIS_y
   s_axis_aclk pll_0/clk_out1
   s_axis_aresetn slice_trx_reset/dout
   M_AXIS hub_0/S01_AXIS
 }
-
-# create filter
-module filter_xy {
-  source projects/low_pass/filter_xy.tcl
-} {
-  bcast_two/s_axis mult_0/M_AXIS_DOUT
-  slice_decimate/din hub_0/cfg_data
-  cic_filter_x1/M_AXIS fifo_x/S_AXIS
-  cic_filter_y1/M_AXIS fifo_y/S_AXIS
-}
-
 
 # Create axis_fifo
 cell xilinx.com:ip:axis_data_fifo fifo_fout {
@@ -429,31 +350,24 @@ cell xilinx.com:ip:xlconstant const_lockin_sweep_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_status {
-  NUM_PORTS 12
+  NUM_PORTS 10
   IN0_WIDTH 32
   IN1_WIDTH 32
-  IN2_WIDTH 1
-  IN3_WIDTH 1
-  IN4_WIDTH 14 
-  IN5_WIDTH 16
-  IN6_WIDTH 96
+  IN2_WIDTH 16
+  IN3_WIDTH 16
+  IN4_WIDTH 96
+  IN5_WIDTH 32
+  IN6_WIDTH 32
   IN7_WIDTH 32
   IN8_WIDTH 32
   IN9_WIDTH 32
-  IN10_WIDTH 32
-  IN11_WIDTH 32
-  IN12_WIDTH 32
 } {
-  In0 writer_0/sts_data	
-  In1 scope_0/sts_data
-  In2 scope_0/triggered
-  In3 scope_0/complete
-  IN5 const_lockin_sweep_ID/dout
-  In7 fifo_x/axis_wr_data_count
-  In8 fifo_f/axis_wr_data_count
-  In9 fifo_y/axis_wr_data_count
-  In10 fifo_fout/axis_wr_data_count
-  In11 concat_interpol/Dout
+  IN3 const_lockin_sweep_ID/dout
+  In5 fifo_x/axis_wr_data_count
+  In6 fifo_f/axis_wr_data_count
+  In7 fifo_y/axis_wr_data_count
+  In8 fifo_fout/axis_wr_data_count
+  In9 concat_interpol/Dout
   dout hub_0/sts_data
 }
 
