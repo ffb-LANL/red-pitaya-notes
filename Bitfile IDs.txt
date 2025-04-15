@@ -50,7 +50,7 @@ STS map:
 64-65	+8 pktzr_0/complete
 80-95	+10 const_ID
 96-127	+12  phase_snap_0
-128-255	+16 value_xy
-256-287 +32 const_modulus
-288-319	+36 phase_snap_1
+128-255	+16 value_xy     | 192-223 +24 Rx FIFO counter & 224-255 +28 Tx FIFO counter
+256-287 +32 const_modulus | 2nd RX FIFO counter
+288-319	+36 phase_snap_1 | 3nd RX FIFO counter
 320-575	+40 values_xy (x0 (32 bits),y0(32 bits),x1...y4)
