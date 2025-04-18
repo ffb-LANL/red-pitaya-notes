@@ -137,15 +137,13 @@ cell xilinx.com:ip:dds_compiler dds_0 {
 
 
 # Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster bcast_dds {
-  NUM_MI 3
+cell xilinx.com:ip:axis_broadcaster bcast_two {
   S_TDATA_NUM_BYTES.VALUE_SRC USER
   M_TDATA_NUM_BYTES.VALUE_SRC USER
   S_TDATA_NUM_BYTES 4
   M_TDATA_NUM_BYTES 4
   M00_TDATA_REMAP {16'b0,tdata[15:0]}
   M01_TDATA_REMAP {tdata[31:0]}
-  M02_TDATA_REMAP {16'b0,tdata[15:0]}
 } {
   S_AXIS dds_0/M_AXIS_DATA
   aclk /pll_0/clk_out1
@@ -169,8 +167,8 @@ cell xilinx.com:ip:cmpy mult_0 {
   OUTPUTWIDTH 28
   aresetn true
 } {
-  S_AXIS_A bcast_dds/M00_AXIS
-  s_axis_b bcast_dds/M01_AXIS
+  S_AXIS_A bcast_two/M00_AXIS
+  s_axis_b bcast_two/M01_AXIS
   S_AXIS_CTRL lfsr_0/M_AXIS
   aclk pll_0/clk_out1
   aresetn slice_trx_reset/dout
@@ -323,41 +321,6 @@ cell xilinx.com:ip:axis_data_fifo fifo_y {
   s_axis_aresetn slice_trx_reset/dout
   M_AXIS hub_0/S02_AXIS
 }
-
-
-# Create xlslice
-cell xilinx.com:ip:xlslice scale_factor {
-  DIN_WIDTH 544 DIN_FROM 511 DIN_TO 480
-} {
-  Din hub_0/cfg_data
-}
-
-
-# Create axis_scaler
-cell pavel-demin:user:axis_scaler scaler {
-  AXIS_TDATA_WIDTH 14
-} {
-  S_AXIS bcast_DDS/M02_AXIS
-  cfg_data scale_factor/Dout
-  aclk pll_0/clk_out1
-  aresetn slice_trx_reset/dout
-}
-
-
-# Create axis_red_pitaya_dac
-cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
-  aclk pll_0/clk_out1
-  ddr_clk pll_0/clk_out2
-  wrt_clk pll_0/clk_out3
-  locked pll_0/locked
-  S_AXIS scaler/M_AXIS
-  dac_clk dac_clk_o
-  dac_rst dac_rst_o
-  dac_sel dac_sel_o
-  dac_wrt dac_wrt_o
-  dac_dat dac_dat_o
-}
-
 
 
 # Create xlconcat

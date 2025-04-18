@@ -28,8 +28,7 @@ CFG map:
 32-63   +4 RECORD_LENGTH | tot_data
 64-95   +8 FREQUENCY_0 WORD
 96-127  +12 DECIMATION
-128-143 +16 unused
-144-159 +18 LED
+128-159 +16 INTERPOLAION
 160-319 +20 I-V CFG (total_sweeps[16]: +22 ramp[16]:+24 width[16]: +26 unused[16]: +28 threshold[32]:+32 waveform_length[16]:+36 pulse_length[32])
 224-255 +28 DDS DELAY
 320-351 +40 TRIGGER DELAY 
