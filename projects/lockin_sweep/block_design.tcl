@@ -23,10 +23,8 @@ cell xilinx.com:ip:clk_wiz pll_0 {
 # Create processing_system7
 cell xilinx.com:ip:processing_system7 ps_0 {
   PCW_IMPORT_BOARD_PRESET cfg/red_pitaya.xml
-  PCW_USE_S_AXI_HP0 1
 } {
   M_AXI_GP0_ACLK pll_0/clk_out1
-  S_AXI_HP0_ACLK pll_0/clk_out1
 }
 
 # Create all required interconnections
@@ -111,7 +109,7 @@ cell xilinx.com:ip:axis_data_fifo fifo_f {
   TDATA_NUM_BYTES.VALUE_SRC USER
   TDATA_NUM_BYTES 4
   HAS_WR_DATA_COUNT 1
-  FIFO_DEPTH 8192
+  FIFO_DEPTH 16384
 } {
   S_AXIS hub_0/M00_AXIS
   s_axis_aclk /pll_0/clk_out1
@@ -140,95 +138,6 @@ cell pavel-demin:user:axis_interpolator inter_f {
 }
 
 
-# Create axis_broadcaster
-cell xilinx.com:ip:axis_broadcaster bcast_f {
-  NUM_MI 3
-  S_TDATA_NUM_BYTES 4
-  M_TDATA_NUM_BYTES 4
- } {
-  S_AXIS inter_f/m_axis
-  aclk pll_0/clk_out1
-  aresetn slice_trx_reset/dout
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer writer_reset_slice {
-  DIN_WIDTH 544 DIN_FROM 0 DIN_TO 0
-} {
-  din hub_0/cfg_data
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer run_slice {
-  DIN_WIDTH 544 DIN_FROM 1 DIN_TO 1
-} {
-  din hub_0/cfg_data
-}
-
-# Create xlslice
-cell pavel-demin:user:port_slicer slice_trig_record {
-  DIN_WIDTH 544 DIN_FROM 3 DIN_TO 3
-} {
-   din hub_0/cfg_data
-}
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer pre_data_slice {
-  DIN_WIDTH 544 DIN_FROM 447 DIN_TO 416
-} {
-  din hub_0/cfg_data
-}
-
-
-# Create port_slicer
-cell pavel-demin:user:port_slicer tot_data_slice {
-  DIN_WIDTH 544 DIN_FROM 63 DIN_TO 32
-} {
-  din hub_0/cfg_data
-}
-
-
-# Create axis_oscilloscope
-cell pavel-demin:user:axis_oscilloscope scope_0 {
-  AXIS_TDATA_WIDTH 32
-  CNTR_WIDTH 26
-} {
-  S_AXIS   bcast_f/M02_AXIS
-  run_flag run_slice/dout
-  trg_flag slice_trig_record/dout
-  pre_data pre_data_slice/dout
-  tot_data tot_data_slice/dout
-  aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
-}
-
-# Create xlconstant
-cell xilinx.com:ip:xlconstant const_ram_size {
-  CONST_WIDTH 21
-  CONST_VAL 2097151
-}
-
-# Create xlconstant
-cell xilinx.com:ip:xlconstant writer_address_start {
-  CONST_WIDTH 32
-  CONST_VAL 268435456
-}
-
-# Create axis_ram_writer
-cell pavel-demin:user:axis_ram_writer writer_0 {
-  ADDR_WIDTH 21
-  AXI_ID_WIDTH 3
-  AXIS_TDATA_WIDTH 32
-  FIFO_WRITE_DEPTH 1024
-} {
-  S_AXIS scope_0/M_AXIS
-  M_AXI ps_0/S_AXI_HP0
-  min_addr writer_address_start/dout
-  cfg_data const_ram_size/dout
-  aclk pll_0/clk_out1
-  aresetn writer_reset_slice/dout
-}
-
 
 # Create dds_compiler
 cell xilinx.com:ip:dds_compiler dds_0 {
@@ -242,7 +151,7 @@ cell xilinx.com:ip:dds_compiler dds_0 {
   HAS_PHASE_OUT false
   HAS_ARESETn true
 } {
-  S_AXIS_PHASE bcast_f/M00_AXIS
+  S_AXIS_PHASE inter_f/m_axis
   aclk pll_0/clk_out1
   aresetn slice_trx_reset/dout
 }
@@ -272,7 +181,7 @@ cell xilinx.com:ip:xlslice slice_dds_delay {
 
 # create delay
 cell pavel-demin:user:axis_fixed_delay delay_dds { 
- DEPTH 17
+ DEPTH 15
 } {
   s_axis bcast_DDS/M01_AXIS
   aclk pll_0/clk_out1
@@ -327,26 +236,6 @@ cell pavel-demin:user:axis_red_pitaya_dac dac_0 {} {
   dac_sel dac_sel_o
   dac_wrt dac_wrt_o
   dac_dat dac_dat_o
-}
-
-
-# create delay
-cell pavel-demin:user:axis_fixed_delay delay_f { 
- DEPTH 16
-} {
-  s_axis bcast_f/M01_AXIS
-  aclk pll_0/clk_out1
-}
-
-# Create axis_decimator
-cell pavel-demin:user:axis_decimator dcmtr_f {
-  AXIS_TDATA_WIDTH 32
-  CNTR_WIDTH 32
-} {
-  S_AXIS delay_f/M_AXIS
-  cfg_data slice_interpolate/Dout
-  aclk pll_0/clk_out1
-  aresetn slice_trx_reset/dout
 }
 
 # Create axis_broadcaster
@@ -500,19 +389,6 @@ cell xilinx.com:ip:axis_data_fifo fifo_xy {
 }
 
 
-# Create axis_fifo
-cell xilinx.com:ip:axis_data_fifo fifo_fout {
-  FIFO_DEPTH 16384
-  TDATA_NUM_BYTES.VALUE_SRC USER
-  TDATA_NUM_BYTES 4
-  HAS_WR_DATA_COUNT 1
-} {
-  S_AXIS dcmtr_f/M_AXIS
-  s_axis_aclk pll_0/clk_out1
-  s_axis_aresetn slice_trx_reset/dout
-  M_AXIS hub_0/S02_AXIS
-}
-
 
 # Create xlconstant
 cell xilinx.com:ip:xlconstant const_lockin_sweep_ID {
@@ -537,14 +413,9 @@ cell xilinx.com:ip:xlconcat concat_status {
   IN11_WIDTH 32
   IN12_WIDTH 32
 } {
-  In0 writer_0/sts_data	
-  In1 scope_0/sts_data
-  In2 scope_0/triggered
-  In3 scope_0/complete
   IN5 const_lockin_sweep_ID/dout
   In7 fifo_xy/axis_wr_data_count
   In8 fifo_f/axis_wr_data_count
-  In10 fifo_fout/axis_wr_data_count
   In11 slice_interpolate/Dout
   dout hub_0/sts_data
 }
