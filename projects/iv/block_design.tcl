@@ -386,7 +386,7 @@ cell xilinx.com:ip:xlconstant const_ID {
 
 # Create xlconcat
 cell xilinx.com:ip:xlconcat concat_sts {
-  NUM_PORTS 11
+  NUM_PORTS 13
   IN0_WIDTH 32
   IN1_WIDTH 32
   IN2_WIDTH 1
@@ -398,6 +398,8 @@ cell xilinx.com:ip:xlconcat concat_sts {
   IN8_WIDTH 16
   IN9_WIDTH 32
   IN10_WIDTH 32
+  IN11_WIDTH 32
+  IN12_WIDTH 32
 } {
   In0 writer_0/sts_data
   In1 scope_0/sts_data
@@ -409,6 +411,7 @@ cell xilinx.com:ip:xlconcat concat_sts {
   In8 const_ID/dout
   In9 pulse_pattern/sts_data
   In10 pulse_pattern/pulse_count
+  In12 fifo_0/write_count
   dout hub_0/sts_data
 }
 
