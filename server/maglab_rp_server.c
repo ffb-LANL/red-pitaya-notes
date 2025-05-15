@@ -52,8 +52,8 @@
 #define CMD_STOP 2
 #define CMD_IDN 1
 
-void *cfg, *ram, *sts, *hub;
-void *rx_data,*tx_data;
+volatile void *cfg, *ram, *sts, *hub;
+volatile void *rx_data,*tx_data;
 int init_mem_map();
 int clean_up();
 
@@ -257,7 +257,7 @@ void *ctrl_handler(void *arg)
 		if(verbose>1)printf("Status inqury. ");
           	status=*((uint32_t *)(sts + offset));
           	if(verbose>1)printf("STS Offset =%u, Status = %u",(uint32_t)offset, status);
-		if((ret=send(sock_client, sts + offset, sizeof(status), 0)) < 0){   perror("staus send");break;}
+		if((ret=send(sock_client, (void *)sts + offset, sizeof(status), 0)) < 0){   perror("staus send");break;}
 		if(verbose>1)printf("Status response: %d bytes sent.\n",ret);
           	break;
           case 4: //get temperature
@@ -310,7 +310,7 @@ void *ctrl_handler(void *arg)
         	end_offset=((trigger_pos*2)/packet_size)*packet_size+samples*4-packet_size;
         	for(offset=0;offset < samples*4;offset +=packet_size)
         	{
-        		 if(send(sock_client, ram + offset, packet_size, 0) < 0){   perror("send");break;}
+        		 if(send(sock_client, (void *)ram + offset, packet_size, 0) < 0){   perror("send");break;}
         	 	 if(verbose > 1) if((offset)%(packet_size*256)==0)printf("Offset %ld\n",offset);
         	}
             if(verbose)printf("Offset %ld\n",offset);
@@ -335,13 +335,13 @@ void *ctrl_handler(void *arg)
                 }
                 if(start_offset+tot <= (RAM_LENGTH-1))
 		{
-			  if(send(sock_client, ram + start_offset, tot, MSG_NOSIGNAL) < 0) break;
+			  if(send(sock_client, (void *)ram + start_offset, tot, MSG_NOSIGNAL) < 0) break;
 			  if(verbose)printf("Sent one chunk: %d bytes starting from %d\n", tot, start_offset);
 		}
                 else
 		{ 
-			  if(send(sock_client, ram + start_offset, ((RAM_LENGTH) - start_offset), MSG_NOSIGNAL) < 0) break;
-			  if(send(sock_client, ram, (start_offset + tot - (RAM_LENGTH)), MSG_NOSIGNAL) < 0) break;
+			  if(send(sock_client, (void *)ram + start_offset, ((RAM_LENGTH) - start_offset), MSG_NOSIGNAL) < 0) break;
+			  if(send(sock_client, (void *)ram, (start_offset + tot - (RAM_LENGTH)), MSG_NOSIGNAL) < 0) break;
 	                  if(verbose)printf("Sent two chunks: %d bytes starting from %d, then %d bytes starting from %d\n", ((RAM_LENGTH-1) - start_offset), start_offset, (start_offset + tot - (RAM_LENGTH-1)),0);
 		}
  
@@ -353,7 +353,7 @@ void *ctrl_handler(void *arg)
           	 offset = command & 0xFFFFFFFF;
           	 status=*((uint32_t *)(cfg + offset));
           	 if(verbose > 1)printf("CFG Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 	         if(send(sock_client, cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
+ 	         if(send(sock_client, (void *)cfg + offset, sizeof(status), 0) < 0){   perror("send");break;}
           	 break;
           case 12: //set config
           	offset = (command >> 32)& 0xFF;
@@ -362,20 +362,25 @@ void *ctrl_handler(void *arg)
           	*((uint32_t *)(cfg + offset)) = status;
  			break;
           case 13: // read from hub
+                uint32_t cnt1,cnt2;
            	samples = command >> 28 & 0xffffff;
                 addr = command & 0xfffffff;
-          	if(verbose>1)printf("Read %d u32. FIFO Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
+                cnt1=*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET));
+                cnt2=*((uint32_t *)(sts + 16));
+          	if(verbose)printf("Read %d u32 samples from hub address %d. FIFO count %u, Pulse count %u\n",samples,addr,cnt1,cnt2);
           	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
           	//memcpy(buffer, rx_data, samples);
           	for(i = 0; i < samples; ++i) buffer[i] = ((uint32_t *)(hub+addr))[i];
-          	if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
-              if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
+                if(send(sock_client, buffer, samples*4, MSG_NOSIGNAL) < 0){   perror("send FIFO");break;}
           	if(verbose){
           		printf("First words in RX buffer=");
                       		for (int i=0;i<15;++i)
                       			printf("%d, ",buffer[i] );
                   printf("\n");
           	}
+		cnt1=*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET));
+                cnt2=*((uint32_t *)(sts + 16));
+          	if(verbose)printf("After read FIFO count %u, Pulse count %u\n",cnt1,cnt2);
               break;
 
           case 14: //read-write calibration
@@ -464,7 +469,7 @@ void *rx_handler(void *arg)
           	offset = command & 0xFFFFFFFF;
           	status=*((uint32_t *)(sts + offset));
           	if(verbose>1)printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 			if(send(sock_client, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
+ 			if(send(sock_client, (void *)sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
           	break;
           case 12: //set config
           	offset = (command >> 32)& 0xFF;
@@ -476,7 +481,7 @@ void *rx_handler(void *arg)
           	samples = command & 0xFFFFFFFF;
           	if(verbose>1)printf("Read %d samples RX buffer. Counter =%u\n",samples,*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
           	//while(*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET))< 4096)usleep(500);
-          	memcpy(buffer, rx_data, samples);
+          	memcpy(buffer, (void *)rx_data, samples);
           	//if(verbose>1)printf("After read FIFO. Counter =%u\n",*((uint32_t *)(sts + RX_FIFO_CNT_OFFSET)));
             if(send(sock_client, buffer, samples, MSG_NOSIGNAL) < 0){   perror("send RX");break;}
             break;
@@ -526,7 +531,7 @@ void *tx_handler(void *arg)
           	offset = command & 0xFFFFFFFF;
           	status=*((uint32_t *)(sts + offset));
           	if(verbose>1)printf("STS Offset =%u, Status = %u\n",(uint32_t)offset, status);
- 			if(send(sock_client, sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
+ 			if(send(sock_client, (void *)sts + offset, sizeof(status), 0) < 0){   perror("send");break;}
           	break;
           case 12: //set config
           	offset = (command >> 32)& 0xFF;
@@ -542,7 +547,7 @@ void *tx_handler(void *arg)
           	if(verbose)printf("Transmitting %d bytes\n",samples);
           	if(recv(sock_client, buffer, samples, MSG_WAITALL) < 0) break;
           	if(verbose)printf("1st 32-bit word %d\n",*(uint32_t *)buffer);
-          	memcpy( tx_data, buffer,samples);
+          	memcpy( (void *)tx_data, buffer,samples);
             break;
 	    }
 	}
@@ -605,11 +610,11 @@ void signal_handler(int sig)
 
 int clean_up()
 {
-	  munmap(cfg, sysconf(_SC_PAGESIZE));
-	  munmap(ram, sysconf(_SC_PAGESIZE));
-	  munmap(sts, sysconf(_SC_PAGESIZE));
-	  munmap(rx_data, sysconf(_SC_PAGESIZE));
-	  munmap(tx_data, sysconf(_SC_PAGESIZE));
+	  munmap((void *)cfg, sysconf(_SC_PAGESIZE));
+	  munmap((void *)ram, sysconf(_SC_PAGESIZE));
+	  munmap((void *)sts, sysconf(_SC_PAGESIZE));
+	  munmap((void *)rx_data, sysconf(_SC_PAGESIZE));
+	  munmap((void *)tx_data, sysconf(_SC_PAGESIZE));
 	  return 0;
 }
 int read_calibration()
