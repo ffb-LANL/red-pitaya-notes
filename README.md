@@ -6,8 +6,6 @@ Typical framework consist of FPGA bit file, with runs on Red Pitaya programmable
 
 Bitfile creation example: https://pavel-demin.github.io/red-pitaya-notes/led-blinker/  
 
-On Red Pitaya:
-Command to program FPPA with bitfile: cat <bifile_name>.bit > /dev/xdevcfg 
 
 
 
