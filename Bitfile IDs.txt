@@ -18,6 +18,8 @@ dual channel lockin 2024 159
 dual channel lockin 122.88 2024 169
 4adc recorder 157
 4adc digitizer 158
+single channel lockin 2025 153
+dual channel fine frequency lockin 2026 160
 
 CFG map:
 0-0     PKTZR RESET | writer_reset
